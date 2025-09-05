@@ -19,8 +19,8 @@
     "apps/petpage"
   ],
   "scripts": {
-    "build": "npm run build --workspace=petCorner && npm run build --workspace=petpage",
+    "build": "npm run build --workspace=petcorner && npm run build --workspace=petpage",
     "dev:next": "npm run dev --workspace=petpage",
-    "dev:vite": "npm run dev --workspace=petCorner"
+    "dev:vite": "npm run dev --workspace=petcorner"
   }
 }
