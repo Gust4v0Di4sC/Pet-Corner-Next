@@ -1,6 +1,9 @@
 // next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    images: {
+    unoptimized: true,
+  },
   async rewrites() {
     return [
       // Rewrite para servir o index.html da SPA para todas as rotas /app-react/*
