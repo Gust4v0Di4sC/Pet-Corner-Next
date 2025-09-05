@@ -45,6 +45,7 @@ export function Footer(){
                     height: "auto",
                   }}
                   className="object-contain"
+                  unoptimized
                 />
               </div>
             ))}

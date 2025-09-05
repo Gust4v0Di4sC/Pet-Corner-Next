@@ -18,7 +18,7 @@ export function NavBar(){
                 height: "auto",
               }}
               className="object-contain"
-              
+              unoptimized
             />
           </div>
 

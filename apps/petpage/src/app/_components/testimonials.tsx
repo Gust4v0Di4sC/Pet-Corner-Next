@@ -64,6 +64,7 @@ export function Testimonials(){
                               fill
                               sizes="96px"
                               className="object-cover rounded-full"
+                              unoptimized
                             />
                           </div>
                         </div>

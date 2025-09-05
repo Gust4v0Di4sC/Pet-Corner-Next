@@ -20,6 +20,7 @@ export function About(){
                         fill
                         quality={100}
                         priority
+                        unoptimized
                     />
                     </div>
 

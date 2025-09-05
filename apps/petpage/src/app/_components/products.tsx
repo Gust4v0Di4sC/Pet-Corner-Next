@@ -77,6 +77,7 @@ export function Products(){
                           objectFit="cover" // Corta a imagem para cobrir o container sem distorcer
                           quality={100}
                           className="object-cover" // Assegura que a imagem cubra o espaço
+                          unoptimized
                         />
                       </div>
 
