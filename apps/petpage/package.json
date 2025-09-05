@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vite": "cd ../petCorner && npm install && npm run build && cp -r dist/* ../petpage/public/",
     "start": "next start",
     "lint": "next lint"
   },

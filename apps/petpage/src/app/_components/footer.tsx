@@ -1,9 +1,9 @@
-import golden from "/public/golden.png";
-import royal from "/public/royal.png";
-import primier from "/public/primier.png";
-import whiskas from "/public/whiskas.png";
-import natural from "/public/natural.png";
-import paws from "/public/paws.png";
+import golden from "@/assets/golden.png";
+import royal from "@/assets/royal.png";
+import primier from "@/assets/primier.png";
+import whiskas from "@/assets/whiskas.png";
+import natural from "@/assets/natural.png";
+import paws from "@/assets/paws.png";
 import Image from "next/image";
 import { FacebookLogo, InstagramLogo, YoutubeLogo, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 
