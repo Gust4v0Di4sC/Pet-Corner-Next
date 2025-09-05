@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "npm rebuild sharp --platform=linux --arch=x64",
     "dev": "next dev",
     "build": "next build",
-    "build:vite": "cd ../petCorner && npm install && npm run build && cp -r dist/* ../petpage/public/",
     "start": "next start",
     "lint": "next lint"
   },
