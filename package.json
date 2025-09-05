@@ -1,0 +1,26 @@
+{
+  "name": "pertcornernext",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Gust4v0Di4sC/Pet-Corner-Next#readme",
+  "bugs": {
+    "url": "https://github.com/Gust4v0Di4sC/Pet-Corner-Next/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gust4v0Di4sC/Pet-Corner-Next.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "workspaces": [
+    "apps/petCorner",
+    "apps/petpage"
+  ],
+  "scripts": {
+    "dev:next": "npm run dev -w apps/petpage",
+    "dev:vite": "npm run dev -w apps/petCorner",
+    "build": "npm run build -w apps/petCorner && npm run build -w apps/petpage"
+  }
+}
