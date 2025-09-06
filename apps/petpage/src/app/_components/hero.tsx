@@ -6,7 +6,7 @@ export function Hero() {
         <section className="bg-[#E36414] text-white relative overflow-hidden">
 
             <div>
-                <Image src={"/hero-dog.webp"} alt="Foto do cachorro" fill sizes="100vw" priority className='object-contain opacity-60 lg:hidden' unoptimized/>
+                <Image src={"@/assets/hero-dog.webp"} alt="Foto do cachorro" fill sizes="100vw" priority className='object-contain opacity-60 lg:hidden' unoptimized/>
                 <div className='absolute inset-0 bg-black opacity-60
                 md:hidden'></div>
             </div>

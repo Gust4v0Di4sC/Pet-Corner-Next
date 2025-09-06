@@ -8,7 +8,7 @@ export function NavBar(){
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center md:justify-between">
           <div className="flex items-center mb-4 md:mb-0">
             <Image
-              src={"/Logo-Home.svg"}
+              src={"@/assets/Logo-Home.svg"}
               alt={"Logo do petshop"}
               width={100}
               height={40}
