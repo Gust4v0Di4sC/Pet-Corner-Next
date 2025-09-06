@@ -1,4 +1,5 @@
 import Image from "next/image";
+import logoImg from "@/assets/Logo-Home.svg";
 import { User, Wrench } from "@phosphor-icons/react/dist/ssr";
 
 
@@ -8,7 +9,7 @@ export function NavBar(){
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center md:justify-between">
           <div className="flex items-center mb-4 md:mb-0">
             <Image
-              src={"@/assets/Logo-Home.svg"}
+              src={logoImg}
               alt={"Logo do petshop"}
               width={100}
               height={40}

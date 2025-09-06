@@ -1,4 +1,5 @@
 import {WhatsappLogo} from '@phosphor-icons/react/dist/ssr';
+import herodog from "@/assets/hero-dog.webp";
 import Image from 'next/image';
 
 export function Hero() {
@@ -6,7 +7,7 @@ export function Hero() {
         <section className="bg-[#E36414] text-white relative overflow-hidden">
 
             <div>
-                <Image src={"@/assets/hero-dog.webp"} alt="Foto do cachorro" fill sizes="100vw" priority className='object-contain opacity-60 lg:hidden' unoptimized/>
+                <Image src={herodog} alt="Foto do cachorro" fill sizes="100vw" priority className='object-contain opacity-60 lg:hidden' unoptimized/>
                 <div className='absolute inset-0 bg-black opacity-60
                 md:hidden'></div>
             </div>
@@ -34,7 +35,7 @@ export function Hero() {
                     </div>
 
                     <div className='hidden md:block h-full relative'>
-                        <Image src={"/hero-dog.webp"} alt="Foto Cachorro" className='object-contain' fill sizes='(max-width: 768px) 0vw, 50vw' quality={100} priority />
+                        <Image src={herodog} alt="Foto Cachorro" className='object-contain' fill sizes='(max-width: 768px) 0vw, 50vw' quality={100} priority />
                     </div>
                 </article>
             </div>
