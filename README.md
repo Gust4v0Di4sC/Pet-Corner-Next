@@ -105,6 +105,8 @@ npm run build
    * Output Directory: `.next`
 4. Configurar as **variáveis de ambiente** no painel da Vercel.
 
+Link para acessar o Projeto no ar : [Site](https://pet-corner-next-nine.vercel.app)
+
 ---
 
 ## 📚 Serviços
