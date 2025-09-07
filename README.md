@@ -121,9 +121,13 @@ npm run build
 Adicione screenshots do app rodando:
 
 * Login com Google/Microsoft
+![Tela de Login](./assets/image1.png)
 
 * Lista de clientes/pets/produtos
+![Tela de Clientes](./assets/image2.png)
+
 * Vitrine Next.js
+![Pagina Next](./assets/image.png)
 
 ---
 
@@ -142,6 +146,7 @@ Adicione screenshots do app rodando:
 * [ ] Painel administrativo com dashboards
 * [ ] Upload de imagens para pets e produtos
 * [ ] Notificações em tempo real via Firebase
+* [ ] Carrinho de compras
 * [ ] Testes automatizados
 
 ---
@@ -154,8 +159,6 @@ Sinta-se livre para usar, modificar e compartilhar 🚀.
 ---
 
 👨‍💻 Desenvolvido por [Gustavo Dias](https://github.com/Gust4v0Di4sC) com ❤️ e ☕
-
-```
 
 ---
 
