@@ -1,0 +1,172 @@
+body{
+    background-image: url("../../assets/final.png");
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.paws{
+  
+  position: fixed; /* Fixa a animação na posição desejada, mesmo ao rolar a página */
+  margin: 0 auto;
+  bottom: 20px; /* Distância da parte inferior da tela */
+  right: -200px;
+  width: 50%;
+  height: 100%;
+ 
+}
+
+
+
+.container{
+    margin-top: 72px;
+    display: grid;
+    width: 500px;
+    height: 500px;
+    background-color: rgba(227,100,20,69%);
+    border: 2px solid #FB8B24;
+    border-radius: 16px;
+    justify-content: center;
+    align-items: center;
+    grid-template-rows: auto auto;
+}
+
+.box{
+    margin-top: 32px;
+   display: grid;
+}
+
+.box input{
+    width: 400px;
+    padding: 8px;
+    margin-bottom: 32px;
+    border-radius: 18px;
+    border:none;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s; 
+}
+
+.box input:focus{
+    border: 3px solid #FB8B24;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.788);
+}
+
+.btn-primary{
+    margin: 0 auto;
+    border-radius: 25px;
+    border: none;
+    padding: 16px;
+    width: 236px;
+    background-color: #FB8B24;
+    color: #fff;
+    transition: linear 200ms;
+    font-size: medium;
+    font-weight: bold;
+}
+
+.btn-primary:hover{
+    background-color: #E36414;
+}
+
+.box-button{
+    margin: 0 auto; 
+}
+
+.social-login {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.social-button {
+  background: #FB8B24;
+  border: none;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.social-button:hover {
+  background: #E36414;
+}
+
+.google {
+  color: #E94234;
+}
+
+.microsoft {
+  color: #2f99ef;
+}
+
+@media (max-width: 1024px) {
+    .box{
+       justify-items: center;
+    }
+    .container{
+        margin-top: 200px;
+        width: 300px;
+        height: 450px;
+    }
+
+    .social-button{
+        padding: 8px;
+    }
+
+    .box input{
+        width: 200px;
+        padding: 4px;
+        margin-bottom: 32px;
+    }
+
+    .btn-primary{
+        width: 150px;
+        padding: 8px;
+    }
+
+    body{
+        background-image: url("../../assets/ipadbg.png");
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+
+      
+
+    .paws{
+  
+        position: fixed; /* Fixa a animação na posição desejada, mesmo ao rolar a página */
+        margin: 0 auto;
+        bottom: 20px; /* Distância da parte inferior da tela */
+        right: -130px;
+        width: 50%;
+        height: 100%;
+       
+      }
+    
+}
+
+@media (max-width: 750px) {
+    
+    .box input{
+        width: 200px;
+        padding: 2px;
+    }
+
+    .social-button{
+        padding: 16px;
+    }
+
+    .paws{
+        display: none;
+    }
+
+    body{
+        background-image: url("../../assets/phonebg.png");
+    }
+   
+}
+
+
+

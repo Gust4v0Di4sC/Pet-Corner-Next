@@ -1,0 +1,36 @@
+aside.menu-area{
+    background-color: #E36414;
+    box-shadow: 2px 0 10px 0 rgba(0,0,0,0.12),
+    2px 0 15px 0 rgba(0,0,0,0.09);
+}
+
+.menu a{
+    display: block;
+    text-decoration: none;
+    background-color: #464442;
+    color: #fff;
+    padding: 15px;
+    font-weight: 300;
+}
+
+.menu a:hover{
+    background: linear-gradient(153deg, #ffcc3e 0%, #F09156 100%);
+    color: #464442;
+}
+
+@media(max-width: 768px){
+    .menu{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .menu a{
+        display: inline;
+        padding: 10px;
+        margin: 0px;
+    }
+    .menu{
+        height: 100%;
+        justify-content: space-around;
+    }
+}

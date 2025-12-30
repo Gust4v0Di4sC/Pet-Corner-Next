@@ -1,0 +1,115 @@
+
+.tabela{
+    background-color: #E36414;
+    width: 963px;
+    height: 645px;
+    margin: 0 auto;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 25px;
+    text-align: center;
+    color: #fff;
+    font-size: large;
+    border: 5px solid #F09156;
+}
+
+
+
+.tabela tr,td,th{
+    border: solid 2px #fff;
+    
+}
+
+th{
+   background-color: #464442; 
+   
+}
+
+thead th:first-child {
+  border-top-left-radius: 18px;
+}
+thead th:last-child {
+  border-top-right-radius: 18px;
+}
+
+th:first-child, td:first-child {
+    border-left: none; /* Remover borda da esquerda da primeira célula */
+}
+th:last-child, td:last-child {
+    border-right: none; /* Remover borda da direita da última célula */
+}
+tr:first-child th {
+    border-top: none; /* Remover borda superior da primeira linha */
+}
+tr:last-child td {
+    border-bottom: none; /* Remover borda inferior da última linha */
+}
+
+
+
+
+.box-button-tab{
+  display: flex;
+  justify-content: center;
+  margin-top: 45px;
+  gap: 84px;
+}
+
+.box-button-tab button{
+    width: 257px;
+    border-radius: 25px;
+    border: none;
+    padding: 24px;
+    background-color: #FB8B24;
+    color: #fff;
+    transition: linear 200ms;
+    font-size: medium;
+    font-weight: bold;
+}
+
+.box-button-tab button:hover{
+    background-color: #E36414;
+}
+
+
+
+@media (max-width: 1024px){
+    .tabela {
+        width: 700px;
+        height: 1000px;
+    }
+    
+    .box-button-tab button {
+            width: 150px;
+    }
+
+    
+}
+
+@media (max-width: 700px) {
+    main > div{
+        width: 350px;
+        height: 550px;
+        margin: 0 auto;
+
+    }
+    .menu{
+        width: 400px;
+    }
+
+    .tabela {
+        width: 300px;
+        height: 400px;
+        word-wrap: break-word;
+        table-layout: fixed; /* Força as colunas a respeitarem a largura da tabela */
+    }
+
+    
+    .box-button-tab{
+        gap: 10px;
+    }
+
+    .box-button-tab button{
+        padding: 12px;
+    }
+}
