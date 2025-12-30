@@ -1,19 +1,15 @@
 
-import './App.css'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import RoutesApp from './Routes'
-import {BrowserRouter} from 'react-router-dom'
-import { AuthProvider } from '../src/contexts/AuthContext'
+import "./App.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import RoutesApp from "./Routes";
+import { BrowserRouter } from "react-router-dom";
 
 function App() {
-  
   return (
-     <BrowserRouter basename="/app-react">
-        <AuthProvider>
-          <RoutesApp />
-        </AuthProvider>
-      </BrowserRouter>
-  )
+    <BrowserRouter basename="/app-react">
+      <RoutesApp />
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

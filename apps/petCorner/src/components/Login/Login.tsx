@@ -1,11 +1,11 @@
 import "./login.css";
 import Logo from "../Templates/Logo";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { useState } from "react";
-import type {FormEvent} from "react";
+import type { FormEvent } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Animation from "../../assets/Animation.lottie";
-import logoimg from "../../assets/logo.png"
+import logoimg from "../../assets/logo.png";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import Box from "@mui/material/Box";
@@ -20,7 +20,7 @@ type AlertType = {
 export default function Login() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const { login,loginWithGoogle,loginWithMicrosoft } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const [alert, setAlert] = useState<AlertType>(null);
   const [showAnimation, setShowAnimation] = useState<boolean>(false);
 
