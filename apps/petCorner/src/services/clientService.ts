@@ -1,3 +1,4 @@
+// services/clientService.ts
 import { getFirestoreDB } from "../firebase";
 import {
   collection,
@@ -10,60 +11,64 @@ import {
   setDoc,
   Timestamp,
 } from "firebase/firestore";
-import type { Client } from "../contexts/ClientContext";
 
-// Buscar todos os clientes
-export const getAllClients = async (rota: string) => {
+import type { Client, RawClientData } from "../types/client";
+
+type ClientInput = Omit<Client, "id"> & { age: Timestamp | Date };
+
+function ensureTimestamp(value: Timestamp | Date): Timestamp {
+  return value instanceof Timestamp ? value : Timestamp.fromDate(value);
+}
+
+// Buscar todos
+export const getAllClients = async (rota: string): Promise<RawClientData[]> => {
   const db = await getFirestoreDB();
   const colRef = collection(db, rota);
   const snapshot = await getDocs(colRef);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as RawClientData[];
 };
 
-// Adicionar um cliente
-export const addClient = async (rota: string, data: Omit<Client, "id">) => {
+// Adicionar
+export const addClient = async (rota: string, data: ClientInput): Promise<RawClientData> => {
   const db = await getFirestoreDB();
   const colRef = collection(db, rota);
 
-  // Converter "age" caso venha como Timestamp
   const preparedData = {
     ...data,
-    age:
-      data.age instanceof Timestamp
-        ? data.age.toDate()
-        : data.age ?? null,
+    age: ensureTimestamp(data.age), // ✅ grava Timestamp
   };
 
   const docRef = await addDoc(colRef, preparedData);
-  return { id: docRef.id, ...preparedData };
+
+  return { id: docRef.id, ...preparedData } as RawClientData;
 };
 
-// Atualizar um cliente existente
-export const updateClient = async (
-  rota: string,
-  id: string,
-  data: Omit<Client, "id">
-) => {
+// Atualizar
+export const updateClient = async (rota: string, id: string, data: ClientInput): Promise<void> => {
   const db = await getFirestoreDB();
   const docRef = doc(db, rota, id);
-  await setDoc(docRef, data, { merge: true });
+
+  const preparedData = {
+    ...data,
+    age: ensureTimestamp(data.age),
+  };
+
+  await setDoc(docRef, preparedData, { merge: true });
 };
 
-// Deletar um cliente
-export const deleteClient = async (rota: string, id: string) => {
+// Deletar
+export const deleteClient = async (rota: string, id: string): Promise<void> => {
   const db = await getFirestoreDB();
   const docRef = doc(db, rota, id);
   await deleteDoc(docRef);
 };
 
-// Buscar cliente pelo nome
-export const searchClientByName = async (rota: string, name: string) => {
+// Buscar por nome
+export const searchClientByName = async (rota: string, name: string): Promise<RawClientData[]> => {
   const db = await getFirestoreDB();
   const q = query(collection(db, rota), where("name", "==", name));
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Client[];
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as RawClientData[];
 };

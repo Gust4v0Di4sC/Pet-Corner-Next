@@ -9,10 +9,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import type { Client } from "../contexts/ClientContext"; // reaproveitando o tipo
-
-// Reuso de Client como Dog (se quiser separar, basta criar um tipo Dog próprio)
-export type Dog = Client;
+import type { Dog } from "../types/dog";
 
 // Buscar todos os dogs
 export const getAllDogs = async (rota: string = "dogs"): Promise<Dog[]> => {

@@ -9,3 +9,4 @@ export function parseDateFromString(dateStr: string): Date | null {
 export function formatDateToString(date: Date): string {
   return date.toLocaleDateString("pt-BR");
 }
+
