@@ -12,10 +12,12 @@ import Box from "@mui/material/Box";
 import { FirebaseError } from "firebase/app";
 
 
-type AlertType = {
-  severity: 'error' | 'success';
-  message: string;
-} | null;
+type AlertType =
+  | {
+      severity: "error" | "success";
+      message: string;
+    }
+  | null;
 
 export default function Login() {
   const [email, setEmail] = useState<string>("");
@@ -24,35 +26,31 @@ export default function Login() {
   const [alert, setAlert] = useState<AlertType>(null);
   const [showAnimation, setShowAnimation] = useState<boolean>(false);
 
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  
+    e.preventDefault();
 
-  if (email !== '' && password !== '') {
-    try {
-      await login(email, password);
-      setAlert({ severity: 'success', message: 'Login realizado com sucesso!' });
-      // redirecionar, por exemplo:
-      // navigate('/dashboard');
-    } catch (error: unknown) {
-      if (error instanceof FirebaseError) {
-        const errorMessage =
-          error.code === "auth/user-not-found"
-            ? "Usuário não encontrado"
-            : error.code === "auth/wrong-password"
-            ? "Senha incorreta"
-            : "Erro ao fazer login";
-        setAlert({ severity: "error", message: errorMessage });
-      } else {
-        setAlert({ severity: "error", message: "Erro ao fazer login" });
+    if (email !== "" && password !== "") {
+      try {
+        await login(email, password);
+        setAlert({ severity: "success", message: "Login realizado com sucesso!" });
+        // navigate('/clientes');
+      } catch (error: unknown) {
+        if (error instanceof FirebaseError) {
+          const errorMessage =
+            error.code === "auth/user-not-found"
+              ? "Usuário não encontrado"
+              : error.code === "auth/wrong-password"
+              ? "Senha incorreta"
+              : "Erro ao fazer login";
+          setAlert({ severity: "error", message: errorMessage });
+        } else {
+          setAlert({ severity: "error", message: "Erro ao fazer login" });
+        }
       }
+    } else {
+      setAlert({ severity: "error", message: "Preencha todos os campos" });
     }
-  } else  {
-      setAlert({ severity: 'error', message: 'Preencha todos os campos' });
-  }
-};
-
+  };
 
   return (
     <div className="container paw-main">
@@ -70,8 +68,10 @@ export default function Login() {
           </Alert>
         </Box>
       )}
+
       <form className="form" onSubmit={handleSubmit}>
         <Logo src={logoimg} />
+
         <div className="box">
           <input
             name="email"
@@ -80,6 +80,7 @@ export default function Login() {
             placeholder="Digite seu nome..."
             value={email}
           />
+
           <input
             name="password"
             onChange={(e) => setPassword(e.target.value)}
@@ -87,24 +88,38 @@ export default function Login() {
             placeholder="Digite sua senha..."
             value={password}
           />
-          <button className="btn-primary login-button"
+
+          <button
+            className="btn-primary login-button"
             onMouseEnter={() => setShowAnimation(true)}
             onMouseLeave={() => setShowAnimation(false)}
             type="submit"
           >
             Entrar
           </button>
+
+          
+
           <section className="social-login">
-            <button type="button" className="social-button google" onClick={loginWithGoogle}>
-              <i className="fa-brands fa-google"></i>
+            <button
+              type="button"
+              className="social-button google"
+              onClick={loginWithGoogle}
+            >
+              <i className="fa-brands fa-google" />
             </button>
-            <button type="button" className="social-button microsoft" onClick={loginWithMicrosoft}>
-              <i className="fa-brands fa-windows"></i>
+
+            <button
+              type="button"
+              className="social-button microsoft"
+              onClick={loginWithMicrosoft}
+            >
+              <i className="fa-brands fa-windows" />
             </button>
           </section>
         </div>
-        
       </form>
+
       <div className="paws">
         {showAnimation && <DotLottieReact src={Animation} autoplay loop />}
       </div>
