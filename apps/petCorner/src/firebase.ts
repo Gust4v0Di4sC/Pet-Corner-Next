@@ -5,21 +5,23 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 
 let appPromise: Promise<FirebaseApp> | null = null;
 
+function required(name: string, value: string | undefined) {
+  if (!value) throw new Error(`Variável ausente: ${name}`);
+  return value;
+}
+
 function loadFirebaseConfig() {
-  return fetch("/api/env")
-    .then((res) => {
-      if (!res.ok) throw new Error("Erro ao carregar variáveis de ambiente do Firebase");
-      return res.json();
-    })
-    .then((env) => ({
-      apiKey: env.FIREBASE_API_KEY,
-      authDomain: env.FIREBASE_AUTH_DOMAIN,
-      projectId: env.FIREBASE_PROJECT_ID,
-      storageBucket: env.FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
-      appId: env.FIREBASE_APP_ID,
-      measurementId: env.FIREBASE_MEASUREMENT_ID,
-    }));
+  const env = import.meta.env;
+
+  return Promise.resolve({
+    apiKey: required("VITE_FIREBASE_API_KEY", env.VITE_FIREBASE_API_KEY),
+    authDomain: required("VITE_FIREBASE_AUTH_DOMAIN", env.VITE_FIREBASE_AUTH_DOMAIN),
+    projectId: required("VITE_FIREBASE_PROJECT_ID", env.VITE_FIREBASE_PROJECT_ID),
+    storageBucket: required("VITE_FIREBASE_STORAGE_BUCKET", env.VITE_FIREBASE_STORAGE_BUCKET),
+    messagingSenderId: required("VITE_FIREBASE_MESSAGING_SENDER_ID", env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+    appId: required("VITE_FIREBASE_APP_ID", env.VITE_FIREBASE_APP_ID),
+    measurementId: env.VITE_FIREBASE_MEASUREMENT_ID, // opcional
+  });
 }
 
 export function getFirebaseApp(): Promise<FirebaseApp> {

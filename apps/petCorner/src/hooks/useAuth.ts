@@ -1,3 +1,4 @@
+// useAuth.ts
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,29 +8,18 @@ import {
   signOut,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { useNavigate } from "react-router";
-import {
-  getFirebaseAuth,
-  googleProvider,
-  microsoftProvider,
-} from "../firebase";
+import { useNavigate } from "react-router-dom"; // recomendo
+import { getFirebaseAuth, googleProvider, microsoftProvider } from "../firebase";
 import type { AuthHookReturn, AuthUser, EmailCredentials } from "../types/Auth";
-import type { SetStateAction } from "react";
 
-const AUTH_QUERY_KEY = ["auth", "user"];
+const AUTH_QUERY_KEY = ["auth", "user"] as const;
 
 const mapFirebaseUser = (user: FirebaseUser | null): AuthUser | null =>
-  user
-    ? {
-        uid: user.uid,
-        email: user.email,
-      }
-    : null;
+  user ? { uid: user.uid, email: user.email } : null;
 
 const fetchCurrentUser = async (): Promise<AuthUser | null> => {
   const auth = await getFirebaseAuth();
   const current = mapFirebaseUser(auth.currentUser);
-
   if (current) return current;
 
   return new Promise((resolve) => {
@@ -62,13 +52,11 @@ export const useAuth = (): AuthHookReturn => {
       });
     });
 
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    return () => unsubscribe?.();
   }, [queryClient]);
 
   const loginMutation = useMutation<boolean, Error, EmailCredentials>({
-    mutationFn: async ({ email, password }: EmailCredentials) => {
+    mutationFn: async ({ email, password }) => {
       const auth = await getFirebaseAuth();
       await signInWithEmailAndPassword(auth, email, password);
       return true;
@@ -114,23 +102,31 @@ export const useAuth = (): AuthHookReturn => {
     },
   });
 
-  const setUser = (updater: SetStateAction<AuthUser | null>) => {
+  // ✅ ADAPTADORES com a assinatura pública dos seus types
+  const login: AuthHookReturn["login"] = (email, password) =>
+    loginMutation.mutateAsync({ email, password });
+
+  const loginWithGoogle: AuthHookReturn["loginWithGoogle"] = () =>
+    loginWithGoogleMutation.mutateAsync();
+
+  const loginWithMicrosoft: AuthHookReturn["loginWithMicrosoft"] = () =>
+    loginWithMicrosoftMutation.mutateAsync();
+
+  const logout: AuthHookReturn["logout"] = () => logoutMutation.mutateAsync();
+
+  const setUser: AuthHookReturn["setUser"] = (updater) => {
     queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, (current) =>
-      typeof updater === "function"
-        ? (updater as (prev: AuthUser | null) => AuthUser | null)(
-            current ?? null
-          )
-        : updater
+      typeof updater === "function" ? (updater as any)(current ?? null) : updater
     );
   };
 
   return {
     user: user ?? null,
     isLoading,
-    login: loginMutation.mutateAsync,
-    loginWithGoogle: loginWithGoogleMutation.mutateAsync,
-    loginWithMicrosoft: loginWithMicrosoftMutation.mutateAsync,
-    logout: logoutMutation.mutateAsync,
+    login,
+    loginWithGoogle,
+    loginWithMicrosoft,
+    logout,
     setUser,
   };
 };
