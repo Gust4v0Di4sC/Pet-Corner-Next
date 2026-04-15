@@ -22,5 +22,8 @@
     "build": "npm run build --workspace=petcorner && npm run build --workspace=petpage",
     "dev:next": "npm run dev --workspace=petpage",
     "dev:vite": "npm run dev --workspace=petcorner"
+  },
+  "dependencies": {
+    "zustand": "^5.0.9"
   }
 }
