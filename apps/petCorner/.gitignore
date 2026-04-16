@@ -15,6 +15,7 @@ dist-ssr
 
 # Arquivos sensíveis
 .env
+public/runtime-config.js
 
 # Editor directories and files
 .vscode/*

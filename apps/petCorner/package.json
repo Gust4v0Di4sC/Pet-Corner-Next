@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "prepare:runtime-config": "node scripts/write-runtime-config.mjs",
+    "dev": "npm run prepare:runtime-config && vite",
+    "build": "npm run prepare:runtime-config && tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run prepare:runtime-config && vite preview"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
