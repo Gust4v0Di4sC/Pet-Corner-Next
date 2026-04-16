@@ -7,7 +7,7 @@ import {
   searchDogByName
 } from '../services/dogService';
 
-import type { Dog } from '../services/dogService';
+import type { Dog } from '../types/dog';
 
 // src/contexts/DogContext.tsx
 export type DogContextType = {

@@ -2,11 +2,13 @@ import { Timestamp } from "firebase/firestore";
 import type { Client, RawClientData, ClientDisplay } from "../../types/client";
 
 export function isTimestampLike(v: unknown): v is Timestamp {
+  const candidate = v as { toDate?: unknown } | null;
+
   return (
     typeof v === "object" &&
     v !== null &&
     "toDate" in v &&
-    typeof (v as any).toDate === "function"
+    typeof candidate?.toDate === "function"
   );
 }
 

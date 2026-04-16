@@ -194,7 +194,7 @@ export default function EntityManager<T extends { id?: string }>({
                   }}
                 >
                   {columns.map((col) => {
-                    const value = (row as any)[col.accessor];
+                    const value = row[col.accessor];
                     return <td key={col.accessor}>{String(value ?? "")}</td>;
                   })}
                 </tr>
@@ -211,7 +211,7 @@ export default function EntityManager<T extends { id?: string }>({
       ) : (
         <Form
           data={formData}
-          fields={fields as any} // se seu Form já usa FieldDef compatível, pode remover esse cast
+          fields={fields}
           mode={mode}
           searchName={searchName}
           setSearchName={handleSearch}
