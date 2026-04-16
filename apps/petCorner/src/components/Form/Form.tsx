@@ -23,6 +23,9 @@ type FormProps = {
   setSearchName?: (v: string) => void;
   textTitle: string;
   textButton: string;
+  className?: string;
+  backButtonLabel?: string;
+  disableActions?: boolean;
 };
 
 
@@ -153,6 +156,9 @@ export default function Form({
   setSearchName,
   textTitle,
   textButton,
+  className = "",
+  backButtonLabel = "Voltar",
+  disableActions = false,
 }: FormProps) {
   const handleDateChange = (fieldName: string, date: Date | null) => {
     const formatted = date ? formatDateToString(date) : "";
@@ -168,7 +174,7 @@ export default function Form({
 
 
   return (
-    <form onSubmit={handleSubmit} className="form">
+    <form onSubmit={handleSubmit} className={`form ${className}`.trim()}>
       <h2>{textTitle}</h2>
 
       {mode !== "create" && (
@@ -201,9 +207,11 @@ export default function Form({
         ))}
 
       <section className="box-button-tab">
-        <button  type="submit">{textButton}</button>
-        <button type="button" onClick={handleBack}>
-          Voltar
+        <button type="submit" disabled={disableActions}>
+          {textButton}
+        </button>
+        <button type="button" onClick={handleBack} disabled={disableActions}>
+          {backButtonLabel}
         </button>
       </section>
     </form>

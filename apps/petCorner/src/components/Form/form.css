@@ -6,6 +6,11 @@
   margin: 0 auto;
 }
 
+.form h2{
+    margin: 0;
+    font-weight: 700;
+    color: #1A2F3A;
+}
 
 .form .box-input {
   display: flex;
@@ -16,6 +21,7 @@
   margin-bottom: 0.5rem;
   font-weight: 600;
   font-size: 1.1rem;
+  color: #1A2F3A;
 }
 
 .form input {
@@ -52,6 +58,53 @@
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.788);
 }
 
+.form.form--modal{
+    max-width: none;
+    gap: 0.9rem;
+}
+
+.form.form--modal label{
+    font-size: 1rem;
+}
+
+.form.form--modal .box-button-tab{
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.85rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.form.form--modal .box-button-tab button{
+    min-width: 170px;
+    border: 0;
+    border-radius: 16px;
+    padding: 0.9rem 1.25rem;
+    font-size: 0.98rem;
+    font-weight: 700;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.form.form--modal .box-button-tab button[type="submit"]{
+    background: linear-gradient(135deg, #FB8B24 0%, #E36414 100%);
+    color: #fff;
+    box-shadow: 0 14px 30px rgba(227, 100, 20, 0.24);
+}
+
+.form.form--modal .box-button-tab button[type="button"]{
+    background: #EEF2F4;
+    color: #1A2F3A;
+}
+
+.form.form--modal .box-button-tab button:hover:not(:disabled){
+    transform: translateY(-1px);
+}
+
+.form.form--modal .box-button-tab button:disabled{
+    cursor: wait;
+    opacity: 0.78;
+}
+
 @media screen and (max-width: 700px){
     .form{
         grid-template-columns: 1fr;
@@ -67,6 +120,15 @@
     .form .box-button-tab button{
         width: 150px;
         margin-top: -40px;
+    }
+
+    .form.form--modal .box-button-tab{
+        justify-content: stretch;
+    }
+
+    .form.form--modal .box-button-tab button{
+        width: 100%;
+        margin-top: 0;
     }
 }
 

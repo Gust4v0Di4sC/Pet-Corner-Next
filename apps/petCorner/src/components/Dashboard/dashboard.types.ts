@@ -25,11 +25,6 @@ export type DashboardChartSection = {
   emptyMessage: string;
 };
 
-export type DashboardQuickStat = {
-  label: string;
-  value: string;
-};
-
 export type DashboardRecordItem = {
   id: string;
   title: string;

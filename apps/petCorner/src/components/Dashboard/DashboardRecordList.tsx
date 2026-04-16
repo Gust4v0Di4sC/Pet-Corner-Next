@@ -3,6 +3,9 @@ import type { DashboardRecordGroup } from "./dashboard.types";
 type Props = DashboardRecordGroup & {
   isLoading: boolean;
   className?: string;
+  busyRecordId?: string | null;
+  onEditRecord?: (recordId: string) => void;
+  onDeleteRecord?: (recordId: string) => void;
 };
 
 export default function DashboardRecordList({
@@ -12,6 +15,9 @@ export default function DashboardRecordList({
   items,
   isLoading,
   className = "",
+  busyRecordId = null,
+  onEditRecord,
+  onDeleteRecord,
 }: Props) {
   return (
     <section className={`dashboard-panel dashboard-panel--records ${className}`.trim()}>
@@ -37,7 +43,37 @@ export default function DashboardRecordList({
                 <span className="dashboard-record-card__badge">{item.badge}</span>
               </div>
 
-              <small>{item.detail}</small>
+              <div className="dashboard-record-card__footer">
+                <small>{item.detail}</small>
+
+                {(onEditRecord || onDeleteRecord) && (
+                  <div className="dashboard-record-card__actions">
+                    {onEditRecord && (
+                      <button
+                        type="button"
+                        className="dashboard-record-card__action"
+                        onClick={() => onEditRecord(item.id)}
+                        disabled={busyRecordId === item.id}
+                        aria-label={`Editar ${item.title}`}
+                      >
+                        <i className="fa fa-pencil" aria-hidden="true" />
+                      </button>
+                    )}
+
+                    {onDeleteRecord && (
+                      <button
+                        type="button"
+                        className="dashboard-record-card__action dashboard-record-card__action--danger"
+                        onClick={() => onDeleteRecord(item.id)}
+                        disabled={busyRecordId === item.id}
+                        aria-label={`Excluir ${item.title}`}
+                      >
+                        <i className="fa fa-trash" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </article>
           ))}
         </div>

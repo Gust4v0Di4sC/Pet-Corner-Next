@@ -5,7 +5,6 @@ import type {
   DashboardChartData,
   DashboardChartSection,
   DashboardDomainKey,
-  DashboardQuickStat,
   DashboardRecordGroup,
   DashboardRecordItem,
   DashboardSummaryCardData,
@@ -60,13 +59,6 @@ function getClientAgeInYears(client: Client): number {
 
 function getTotalStock(products: Product[]): number {
   return products.reduce((total, product) => total + Math.max(product.quantity, 0), 0);
-}
-
-function getClientsWithEmailRate(clients: Client[]): number {
-  if (!clients.length) return 0;
-
-  const withEmail = clients.filter((client) => client.email.trim()).length;
-  return (withEmail / clients.length) * 100;
 }
 
 function getClientAgeChart(clients: Client[]): DashboardChartData[] {
@@ -209,38 +201,10 @@ export function getSummaryCards(
   ];
 }
 
-export function getQuickStats(
-  clients: Client[],
-  dogs: Dog[],
-  products: Product[]
-): DashboardQuickStat[] {
-  const averageProductPrice = average(products.map((product) => product.price));
-  const averageDogWeight = average(dogs.map((dog) => dog.weight));
-
-  return [
-    {
-      label: "Produtos cadastrados",
-      value: formatNumber(products.length),
-    },
-    {
-      label: "Preco medio dos produtos",
-      value: formatCurrency(averageProductPrice),
-    },
-    {
-      label: "Peso medio dos animais",
-      value: formatDecimal(averageDogWeight, " kg"),
-    },
-    {
-      label: "Clientes com e-mail",
-      value: `${getClientsWithEmailRate(clients).toFixed(0)}%`,
-    },
-  ];
-}
-
 export function getChartSections(clients: Client[], dogs: Dog[], products: Product[]) {
   return [
     {
-      title: "Volume por dominio",
+      title: "Volume por recursos",
       subtitle: "Comparativo rapido entre clientes, animais e produtos",
       kind: "donut",
       data: getOverviewChart(clients, dogs, products),

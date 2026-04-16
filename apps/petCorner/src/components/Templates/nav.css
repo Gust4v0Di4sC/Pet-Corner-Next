@@ -102,6 +102,11 @@ aside.menu-area.is-open .menu__brand{
     gap: 0.55rem;
 }
 
+aside.menu-area:not(.is-open) .menu__top{
+    grid-template-columns: 1fr;
+    justify-items: center;
+}
+
 .menu__link,
 .menu__logout{
     display: flex;
@@ -119,6 +124,13 @@ aside.menu-area.is-open .menu__brand{
     text-align: left;
     white-space: nowrap;
     transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+aside.menu-area:not(.is-open) .menu__link,
+aside.menu-area:not(.is-open) .menu__logout{
+    justify-content: center;
+    padding-inline: 0;
+    gap: 0;
 }
 
 .menu__link i,
@@ -150,6 +162,12 @@ aside.menu-area.is-open .menu__logout span{
     background: linear-gradient(135deg, #ffcc3e 0%, #F09156 100%);
     color: #46351f;
     transform: translateX(2px);
+}
+
+aside.menu-area:not(.is-open) .menu__link:hover,
+aside.menu-area:not(.is-open) .menu__logout:hover,
+aside.menu-area:not(.is-open) .menu__link.is-active{
+    transform: translateY(-1px);
 }
 
 .menu__logout{
