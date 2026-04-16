@@ -8,14 +8,26 @@ type MainProps = {
   title: string;
   subtitle: string;
   children?: ReactNode;
+  fillHeight?: boolean;
+  contentClassName?: string;
 };
 
-const Main: React.FC<MainProps> = ({ icon, title, subtitle, children }) => {
+const Main: React.FC<MainProps> = ({
+  icon,
+  title,
+  subtitle,
+  children,
+  fillHeight = false,
+  contentClassName = "",
+}) => {
+  const mainClassName = `content${fillHeight ? " content--fill" : ""}`;
+  const wrapperClassName = `p-3 mt-3 ${contentClassName}`.trim();
+
   return (
     <Fragment>
       <Header icon={icon} title={title} subtitle={subtitle} />
-      <main className="content ">
-        <div className="p-3 mt-3">{children}</div>
+      <main className={mainClassName}>
+        <div className={wrapperClassName}>{children}</div>
       </main>
     </Fragment>
   );

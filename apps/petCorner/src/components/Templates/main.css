@@ -2,3 +2,13 @@ main > div{
     background-color: #fff;
     box-shadow: 0px 0px 15px #0004;
 }
+
+main.content{
+    min-height: 0;
+}
+
+main.content.content--fill > div{
+    height: calc(100% - 1rem);
+    display: flex;
+    flex-direction: column;
+}

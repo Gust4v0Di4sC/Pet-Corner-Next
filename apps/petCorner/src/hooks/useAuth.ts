@@ -9,6 +9,7 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom"; // recomendo
+import { DASHBOARD_ROUTE } from "../components/Dashboard/dashboard.domain";
 import { getFirebaseAuth, googleProvider, microsoftProvider } from "../firebase";
 import type { AuthHookReturn, AuthUser, EmailCredentials } from "../types/Auth";
 
@@ -63,7 +64,7 @@ export const useAuth = (): AuthHookReturn => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-      navigate("/clientes");
+      navigate(DASHBOARD_ROUTE);
     },
   });
 
@@ -75,7 +76,7 @@ export const useAuth = (): AuthHookReturn => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-      navigate("/clientes");
+      navigate(DASHBOARD_ROUTE);
     },
   });
 
@@ -87,7 +88,7 @@ export const useAuth = (): AuthHookReturn => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-      navigate("/clientes");
+      navigate(DASHBOARD_ROUTE);
     },
   });
 
@@ -116,7 +117,7 @@ export const useAuth = (): AuthHookReturn => {
 
   const setUser: AuthHookReturn["setUser"] = (updater) => {
     queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, (current) =>
-      typeof updater === "function" ? (updater as any)(current ?? null) : updater
+      typeof updater === "function" ? updater(current ?? null) : updater
     );
   };
 

@@ -5,6 +5,13 @@ import { resolve } from "path";
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "@emotion/react": resolve(__dirname, "node_modules/@emotion/react"),
+      "@emotion/styled": resolve(__dirname, "node_modules/@emotion/styled"),
+    },
+    dedupe: ["react", "react-dom", "@emotion/react", "@emotion/styled"],
+  },
   base: '/app-react/', // Importante: define o caminho base
   build: {
     outDir: resolve(__dirname, "../petpage/public/app-react"), // Diretório de saída direto para o Next.js
