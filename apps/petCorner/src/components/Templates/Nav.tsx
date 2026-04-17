@@ -1,8 +1,14 @@
 import "./nav.css";
 import React, { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+
 import { useAuth } from "../../hooks/useAuth";
-import { DASHBOARD_ROUTE } from "../Dashboard/dashboard.domain";
+import {
+  ANIMALS_ROUTE,
+  CLIENTS_ROUTE,
+  DASHBOARD_ROUTE,
+  PRODUCTS_ROUTE,
+} from "../Dashboard/dashboard.domain";
 
 const Nav: React.FC = () => {
   const { logout } = useAuth();
@@ -11,9 +17,9 @@ const Nav: React.FC = () => {
 
   const navigationItems = [
     { to: DASHBOARD_ROUTE, icon: "home", label: "Dashboard" },
-    { to: "/clientes", icon: "users", label: "Clientes" },
-    { to: "/caes", icon: "paw", label: "Animais" },
-    { to: "/prods", icon: "medkit", label: "Produtos" },
+    { to: CLIENTS_ROUTE, icon: "users", label: "Clientes" },
+    { to: ANIMALS_ROUTE, icon: "paw", label: "Animais" },
+    { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
   ];
 
   useEffect(() => {

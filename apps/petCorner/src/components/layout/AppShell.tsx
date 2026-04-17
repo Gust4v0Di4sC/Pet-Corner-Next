@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 
-import Nav from "../Templates/Nav";
+import "./app-shell.css";
 import Footer from "../Templates/Footer";
 import Logo from "../Templates/Logo";
+import Nav from "../Templates/Nav";
 
 type Props = {
   logoSrc: string;
   children: ReactNode;
-  className?: string; // permite manter "app" se você quiser
+  className?: string;
 };
 
 export default function AppShell({ logoSrc, children, className = "app" }: Props) {

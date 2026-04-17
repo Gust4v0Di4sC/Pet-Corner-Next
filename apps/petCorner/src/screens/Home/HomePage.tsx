@@ -1,18 +1,17 @@
-import "./home.css";
+import logoimg from "../../assets/Logo.svg";
+import Dashboard from "../../components/Dashboard/Dashboard";
+import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
 
-
-import AppShell from "../../components/layout/AppShell";
-import logoimg from "../../assets/Logo.svg";
-
 export default function HomePage() {
-  // const location = useLocation();
-  // const routeConfig = getRouteConfig(location.pathname);
-
   return (
     <AppShell logoSrc={logoimg}>
-      <Main icon="home" title="Inicio" subtitle="Sistema para Gestão de petshop">
-       
+      <Main
+        icon="home"
+        title="Dashboard"
+        subtitle="Resumo visual dos clientes, animais e itens cadastrados"
+      >
+        <Dashboard />
       </Main>
     </AppShell>
   );

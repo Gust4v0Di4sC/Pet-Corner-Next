@@ -1,40 +1,35 @@
 import type { DashboardDomainKey } from "./dashboard.types";
 
 export const DASHBOARD_ROUTE = "/dashboard";
+export const CLIENTS_ROUTE = "/clientes";
+export const ANIMALS_ROUTE = "/caes";
+export const PRODUCTS_ROUTE = "/prods";
 
 type DashboardDomainMeta = {
   key: DashboardDomainKey;
   route: string;
   icon: string;
   cardActionLabel: string;
-  recordsTitle: string;
-  recordsSubtitle: string;
 };
 
 const dashboardDomainMetaMap: Record<DashboardDomainKey, DashboardDomainMeta> = {
   clientes: {
     key: "clientes",
-    route: "/clientes",
+    route: CLIENTS_ROUTE,
     icon: "users",
     cardActionLabel: "Abrir clientes",
-    recordsTitle: "Clientes cadastrados",
-    recordsSubtitle: "Lista completa com os clientes registrados no sistema",
   },
   animais: {
     key: "animais",
-    route: "/caes",
+    route: ANIMALS_ROUTE,
     icon: "paw",
     cardActionLabel: "Abrir animais",
-    recordsTitle: "Animais cadastrados",
-    recordsSubtitle: "Lista completa com os animais registrados no sistema",
   },
   itens: {
     key: "itens",
-    route: "/prods",
+    route: PRODUCTS_ROUTE,
     icon: "medkit",
     cardActionLabel: "Abrir produtos",
-    recordsTitle: "Produtos cadastrados",
-    recordsSubtitle: "Lista completa com os produtos e estoque atual",
   },
 };
 
