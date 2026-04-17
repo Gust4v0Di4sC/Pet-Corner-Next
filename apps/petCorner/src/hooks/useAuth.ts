@@ -1,4 +1,3 @@
-// useAuth.ts
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -6,28 +5,74 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  type Auth,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { useNavigate } from "react-router-dom"; // recomendo
+import { useNavigate } from "react-router-dom";
+
 import { DASHBOARD_ROUTE } from "../components/Dashboard/dashboard.domain";
 import { getFirebaseAuth, googleProvider, microsoftProvider } from "../firebase";
+import { AdminAccessError, hasAdminAccess } from "../services/adminService";
 import type { AuthHookReturn, AuthUser, EmailCredentials } from "../types/Auth";
 
 const AUTH_QUERY_KEY = ["auth", "user"] as const;
 
 const mapFirebaseUser = (user: FirebaseUser | null): AuthUser | null =>
-  user ? { uid: user.uid, email: user.email } : null;
+  user ? { uid: user.uid, email: user.email, isAdmin: true } : null;
+
+async function resolveAuthorizedUser(
+  auth: Auth,
+  firebaseUser: FirebaseUser | null,
+  options?: { forceRefresh?: boolean; throwOnDenied?: boolean }
+): Promise<AuthUser | null> {
+  if (!firebaseUser) {
+    return null;
+  }
+
+  try {
+    const isAdmin = await hasAdminAccess(firebaseUser, options?.forceRefresh === true);
+
+    if (!isAdmin) {
+      await signOut(auth);
+
+      if (options?.throwOnDenied) {
+        throw new AdminAccessError();
+      }
+
+      return null;
+    }
+
+    return mapFirebaseUser(firebaseUser);
+  } catch (error) {
+    await signOut(auth).catch(() => undefined);
+
+    if (error instanceof AdminAccessError) {
+      throw error;
+    }
+
+    throw error;
+  }
+}
 
 const fetchCurrentUser = async (): Promise<AuthUser | null> => {
   const auth = await getFirebaseAuth();
-  const current = mapFirebaseUser(auth.currentUser);
-  if (current) return current;
+  const current = await resolveAuthorizedUser(auth, auth.currentUser, {
+    forceRefresh: true,
+  });
 
-  return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      unsubscribe();
-      resolve(mapFirebaseUser(firebaseUser));
-    });
+  if (current) {
+    return current;
+  }
+
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (firebaseUser) => {
+        unsubscribe();
+        resolveAuthorizedUser(auth, firebaseUser).then(resolve).catch(reject);
+      },
+      reject
+    );
   });
 };
 
@@ -42,28 +87,52 @@ export const useAuth = (): AuthHookReturn => {
   });
 
   useEffect(() => {
+    let isDisposed = false;
     let unsubscribe: (() => void) | undefined;
 
     getFirebaseAuth().then((auth) => {
+      if (isDisposed) {
+        return;
+      }
+
+      const syncAuthorizedUser = async (firebaseUser: FirebaseUser | null) => {
+        try {
+          const nextUser = await resolveAuthorizedUser(auth, firebaseUser);
+
+          if (!isDisposed) {
+            queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, nextUser);
+          }
+        } catch {
+          if (!isDisposed) {
+            queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
+          }
+        }
+      };
+
       unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        queryClient.setQueryData<AuthUser | null>(
-          AUTH_QUERY_KEY,
-          mapFirebaseUser(firebaseUser)
-        );
+        void syncAuthorizedUser(firebaseUser);
       });
     });
 
-    return () => unsubscribe?.();
+    return () => {
+      isDisposed = true;
+      unsubscribe?.();
+    };
   }, [queryClient]);
 
   const loginMutation = useMutation<boolean, Error, EmailCredentials>({
     mutationFn: async ({ email, password }) => {
       const auth = await getFirebaseAuth();
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
+        forceRefresh: true,
+        throwOnDenied: true,
+      });
+
+      queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, authorizedUser);
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
       navigate(DASHBOARD_ROUTE);
     },
   });
@@ -71,11 +140,16 @@ export const useAuth = (): AuthHookReturn => {
   const loginWithGoogleMutation = useMutation<boolean, Error, void>({
     mutationFn: async () => {
       const auth = await getFirebaseAuth();
-      await signInWithPopup(auth, googleProvider);
+      const credential = await signInWithPopup(auth, googleProvider);
+      const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
+        forceRefresh: true,
+        throwOnDenied: true,
+      });
+
+      queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, authorizedUser);
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
       navigate(DASHBOARD_ROUTE);
     },
   });
@@ -83,11 +157,16 @@ export const useAuth = (): AuthHookReturn => {
   const loginWithMicrosoftMutation = useMutation<boolean, Error, void>({
     mutationFn: async () => {
       const auth = await getFirebaseAuth();
-      await signInWithPopup(auth, microsoftProvider);
+      const credential = await signInWithPopup(auth, microsoftProvider);
+      const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
+        forceRefresh: true,
+        throwOnDenied: true,
+      });
+
+      queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, authorizedUser);
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
       navigate(DASHBOARD_ROUTE);
     },
   });
@@ -103,7 +182,6 @@ export const useAuth = (): AuthHookReturn => {
     },
   });
 
-  // ✅ ADAPTADORES com a assinatura pública dos seus types
   const login: AuthHookReturn["login"] = (email, password) =>
     loginMutation.mutateAsync({ email, password });
 

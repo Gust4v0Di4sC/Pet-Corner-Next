@@ -1,16 +1,21 @@
-import { Navigate } from "react-router-dom";
-import { useAuth } from "./hooks/useAuth";
 import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
+
+import AppLoader from "./components/Templates/AppLoader";
+import { useAuth } from "./hooks/useAuth";
 
 type PrivateRouteProps = {
-  children: ReactNode
-}
+  children: ReactNode;
+};
 
 const PrivateRoute = ({ children }: PrivateRouteProps) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  // Verifica se o usuário existe, caso contrário, redireciona para a página de login
-  return user ? children : <Navigate to="/" />;
+  if (isLoading) {
+    return <AppLoader fullscreen message="Carregando interface..." />;
+  }
+
+  return user?.isAdmin ? children : <Navigate to="/" />;
 };
 
 export default PrivateRoute;

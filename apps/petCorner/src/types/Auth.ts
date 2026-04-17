@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 export type AuthUser = {
   uid: string;
   email: string | null;
+  isAdmin: boolean;
 };
 
 export type EmailCredentials = {
