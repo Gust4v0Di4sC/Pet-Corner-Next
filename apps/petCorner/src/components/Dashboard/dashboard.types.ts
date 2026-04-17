@@ -24,18 +24,3 @@ export type DashboardChartSection = {
   data: DashboardChartData[];
   emptyMessage: string;
 };
-
-export type DashboardRecordItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  detail: string;
-  badge: string;
-};
-
-export type DashboardRecordGroup = {
-  title: string;
-  subtitle: string;
-  emptyMessage: string;
-  items: DashboardRecordItem[];
-};

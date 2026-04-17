@@ -4,25 +4,13 @@ import type { Product } from "../../types/product";
 import type {
   DashboardChartData,
   DashboardChartSection,
-  DashboardDomainKey,
-  DashboardRecordGroup,
-  DashboardRecordItem,
   DashboardSummaryCardData,
 } from "./dashboard.types";
 
 const numberFormatter = new Intl.NumberFormat("pt-BR");
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 2,
-});
 
 function formatNumber(value: number): string {
   return numberFormatter.format(Number.isFinite(value) ? value : 0);
-}
-
-function formatCurrency(value: number): string {
-  return currencyFormatter.format(Number.isFinite(value) ? value : 0);
 }
 
 function formatDecimal(value: number, suffix = ""): string {
@@ -31,13 +19,12 @@ function formatDecimal(value: number, suffix = ""): string {
 }
 
 function average(values: number[]): number {
-  if (!values.length) return 0;
+  if (!values.length) {
+    return 0;
+  }
+
   const total = values.reduce((sum, value) => sum + value, 0);
   return total / values.length;
-}
-
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
 function getClientAgeInYears(client: Client): number {
@@ -47,8 +34,7 @@ function getClientAgeInYears(client: Client): number {
   let years = today.getFullYear() - birthDate.getFullYear();
   const beforeBirthday =
     today.getMonth() < birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() &&
-      today.getDate() < birthDate.getDate());
+    (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate());
 
   if (beforeBirthday) {
     years -= 1;
@@ -123,44 +109,6 @@ function getInventoryChart(products: Product[]): DashboardChartData[] {
     }));
 }
 
-function buildClientRecords(clients: Client[]): DashboardRecordItem[] {
-  return [...clients]
-    .sort((left, right) => left.name.localeCompare(right.name))
-    .map((client) => ({
-      id: client.id,
-      title: client.name || "Cliente sem nome",
-      subtitle: client.email || "Sem e-mail cadastrado",
-      detail: `Nascimento ${formatDate(client.age.toDate())} | Telefone ${String(
-        client.phone || "-"
-      )}`,
-      badge: `${getClientAgeInYears(client)} anos`,
-    }));
-}
-
-function buildDogRecords(dogs: Dog[]): DashboardRecordItem[] {
-  return [...dogs]
-    .sort((left, right) => left.name.localeCompare(right.name))
-    .map((dog, index) => ({
-      id: dog.id ?? `dog-${index}`,
-      title: dog.name || "Animal sem nome",
-      subtitle: dog.breed || "Raca nao informada",
-      detail: `${formatDecimal(dog.age, " anos")} | ${formatDecimal(dog.weight, " kg")}`,
-      badge: `${formatDecimal(dog.weight, " kg")}`,
-    }));
-}
-
-function buildProductRecords(products: Product[]): DashboardRecordItem[] {
-  return [...products]
-    .sort((left, right) => right.quantity - left.quantity)
-    .map((product, index) => ({
-      id: product.id ?? `product-${index}`,
-      title: product.name || "Produto sem nome",
-      subtitle: `Codigo ${product.code || "nao informado"}`,
-      detail: `${formatCurrency(product.price)} | ${formatNumber(product.quantity)} unidades`,
-      badge: `Estoque ${formatNumber(product.quantity)}`,
-    }));
-}
-
 export function getSummaryCards(
   clients: Client[],
   dogs: Dog[],
@@ -225,36 +173,4 @@ export function getChartSections(clients: Client[], dogs: Dog[], products: Produ
       emptyMessage: "Sem produtos cadastrados para comparar estoque.",
     },
   ] satisfies DashboardChartSection[];
-}
-
-export function getRecordGroup(
-  domain: DashboardDomainKey,
-  clients: Client[],
-  dogs: Dog[],
-  products: Product[]
-): DashboardRecordGroup {
-  if (domain === "animais") {
-    return {
-      title: "Lista de animais",
-      subtitle: `${formatNumber(dogs.length)} registros encontrados`,
-      emptyMessage: "Nenhum animal registrado ate o momento.",
-      items: buildDogRecords(dogs),
-    };
-  }
-
-  if (domain === "itens") {
-    return {
-      title: "Lista de produtos",
-      subtitle: `${formatNumber(products.length)} produtos no painel`,
-      emptyMessage: "Nenhum produto cadastrado ate o momento.",
-      items: buildProductRecords(products),
-    };
-  }
-
-  return {
-    title: "Lista de clientes",
-    subtitle: `${formatNumber(clients.length)} registros encontrados`,
-    emptyMessage: "Nenhum cliente registrado ate o momento.",
-    items: buildClientRecords(clients),
-  };
 }
