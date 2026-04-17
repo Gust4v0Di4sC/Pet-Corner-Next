@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Animation from "../../assets/Animation.lottie";
-import logoimg from "../../assets/logo.png";
+import logoimg from "../../assets/Logo.svg";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import Box from "@mui/material/Box";

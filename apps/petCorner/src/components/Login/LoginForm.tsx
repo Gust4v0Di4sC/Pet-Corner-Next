@@ -9,7 +9,6 @@ import Animation from "../../assets/Animation.lottie";
 
 import LoginTextField from "./LoginTextField";
 import LoginButton from "./LoginButton";
-import SocialLogin from "./SocialLogin";
 
 const loginSchema = z.object({
   email: z
@@ -30,9 +29,7 @@ type Props = {
 
   // agora sobe os dados já validados
   onSubmit: (data: LoginFormValues) => Promise<void> | void;
-
-  onGoogle: () => Promise<boolean>;
-  onMicrosoft: () => Promise<boolean>;
+  onOpenResetPasswordModal: (email: string) => void;
 
   onHoverLogin: (value: boolean) => void;
   showAnimation: boolean;
@@ -44,8 +41,7 @@ type Props = {
 export default function LoginForm({
   header,
   onSubmit,
-  onGoogle,
-  onMicrosoft,
+  onOpenResetPasswordModal,
   onHoverLogin,
   showAnimation,
   defaultValues,
@@ -53,6 +49,7 @@ export default function LoginForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -62,6 +59,8 @@ export default function LoginForm({
       password: defaultValues?.password ?? "",
     },
   });
+
+  const currentEmail = watch("email");
 
   return (
     <>
@@ -91,7 +90,13 @@ export default function LoginForm({
             label={isSubmitting ? "Entrando..." : "Entrar"}
           />
 
-          <SocialLogin onGoogle={onGoogle} onMicrosoft={onMicrosoft} />
+          <button
+            type="button"
+            className="login-reset-link"
+            onClick={() => onOpenResetPasswordModal(currentEmail ?? "")}
+          >
+            Resetar senha
+          </button>
         </div>
       </form>
 
