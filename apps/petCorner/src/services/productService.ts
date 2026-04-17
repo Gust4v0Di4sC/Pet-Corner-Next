@@ -10,25 +10,17 @@ import {
   where,
 } from "firebase/firestore";
 
-export type Product = {
-  id?: string;
-  name: string;
-  price: number;
-  code: string;
-  quantity: number;
-};
+import type { Product } from "../types/product";
 
-// Buscar todos os produtos
 export const getAllProducts = async (
   rota: string = "prods"
 ): Promise<Product[]> => {
   const db = await getFirestoreDB();
   const col = collection(db, rota);
   const snapshot = await getDocs(col);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as Product));
 };
 
-// Adicionar produto
 export const addProduct = async (
   rota: string,
   data: Omit<Product, "id">
@@ -39,7 +31,6 @@ export const addProduct = async (
   return { id: docRef.id, ...data };
 };
 
-// Atualizar produto
 export const updateProduct = async (
   rota: string,
   id: string,
@@ -47,10 +38,9 @@ export const updateProduct = async (
 ): Promise<void> => {
   const db = await getFirestoreDB();
   const ref = doc(db, rota, id);
-  await setDoc(ref, data, { merge: true }); // merge para não sobrescrever tudo
+  await setDoc(ref, data, { merge: true });
 };
 
-// Deletar produto
 export const deleteProduct = async (
   rota: string,
   id: string
@@ -60,14 +50,13 @@ export const deleteProduct = async (
   await deleteDoc(ref);
 };
 
-// Buscar produto pelo nome
 export const searchProductByName = async (
   rota: string,
   name: string
 ): Promise<Product[]> => {
   const db = await getFirestoreDB();
   const col = collection(db, rota);
-  const q = query(col, where("name", "==", name));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+  const collectionQuery = query(col, where("name", "==", name));
+  const snapshot = await getDocs(collectionQuery);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as Product));
 };
