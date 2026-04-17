@@ -1,4 +1,5 @@
 import type { DashboardRecordGroup } from "./dashboard.types";
+import AppLoader from "../Templates/AppLoader";
 
 type Props = DashboardRecordGroup & {
   isLoading: boolean;
@@ -19,6 +20,8 @@ export default function DashboardRecordList({
   onEditRecord,
   onDeleteRecord,
 }: Props) {
+  const shouldShowLoadingState = isLoading && !items.length;
+
   return (
     <section className={`dashboard-panel dashboard-panel--records ${className}`.trim()}>
       <header className="dashboard-panel__header">
@@ -28,8 +31,10 @@ export default function DashboardRecordList({
         </div>
       </header>
 
-      {isLoading ? (
-        <div className="dashboard-empty-state">Carregando registros...</div>
+      {shouldShowLoadingState ? (
+        <div className="dashboard-empty-state dashboard-empty-state--loading">
+          <AppLoader compact message="Carregando registros..." />
+        </div>
       ) : items.length ? (
         <div className="dashboard-record-list">
           {items.map((item) => (

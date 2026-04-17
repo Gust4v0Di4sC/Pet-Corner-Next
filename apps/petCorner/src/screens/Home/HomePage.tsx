@@ -3,7 +3,7 @@ import Main from "../../components/Templates/Main";
 
 
 import AppShell from "../../components/layout/AppShell";
-import logoimg from "../../assets/Logo-home-alt.svg";
+import logoimg from "../../assets/Logo.svg";
 
 export default function HomePage() {
   // const location = useLocation();

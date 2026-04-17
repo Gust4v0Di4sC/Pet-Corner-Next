@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 
-import logoimg from "../../assets/Logo-home-alt.svg";
+import logoimg from "../../assets/Logo.svg";
 import { useClient } from "../../hooks/useClient";
 import { useDog } from "../../hooks/useDog";
 import { useProducts } from "../../hooks/useProducts";

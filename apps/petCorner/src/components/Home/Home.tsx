@@ -1,4 +1,4 @@
-import logoimg from "../../assets/Logo-home-alt.svg";
+import logoimg from "../../assets/Logo.svg";
 import Dashboard from "../Dashboard/Dashboard";
 import AppShell from "../layout/AppShell";
 import Main from "../Templates/Main";

@@ -5,6 +5,7 @@ import { confirmAlert } from "react-confirm-alert";
 import "react-confirm-alert/src/react-confirm-alert.css";
 
 import Form from "../Form/Form";
+import AppLoader from "../Templates/AppLoader";
 import "../Clientes/cliente.css"; // seu CSS da tabela
 
 type Mode = "create" | "edit" | "exclude";
@@ -163,6 +164,8 @@ export default function EntityManager<T extends { id?: string }>({
     handleSubmitCore();
   };
 
+  const shouldShowLoadingState = Boolean(api.isLoading && !items.length && !mode);
+
   return (
     <>
       {alert && (
@@ -174,33 +177,39 @@ export default function EntityManager<T extends { id?: string }>({
 
       {!mode ? (
         <>
-          <table className="tabela">
-            <thead>
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.accessor}>{col.header}</th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {items.map((row) => (
-                <tr
-                  key={row.id}
-                  onClick={() => setSelected(row)}
-                  style={{
-                    cursor: "pointer",
-                    opacity: selected?.id === row.id ? 0.85 : 1,
-                  }}
-                >
-                  {columns.map((col) => {
-                    const value = row[col.accessor];
-                    return <td key={col.accessor}>{String(value ?? "")}</td>;
-                  })}
+          {shouldShowLoadingState ? (
+            <div className="entity-manager-loader">
+              <AppLoader message="Carregando registros..." />
+            </div>
+          ) : (
+            <table className="tabela">
+              <thead>
+                <tr>
+                  {columns.map((col) => (
+                    <th key={col.accessor}>{col.header}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {items.map((row) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => setSelected(row)}
+                    style={{
+                      cursor: "pointer",
+                      opacity: selected?.id === row.id ? 0.85 : 1,
+                    }}
+                  >
+                    {columns.map((col) => {
+                      const value = row[col.accessor];
+                      return <td key={col.accessor}>{String(value ?? "")}</td>;
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
           <section className="box-button-tab">
             <button onClick={() => setMode("create")}>Cadastrar</button>

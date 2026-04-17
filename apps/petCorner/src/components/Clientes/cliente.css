@@ -71,6 +71,16 @@ tr:last-child td {
     background-color: #E36414;
 }
 
+.entity-manager-loader{
+    display: grid;
+    place-items: center;
+    min-height: 28rem;
+    padding: 1.5rem;
+    border-radius: 25px;
+    background: #fff;
+    box-shadow: 0px 0px 15px #0004;
+}
+
 
 
 @media (max-width: 1024px){
