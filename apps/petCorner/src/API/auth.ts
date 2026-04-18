@@ -1,6 +1,11 @@
 import axios from "axios";
+import {
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
+  type ActionCodeSettings,
+} from "firebase/auth";
 
 import { getFirebaseRuntimeConfig } from "../config/runtimeConfig";
+import { getFirebaseAuth } from "../firebase";
 
 const AUTH_BASE_URL = "https://identitytoolkit.googleapis.com/v1";
 const TOKEN_BASE_URL = "https://securetoken.googleapis.com/v1";
@@ -68,10 +73,19 @@ export async function signUpWithEmailPassword(
 }
 
 export async function sendPasswordResetEmail(email: string): Promise<void> {
-  await createAuthApi().post("/accounts:sendOobCode", {
-    requestType: "PASSWORD_RESET",
-    email,
-  });
+  const auth = await getFirebaseAuth();
+  auth.languageCode = "pt-BR";
+
+  const currentUrl = new URL(window.location.href);
+  currentUrl.search = "";
+  currentUrl.hash = "";
+
+  const actionCodeSettings: ActionCodeSettings = {
+    url: currentUrl.toString(),
+    handleCodeInApp: false,
+  };
+
+  await firebaseSendPasswordResetEmail(auth, email, actionCodeSettings);
 }
 
 export async function refreshIdToken(refreshToken: string): Promise<RefreshTokenResponse> {
