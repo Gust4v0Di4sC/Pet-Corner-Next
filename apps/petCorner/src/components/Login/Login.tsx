@@ -1,81 +1,59 @@
-import "./login.css";
-import Logo from "../Templates/Logo";
-import { useAuth } from "../../hooks/useAuth";
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { FirebaseError } from "firebase/app";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+
 import Animation from "../../assets/Animation.lottie";
 import logoimg from "../../assets/Logo.svg";
-import Alert from "@mui/material/Alert";
-import AlertTitle from "@mui/material/AlertTitle";
-import Box from "@mui/material/Box";
-import { FirebaseError } from "firebase/app";
-
-
-type AlertType =
-  | {
-      severity: "error" | "success";
-      message: string;
-    }
-  | null;
+import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
+import Logo from "../Templates/Logo";
+import "./login.css";
 
 export default function Login() {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showAnimation, setShowAnimation] = useState(false);
   const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
-  const [alert, setAlert] = useState<AlertType>(null);
-  const [showAnimation, setShowAnimation] = useState<boolean>(false);
+  const toast = useToast();
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-    if (email !== "" && password !== "") {
-      try {
-        await login(email, password);
-        setAlert({ severity: "success", message: "Login realizado com sucesso!" });
-        // navigate('/clientes');
-      } catch (error: unknown) {
-        if (error instanceof FirebaseError) {
-          const errorMessage =
-            error.code === "auth/user-not-found"
-              ? "Usuário não encontrado"
-              : error.code === "auth/wrong-password"
+    if (!email || !password) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    try {
+      await login(email, password);
+      toast.success("Login realizado com sucesso!");
+    } catch (error: unknown) {
+      if (error instanceof FirebaseError) {
+        const errorMessage =
+          error.code === "auth/user-not-found"
+            ? "Usuario nao encontrado"
+            : error.code === "auth/wrong-password"
               ? "Senha incorreta"
               : "Erro ao fazer login";
-          setAlert({ severity: "error", message: errorMessage });
-        } else {
-          setAlert({ severity: "error", message: "Erro ao fazer login" });
-        }
+
+        toast.error(errorMessage);
+        return;
       }
-    } else {
-      setAlert({ severity: "error", message: "Preencha todos os campos" });
+
+      toast.error("Erro ao fazer login");
     }
   };
 
   return (
     <div className="container paw-main">
-      {alert && (
-        <Box sx={{ width: "fit-content", mx: "auto", my: -5 }}>
-          <Alert
-            variant="filled"
-            severity={alert.severity}
-            onClose={() => setAlert(null)}
-          >
-            <AlertTitle>
-              {alert.severity === "error" ? "Error" : "Success"}
-            </AlertTitle>
-            {alert.message}
-          </Alert>
-        </Box>
-      )}
-
       <form className="form" onSubmit={handleSubmit}>
         <Logo src={logoimg} />
 
         <div className="box">
           <input
             name="email"
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             type="email"
             placeholder="Digite seu nome..."
             value={email}
@@ -83,7 +61,7 @@ export default function Login() {
 
           <input
             name="password"
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             type="password"
             placeholder="Digite sua senha..."
             value={password}
@@ -97,8 +75,6 @@ export default function Login() {
           >
             Entrar
           </button>
-
-          
 
           <section className="social-login">
             <button

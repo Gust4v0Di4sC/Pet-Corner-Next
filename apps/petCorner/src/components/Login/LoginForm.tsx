@@ -30,6 +30,7 @@ type Props = {
   // agora sobe os dados já validados
   onSubmit: (data: LoginFormValues) => Promise<void> | void;
   onOpenResetPasswordModal: (email: string) => void;
+  onOpenPhoneLoginModal: () => void;
 
   onHoverLogin: (value: boolean) => void;
   showAnimation: boolean;
@@ -42,6 +43,7 @@ export default function LoginForm({
   header,
   onSubmit,
   onOpenResetPasswordModal,
+  onOpenPhoneLoginModal,
   onHoverLogin,
   showAnimation,
   defaultValues,
@@ -90,13 +92,23 @@ export default function LoginForm({
             label={isSubmitting ? "Entrando..." : "Entrar"}
           />
 
-          <button
-            type="button"
-            className="login-reset-link"
-            onClick={() => onOpenResetPasswordModal(currentEmail ?? "")}
-          >
-            Resetar senha
-          </button>
+          <div className="login-helper-links">
+            <button
+              type="button"
+              className="login-reset-link"
+              onClick={() => onOpenResetPasswordModal(currentEmail ?? "")}
+            >
+              Resetar senha
+            </button>
+
+            <button
+              type="button"
+              className="login-reset-link"
+              onClick={onOpenPhoneLoginModal}
+            >
+              Entrar com telefone
+            </button>
+          </div>
         </div>
       </form>
 

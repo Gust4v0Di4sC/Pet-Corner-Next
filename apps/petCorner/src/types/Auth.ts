@@ -1,3 +1,4 @@
+import type { ConfirmationResult } from "firebase/auth";
 import type { Dispatch, SetStateAction } from "react";
 
 export type AuthUser = {
@@ -20,11 +21,26 @@ export type ProviderLoginFn = () => Promise<boolean>;
 
 export type LogoutFn = () => Promise<void>;
 
+export type PhoneCodeRequestFn = (
+  phoneNumber: string,
+  recaptchaContainerId: string
+) => Promise<ConfirmationResult>;
+
+export type PhoneCodeConfirmFn = (
+  confirmationResult: ConfirmationResult,
+  verificationCode: string
+) => Promise<boolean>;
+
+export type ClearPhoneVerifierFn = () => void;
+
 export type AuthHookReturn = {
   user: AuthUser | null;
   login: EmailLoginFn;
   loginWithGoogle: ProviderLoginFn;
   loginWithMicrosoft: ProviderLoginFn;
+  sendPhoneLoginCode: PhoneCodeRequestFn;
+  confirmPhoneLoginCode: PhoneCodeConfirmFn;
+  clearPhoneLoginVerifier: ClearPhoneVerifierFn;
   logout: LogoutFn;
   setUser: Dispatch<SetStateAction<AuthUser | null>>;
   isLoading: boolean;

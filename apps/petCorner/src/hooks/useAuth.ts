@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   onAuthStateChanged,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   type Auth,
+  type ConfirmationResult,
   type User as FirebaseUser,
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -79,12 +82,18 @@ const fetchCurrentUser = async (): Promise<AuthUser | null> => {
 export const useAuth = (): AuthHookReturn => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const phoneRecaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
   const { data: user, isLoading } = useQuery<AuthUser | null>({
     queryKey: AUTH_QUERY_KEY,
     queryFn: fetchCurrentUser,
     staleTime: Infinity,
   });
+
+  const clearPhoneLoginVerifier = useCallback(() => {
+    phoneRecaptchaVerifierRef.current?.clear();
+    phoneRecaptchaVerifierRef.current = null;
+  }, []);
 
   useEffect(() => {
     let isDisposed = false;
@@ -119,6 +128,12 @@ export const useAuth = (): AuthHookReturn => {
       unsubscribe?.();
     };
   }, [queryClient]);
+
+  useEffect(() => {
+    return () => {
+      clearPhoneLoginVerifier();
+    };
+  }, [clearPhoneLoginVerifier]);
 
   const loginMutation = useMutation<boolean, Error, EmailCredentials>({
     mutationFn: async ({ email, password }) => {
@@ -171,6 +186,57 @@ export const useAuth = (): AuthHookReturn => {
     },
   });
 
+  const sendPhoneLoginCodeMutation = useMutation<
+    ConfirmationResult,
+    Error,
+    { phoneNumber: string; recaptchaContainerId: string }
+  >({
+    mutationFn: async ({ phoneNumber, recaptchaContainerId }) => {
+      const auth = await getFirebaseAuth();
+      clearPhoneLoginVerifier();
+
+      const recaptchaContainer = document.getElementById(recaptchaContainerId);
+
+      if (!recaptchaContainer) {
+        throw new Error("Nao foi possivel iniciar a verificacao por SMS.");
+      }
+
+      recaptchaContainer.innerHTML = "";
+
+      const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
+        size: "normal",
+        theme: "dark",
+      });
+
+      phoneRecaptchaVerifierRef.current = verifier;
+      await verifier.render();
+
+      return signInWithPhoneNumber(auth, phoneNumber, verifier);
+    },
+  });
+
+  const confirmPhoneLoginCodeMutation = useMutation<
+    boolean,
+    Error,
+    { confirmationResult: ConfirmationResult; verificationCode: string }
+  >({
+    mutationFn: async ({ confirmationResult, verificationCode }) => {
+      const auth = await getFirebaseAuth();
+      const credential = await confirmationResult.confirm(verificationCode);
+      const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
+        forceRefresh: true,
+        throwOnDenied: true,
+      });
+
+      queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, authorizedUser);
+      return true;
+    },
+    onSuccess: () => {
+      clearPhoneLoginVerifier();
+      navigate(DASHBOARD_ROUTE);
+    },
+  });
+
   const logoutMutation = useMutation<void, Error, void>({
     mutationFn: async () => {
       const auth = await getFirebaseAuth();
@@ -191,6 +257,24 @@ export const useAuth = (): AuthHookReturn => {
   const loginWithMicrosoft: AuthHookReturn["loginWithMicrosoft"] = () =>
     loginWithMicrosoftMutation.mutateAsync();
 
+  const sendPhoneLoginCode: AuthHookReturn["sendPhoneLoginCode"] = (
+    phoneNumber,
+    recaptchaContainerId
+  ) =>
+    sendPhoneLoginCodeMutation.mutateAsync({
+      phoneNumber,
+      recaptchaContainerId,
+    });
+
+  const confirmPhoneLoginCode: AuthHookReturn["confirmPhoneLoginCode"] = (
+    confirmationResult,
+    verificationCode
+  ) =>
+    confirmPhoneLoginCodeMutation.mutateAsync({
+      confirmationResult,
+      verificationCode,
+    });
+
   const logout: AuthHookReturn["logout"] = () => logoutMutation.mutateAsync();
 
   const setUser: AuthHookReturn["setUser"] = (updater) => {
@@ -205,6 +289,9 @@ export const useAuth = (): AuthHookReturn => {
     login,
     loginWithGoogle,
     loginWithMicrosoft,
+    sendPhoneLoginCode,
+    confirmPhoneLoginCode,
+    clearPhoneLoginVerifier,
     logout,
     setUser,
   };

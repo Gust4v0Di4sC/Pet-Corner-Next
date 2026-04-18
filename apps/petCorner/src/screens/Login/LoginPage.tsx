@@ -1,10 +1,10 @@
 import "./login.css";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FirebaseError } from "firebase/app";
+import type { ConfirmationResult } from "firebase/auth";
 import { Navigate } from "react-router-dom";
 
 import { sendPasswordResetEmail } from "../../API/auth";
-import LoginAlert from "../../components/Login/LoginAlert";
 import LoginForm from "../../components/Login/LoginForm";
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
 import AppLoader from "../../components/Templates/AppLoader";
@@ -13,6 +13,7 @@ import logoimg from "../../assets/Logo.svg";
 import pawPrint from "../../assets/paw-print.svg";
 import splashLogo from "../../assets/Logo-Home.svg";
 import { useAuth } from "../../hooks/useAuth";
+import { useToast } from "../../hooks/useToast";
 import { AdminAccessError } from "../../services/adminService";
 
 type LoginFormValues = {
@@ -20,8 +21,10 @@ type LoginFormValues = {
   password: string;
 };
 
-type AlertType = { severity: "error" | "success"; message: string } | null;
 type SplashStamp = { x: number; y: number; key: number } | null;
+type RecoveryMethod = "email" | "phone";
+
+const PHONE_RECAPTCHA_CONTAINER_ID = "login-phone-recaptcha";
 
 const SPLASH_BACKGROUND_PAWS = [
   { left: "16%", top: "18%", size: "86px", rotate: "-18deg", delay: "0s", duration: "2.8s" },
@@ -35,46 +38,125 @@ const SPLASH_BACKGROUND_PAWS = [
 ];
 
 export default function LoginPage() {
-  const { isLoading, login, user } = useAuth();
+  const {
+    isLoading,
+    login,
+    user,
+    sendPhoneLoginCode,
+    confirmPhoneLoginCode,
+    clearPhoneLoginVerifier,
+  } = useAuth();
+  const toast = useToast();
   const splashRevealTimeoutRef = useRef<number | null>(null);
 
-  const [alert, setAlert] = useState<AlertType>(null);
   const [showAnimation, setShowAnimation] = useState(false);
   const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
+  const [isSendingPhoneCode, setIsSendingPhoneCode] = useState(false);
+  const [isConfirmingPhoneCode, setIsConfirmingPhoneCode] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [recoveryMethod, setRecoveryMethod] = useState<RecoveryMethod>("email");
   const [resetEmail, setResetEmail] = useState("");
+  const [resetPhone, setResetPhone] = useState("");
+  const [smsVerificationCode, setSmsVerificationCode] = useState("");
+  const [phoneConfirmationResult, setPhoneConfirmationResult] =
+    useState<ConfirmationResult | null>(null);
   const [isLoginVisible, setIsLoginVisible] = useState(false);
   const [isSplashStamping, setIsSplashStamping] = useState(false);
   const [splashStamp, setSplashStamp] = useState<SplashStamp>(null);
 
+  const isRecoveryActionBusy =
+    isSendingResetEmail || isSendingPhoneCode || isConfirmingPhoneCode;
+
+  const resetPhoneRecoveryState = useCallback(
+    (options?: { preservePhone?: boolean }) => {
+      clearPhoneLoginVerifier();
+      if (!options?.preservePhone) {
+        setResetPhone("");
+      }
+      setSmsVerificationCode("");
+      setPhoneConfirmationResult(null);
+    },
+    [clearPhoneLoginVerifier]
+  );
+
+  const getFirebaseErrorMessage = (
+    error: unknown,
+    fallbackMessage: string
+  ) => {
+    if (error instanceof AdminAccessError) {
+      return error.message;
+    }
+
+    if (error instanceof FirebaseError) {
+      switch (error.code) {
+        case "auth/user-not-found":
+          return "Usuario nao encontrado.";
+        case "auth/wrong-password":
+          return "Senha incorreta.";
+        case "auth/invalid-credential":
+          return "E-mail ou senha invalidos.";
+        case "auth/invalid-email":
+          return "Informe um e-mail valido.";
+        case "auth/operation-not-allowed":
+          return "O login por telefone nao esta habilitado no Firebase.";
+        case "auth/invalid-phone-number":
+          return "Informe o telefone no formato +55 11 99999-9999.";
+        case "auth/missing-phone-number":
+          return "Informe um telefone para receber o codigo.";
+        case "auth/too-many-requests":
+          return "Muitas tentativas seguidas. Aguarde um pouco e tente novamente.";
+        case "auth/quota-exceeded":
+          return "A cota de SMS do Firebase foi atingida.";
+        case "auth/captcha-check-failed":
+          return "A verificacao reCAPTCHA falhou. Tente novamente.";
+        case "auth/invalid-verification-code":
+          return "O codigo informado e invalido.";
+        case "auth/code-expired":
+          return "O codigo SMS expirou. Solicite um novo envio.";
+        case "auth/session-expired":
+          return "A sessao de verificacao expirou. Solicite um novo codigo.";
+        default:
+          return fallbackMessage;
+      }
+    }
+
+    return fallbackMessage;
+  };
+
+  const normalizePhoneNumber = (value: string) => {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      throw new Error("Informe um telefone para continuar.");
+    }
+
+    const normalizedValue = trimmedValue.startsWith("+")
+      ? `+${trimmedValue.slice(1).replace(/\D/g, "")}`
+      : trimmedValue.replace(/\D/g, "");
+
+    if (!normalizedValue.startsWith("+") || normalizedValue.length < 12) {
+      throw new Error("Use o telefone no formato +55 11 99999-9999.");
+    }
+
+    return normalizedValue;
+  };
+
   const handleSubmit = async ({ email, password }: LoginFormValues) => {
     try {
       await login(email.trim(), password);
-      setAlert({
-        severity: "success",
-        message: "Login realizado com sucesso!",
-      });
+      toast.success("Login realizado com sucesso!");
     } catch (error: unknown) {
       if (error instanceof AdminAccessError) {
-        setAlert({ severity: "error", message: error.message });
+        toast.error(error.message);
         return;
       }
 
       if (error instanceof FirebaseError) {
-        const message =
-          error.code === "auth/user-not-found"
-            ? "Usuario nao encontrado"
-            : error.code === "auth/wrong-password"
-              ? "Senha incorreta"
-              : error.code === "auth/invalid-credential"
-                ? "E-mail ou senha invalidos"
-                : "Erro ao fazer login";
-
-        setAlert({ severity: "error", message });
+        toast.error(getFirebaseErrorMessage(error, "Erro ao fazer login."));
         return;
       }
 
-      setAlert({ severity: "error", message: "Erro ao fazer login" });
+      toast.error("Erro ao fazer login");
     }
   };
 
@@ -85,7 +167,10 @@ export default function LoginPage() {
 
     const previousOverflow = document.body.style.overflow;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSendingResetEmail) {
+      if (event.key === "Escape" && !isRecoveryActionBusy) {
+        setRecoveryMethod("email");
+        setResetEmail("");
+        resetPhoneRecoveryState();
         setIsResetModalOpen(false);
       }
     };
@@ -97,7 +182,7 @@ export default function LoginPage() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isResetModalOpen, isSendingResetEmail]);
+  }, [isRecoveryActionBusy, isResetModalOpen, resetPhoneRecoveryState]);
 
   useEffect(() => {
     if (!isLoginVisible) {
@@ -123,16 +208,36 @@ export default function LoginPage() {
     };
   }, []);
 
+  const handleResetPhoneStep = () => {
+    if (isRecoveryActionBusy) {
+      return;
+    }
+
+    resetPhoneRecoveryState({ preservePhone: true });
+  };
+
   const handleOpenResetPasswordModal = (email: string) => {
+    setRecoveryMethod("email");
     setResetEmail(email.trim());
+    resetPhoneRecoveryState();
+    setIsResetModalOpen(true);
+  };
+
+  const handleOpenPhoneLoginModal = () => {
+    setRecoveryMethod("phone");
+    setResetEmail("");
+    resetPhoneRecoveryState();
     setIsResetModalOpen(true);
   };
 
   const handleCloseResetPasswordModal = () => {
-    if (isSendingResetEmail) {
+    if (isRecoveryActionBusy) {
       return;
     }
 
+    setRecoveryMethod("email");
+    setResetEmail("");
+    resetPhoneRecoveryState();
     setIsResetModalOpen(false);
   };
 
@@ -142,10 +247,7 @@ export default function LoginPage() {
     const sanitizedEmail = resetEmail.trim();
 
     if (!sanitizedEmail) {
-      setAlert({
-        severity: "error",
-        message: "Informe seu e-mail para resetar a senha.",
-      });
+      toast.error("Informe seu e-mail para resetar a senha.");
       return;
     }
 
@@ -153,18 +255,77 @@ export default function LoginPage() {
 
     try {
       await sendPasswordResetEmail(sanitizedEmail);
-      setAlert({
-        severity: "success",
-        message: "Enviamos um link para resetar sua senha.",
-      });
+      toast.success("Enviamos um link para resetar sua senha.");
+      setRecoveryMethod("email");
+      setResetEmail("");
       setIsResetModalOpen(false);
-    } catch {
-      setAlert({
-        severity: "error",
-        message: "Nao foi possivel enviar o e-mail de redefinicao.",
-      });
+    } catch (error) {
+      toast.error(
+        getFirebaseErrorMessage(error, "Nao foi possivel enviar o e-mail de redefinicao.")
+      );
     } finally {
       setIsSendingResetEmail(false);
+    }
+  };
+
+  const handleSendPhoneCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    let phoneNumber = "";
+
+    try {
+      phoneNumber = normalizePhoneNumber(resetPhone);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Informe um telefone valido para continuar."
+      );
+      return;
+    }
+
+    setIsSendingPhoneCode(true);
+
+    try {
+      const confirmationResult = await sendPhoneLoginCode(
+        phoneNumber,
+        PHONE_RECAPTCHA_CONTAINER_ID
+      );
+
+      setPhoneConfirmationResult(confirmationResult);
+      toast.success("Codigo SMS enviado. Digite o codigo recebido para entrar.");
+    } catch (error) {
+      toast.error(getFirebaseErrorMessage(error, "Nao foi possivel enviar o codigo SMS agora."));
+    } finally {
+      setIsSendingPhoneCode(false);
+    }
+  };
+
+  const handleConfirmPhoneCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!phoneConfirmationResult) {
+      toast.error("Solicite o codigo SMS antes de confirmar o acesso.");
+      return;
+    }
+
+    const sanitizedVerificationCode = smsVerificationCode.trim();
+
+    if (!sanitizedVerificationCode) {
+      toast.error("Digite o codigo recebido por SMS.");
+      return;
+    }
+
+    setIsConfirmingPhoneCode(true);
+
+    try {
+      await confirmPhoneLoginCode(phoneConfirmationResult, sanitizedVerificationCode);
+      toast.success("Acesso validado por SMS.");
+      setRecoveryMethod("email");
+      resetPhoneRecoveryState();
+      setIsResetModalOpen(false);
+    } catch (error) {
+      toast.error(getFirebaseErrorMessage(error, "Nao foi possivel validar o codigo SMS."));
+    } finally {
+      setIsConfirmingPhoneCode(false);
     }
   };
 
@@ -242,11 +403,10 @@ export default function LoginPage() {
       </button>
 
       <div className={`login-container paw-main${isLoginVisible ? " is-visible" : ""}`}>
-        <LoginAlert alert={alert} onClose={() => setAlert(null)} />
-
         <LoginForm
           onSubmit={handleSubmit}
           onOpenResetPasswordModal={handleOpenResetPasswordModal}
+          onOpenPhoneLoginModal={handleOpenPhoneLoginModal}
           onHoverLogin={setShowAnimation}
           showAnimation={showAnimation}
           header={<Logo src={logoimg} />}
@@ -271,31 +431,94 @@ export default function LoginPage() {
               className="login-reset-modal__close"
               onClick={handleCloseResetPasswordModal}
               aria-label="Fechar modal"
-              disabled={isSendingResetEmail}
+              disabled={isRecoveryActionBusy}
             >
               <i className="fa fa-times" aria-hidden="true" />
             </button>
 
-            <form className="login-reset-modal__form" onSubmit={handleResetPassword}>
-              <div className="login-reset-modal__header">
-                <h2 id="login-reset-modal-title">Resetar senha</h2>
-                <p>Digite seu e-mail para receber o link de redefinicao.</p>
+            <div className="login-reset-modal__header">
+              <h2 id="login-reset-modal-title">
+                {recoveryMethod === "email" ? "Resetar senha" : "Entrar com telefone"}
+              </h2>
+              <p>
+                {recoveryMethod === "email"
+                  ? "Informe o e-mail para receber o link de redefinicao de senha."
+                  : "Valide o acesso do admin por SMS usando um telefone habilitado no Firebase."}
+              </p>
+            </div>
+
+            {recoveryMethod === "email" ? (
+              <form className="login-reset-modal__form" onSubmit={handleResetPassword}>
+                <input
+                  type="email"
+                  name="reset-email"
+                  placeholder="Digite seu email..."
+                  value={resetEmail}
+                  onChange={(event) => setResetEmail(event.target.value)}
+                  disabled={isRecoveryActionBusy}
+                  autoFocus
+                />
+
+                <button type="submit" className="btn-primary" disabled={isSendingResetEmail}>
+                  {isSendingResetEmail ? "Enviando..." : "Enviar link"}
+                </button>
+              </form>
+            ) : (
+              <div className="login-reset-modal__phone-flow">
+                {!phoneConfirmationResult ? (
+                  <form className="login-reset-modal__form" onSubmit={handleSendPhoneCode}>
+                    <input
+                      type="tel"
+                      name="reset-phone"
+                      placeholder="Telefone no formato +55 11 99999-9999"
+                      value={resetPhone}
+                      onChange={(event) => setResetPhone(event.target.value)}
+                      disabled={isRecoveryActionBusy}
+                      autoFocus
+                    />
+
+                    <div
+                      id={PHONE_RECAPTCHA_CONTAINER_ID}
+                      className="login-reset-modal__recaptcha"
+                    />
+
+                    <button type="submit" className="btn-primary" disabled={isSendingPhoneCode}>
+                      {isSendingPhoneCode ? "Enviando codigo..." : "Enviar codigo SMS"}
+                    </button>
+                  </form>
+                ) : (
+                  <form className="login-reset-modal__form" onSubmit={handleConfirmPhoneCode}>
+                    <input
+                      type="text"
+                      name="sms-verification-code"
+                      placeholder="Digite o codigo de 6 digitos"
+                      value={smsVerificationCode}
+                      onChange={(event) => setSmsVerificationCode(event.target.value)}
+                      disabled={isConfirmingPhoneCode}
+                      inputMode="numeric"
+                      autoFocus
+                    />
+
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={isConfirmingPhoneCode}
+                    >
+                      {isConfirmingPhoneCode ? "Validando..." : "Entrar com SMS"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="login-reset-link"
+                      onClick={handleResetPhoneStep}
+                      disabled={isRecoveryActionBusy}
+                    >
+                      Reenviar SMS
+                    </button>
+                  </form>
+                )}
               </div>
-
-              <input
-                type="email"
-                name="reset-email"
-                placeholder="Digite seu email..."
-                value={resetEmail}
-                onChange={(event) => setResetEmail(event.target.value)}
-                disabled={isSendingResetEmail}
-                autoFocus
-              />
-
-              <button type="submit" className="btn-primary" disabled={isSendingResetEmail}>
-                {isSendingResetEmail ? "Enviando..." : "Enviar"}
-              </button>
-            </form>
+            )}
           </div>
         </div>
       )}

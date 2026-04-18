@@ -245,6 +245,12 @@
   opacity: 0.72;
 }
 
+.login-helper-links {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+}
+
 .login-reset-modal-overlay {
   position: fixed;
   inset: 0;
@@ -297,6 +303,11 @@
   gap: 1rem;
 }
 
+.login-reset-modal__phone-flow {
+  display: grid;
+  gap: 1rem;
+}
+
 .login-reset-modal__header h2 {
   margin: 0;
   color: #f5f0ee;
@@ -325,6 +336,16 @@
   border-color: var(--login-accent);
   box-shadow: 0 0 0 4px rgba(251, 139, 36, 0.14);
   transform: translateY(-1px);
+}
+
+.login-reset-modal__recaptcha {
+  display: grid;
+  justify-content: center;
+  min-height: 78px;
+}
+
+.login-reset-modal__recaptcha > div {
+  margin: 0 auto;
 }
 
 .login-reset-modal__form .btn-primary:disabled {
