@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import Alert from "@mui/material/Alert";
-import AlertTitle from "@mui/material/AlertTitle";
 
+import { useToast } from "../../hooks/useToast";
 import RecordFormModal from "./RecordFormModal";
 import RecordList from "./RecordList";
 import type { RecordFormConfig, RecordFormData, RecordListGroup } from "./record.types";
@@ -39,14 +38,11 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   onDelete,
 }: Props<TRecord, TPayload>) {
   const navigate = useNavigate();
+  const toast = useToast();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const [busyRecordId, setBusyRecordId] = useState<string | null>(null);
-  const [alert, setAlert] = useState<{
-    severity: "success" | "warning";
-    message: string;
-  } | null>(null);
   const [formData, setFormData] = useState<RecordFormData>(() => ({
     ...formConfig.initialValues,
   }));
@@ -72,15 +68,6 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     return new Map(listGroup.items.map((item) => [item.id, item.title]));
   }, [listGroup.items]);
 
-  useEffect(() => {
-    if (!alert) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => setAlert(null), 4000);
-    return () => window.clearTimeout(timeoutId);
-  }, [alert]);
-
   const openCreateModal = () => {
     setActiveRecordId(null);
     setFormData({ ...formConfig.initialValues });
@@ -102,7 +89,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     const selectedRecord = recordsById.get(recordId);
 
     if (!selectedRecord) {
-      setAlert({ severity: "warning", message: "Nao foi possivel localizar o registro." });
+      toast.warning("Nao foi possivel localizar o registro.");
       return;
     }
 
@@ -123,12 +110,9 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 
     try {
       await onDelete(recordId);
-      setAlert({ severity: "success", message: formConfig.deleteSuccessMessage });
+      toast.success(formConfig.deleteSuccessMessage);
     } catch {
-      setAlert({
-        severity: "warning",
-        message: "Nao foi possivel excluir o registro agora.",
-      });
+      toast.warning("Nao foi possivel excluir o registro agora.");
     } finally {
       setBusyRecordId(null);
     }
@@ -138,7 +122,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     event.preventDefault();
 
     if (formConfig.fields.some((field) => !String(formData[field.name] ?? "").trim())) {
-      setAlert({ severity: "warning", message: "Preencha todos os campos antes de salvar." });
+      toast.warning("Preencha todos os campos antes de salvar.");
       return;
     }
 
@@ -149,21 +133,19 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 
       if (activeRecordId) {
         await onUpdate(activeRecordId, payload);
-        setAlert({ severity: "success", message: formConfig.editSuccessMessage });
+        toast.success(formConfig.editSuccessMessage);
       } else {
         await onCreate(payload);
-        setAlert({ severity: "success", message: formConfig.createSuccessMessage });
+        toast.success(formConfig.createSuccessMessage);
       }
 
       closeFormModal();
     } catch (error) {
-      setAlert({
-        severity: "warning",
-        message:
-          error instanceof Error && error.message
-            ? error.message
-            : "Nao foi possivel salvar o registro agora.",
-      });
+      toast.warning(
+        error instanceof Error && error.message
+          ? error.message
+          : "Nao foi possivel salvar o registro agora."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -171,13 +153,6 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 
   return (
     <section className="record-management">
-      {alert && (
-        <Alert variant="filled" severity={alert.severity} onClose={() => setAlert(null)}>
-          <AlertTitle>{alert.severity === "success" ? "Sucesso" : "Aviso"}</AlertTitle>
-          {alert.message}
-        </Alert>
-      )}
-
       <button
         type="button"
         className="record-management__back"
