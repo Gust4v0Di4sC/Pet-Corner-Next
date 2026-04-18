@@ -11,6 +11,7 @@ export type Client = {
 export type Dog = {
   id: string
   name: string
+  animalType: string
   age: number
   breed: string
   weight: number
