@@ -6,10 +6,17 @@ aside.logo {
 
 .app aside.logo {
     padding: 0.75rem 0.35rem;
-    background-color: #fff;
-    box-shadow: var(--shadow);
+    background: var(--sidebar-surface);
     position: relative;
     z-index: 110;
+}
+
+.app aside.logo a.logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    background: transparent;
 }
 
 aside.logo img{

@@ -1,6 +1,7 @@
 import "./nav.css";
 import React, { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { Tooltip } from "react-tooltip";
 
 import { useAuth } from "../../hooks/useAuth";
 import {
@@ -63,6 +64,9 @@ const Nav: React.FC = () => {
               key={item.to}
               to={item.to}
               className={({ isActive }) => `menu__link${isActive ? " is-active" : ""}`}
+              data-tooltip-id="sidebar-tooltip"
+              data-tooltip-content={item.label}
+              data-tooltip-place="right"
             >
               <i className={`fa fa-${item.icon}`} />
               <span>{item.label}</span>
@@ -70,11 +74,20 @@ const Nav: React.FC = () => {
           ))}
         </div>
 
-        <button type="button" className="menu__logout" onClick={handleLogout}>
+        <button
+          type="button"
+          className="menu__logout"
+          onClick={handleLogout}
+          data-tooltip-id="sidebar-tooltip"
+          data-tooltip-content="Logout"
+          data-tooltip-place="right"
+        >
           <i className="fa fa-sign-out" />
           <span>Logout</span>
         </button>
       </nav>
+
+      {!isOpen && <Tooltip id="sidebar-tooltip" className="menu__tooltip" opacity={1} />}
     </aside>
   );
 };

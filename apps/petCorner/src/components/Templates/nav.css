@@ -31,7 +31,7 @@ aside.menu-area{
     flex-direction: column;
     gap: 0.9rem;
     padding: calc(var(--logo-height) + 0.9rem) 0.75rem calc(var(--footer-height) + 0.9rem);
-    background: linear-gradient(180deg, #E36414 0%, #C95308 100%);
+    background: var(--sidebar-surface);
     box-shadow: 16px 0 32px rgba(26, 47, 58, 0.12);
     transition: width 0.28s ease, box-shadow 0.28s ease;
     z-index: 90;
@@ -173,6 +173,17 @@ aside.menu-area:not(.is-open) .menu__link.is-active{
 .menu__logout{
     margin-top: auto;
     cursor: pointer;
+}
+
+.menu__tooltip{
+    background: #1A2F3A !important;
+    color: #f5f0ee !important;
+    border-radius: 12px !important;
+    padding: 0.5rem 0.7rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 14px 28px rgba(26, 47, 58, 0.2) !important;
+    z-index: 140 !important;
 }
 
 @media(max-width: 768px){

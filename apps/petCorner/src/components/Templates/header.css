@@ -2,7 +2,7 @@ header.header{
     background-color: #FB8B24;
     display: flex;
     justify-content: center;
-    padding: 0 15px;
+    padding: 0.35rem 1rem;
     overflow: hidden;
     box-shadow: var(--shadow);
 }
@@ -22,7 +22,7 @@ header.header{
 }
 
 .header__subtitle{
-    margin: 0.2rem 0 0;
+    margin: 0.1rem 0 0;
     font-size: 0.9rem;
     line-height: 1.25;
     color: rgba(255, 255, 255, 0.78);

@@ -1,8 +1,9 @@
 :root {
   --bg-dark: #1A2F3A;
+  --sidebar-surface: #C95308;
 
   --logo-height: 100px;
-  --header-height: 100px;
+  --header-height: 84px;
   --menu-top-height: 0px;
   --aside-width: 84px;
   --drawer-width: 304px;
