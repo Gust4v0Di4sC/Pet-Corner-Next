@@ -111,6 +111,7 @@ export default function ClientesPage() {
           records={items}
           formConfig={clientFormConfig}
           isLoading={isLoading}
+          listPageSize={4}
           backRoute={DASHBOARD_ROUTE}
           addAriaLabel="Adicionar novo cliente"
           getFormData={getClientFormData}

@@ -8,9 +8,13 @@ type FirebaseRuntimeConfig = {
   measurementId?: string;
 };
 
+type AppRuntimeConfig = FirebaseRuntimeConfig & {
+  cosmosSyncUrl?: string;
+};
+
 declare global {
   interface Window {
-    __PETCORNER_RUNTIME_CONFIG__?: Partial<FirebaseRuntimeConfig>;
+    __PETCORNER_RUNTIME_CONFIG__?: Partial<AppRuntimeConfig>;
   }
 }
 
@@ -22,7 +26,7 @@ function required(name: keyof FirebaseRuntimeConfig, value: string | undefined) 
   return value;
 }
 
-export function getFirebaseRuntimeConfig(): FirebaseRuntimeConfig {
+function getRuntimeConfig(): Partial<AppRuntimeConfig> {
   if (typeof window === "undefined") {
     throw new Error("A configuracao do Firebase so pode ser carregada no navegador.");
   }
@@ -33,6 +37,12 @@ export function getFirebaseRuntimeConfig(): FirebaseRuntimeConfig {
     throw new Error("runtime-config.js nao foi carregado antes da aplicacao.");
   }
 
+  return runtimeConfig;
+}
+
+export function getFirebaseRuntimeConfig(): FirebaseRuntimeConfig {
+  const runtimeConfig = getRuntimeConfig();
+
   return {
     apiKey: required("apiKey", runtimeConfig.apiKey),
     authDomain: required("authDomain", runtimeConfig.authDomain),
@@ -42,4 +52,16 @@ export function getFirebaseRuntimeConfig(): FirebaseRuntimeConfig {
     appId: required("appId", runtimeConfig.appId),
     measurementId: runtimeConfig.measurementId,
   };
+}
+
+export function getCosmosSyncUrl(): string {
+  const value = getRuntimeConfig().cosmosSyncUrl?.trim();
+
+  if (!value) {
+    throw new Error(
+      "Configure VITE_COSMOS_SYNC_URL no ambiente para usar a sincronizacao via Cloudflare."
+    );
+  }
+
+  return value;
 }
