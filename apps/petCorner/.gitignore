@@ -16,6 +16,8 @@ dist-ssr
 # Arquivos sensíveis
 .env
 public/runtime-config.js
+cloudflare/cosmos-sync/.dev.vars
+cloudflare/cosmos-sync/.wrangler
 
 # Editor directories and files
 .vscode/*

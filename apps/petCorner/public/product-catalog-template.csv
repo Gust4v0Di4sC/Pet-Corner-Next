@@ -1,0 +1,11 @@
+codigo,nome,preco,quantidade,marca,categoria
+PET-RA-001,Racao Caes Adultos Frango 10kg,189.90,8,PetNutri,Alimento para Caes
+PET-RA-002,Racao Caes Filhotes Carne e Arroz 3kg,79.90,10,PetNutri,Alimento para Caes
+PET-RA-003,Racao Gatos Adultos Salmao 1kg,39.90,12,CatLife,Alimento para Gatos
+PET-HG-001,Tapete Higienico 30 Unidades,32.90,15,PetClean,Higiene
+PET-HG-002,Shampoo Neutro para Caes 500ml,24.90,9,PetClean,Higiene
+PET-HG-003,Areia Higienica para Gatos 4kg,21.90,14,CatLife,Higiene
+PET-AC-001,Comedouro Inox Medio,28.90,7,HousePet,Acessorios
+PET-AC-002,Guia Retratil 5m,49.90,6,HousePet,Acessorios
+PET-BR-001,Brinquedo Mordedor Corda,18.50,11,FunPet,Brinquedos
+PET-SA-001,Antipulgas Spot On Caes 10 a 20kg,64.90,5,PetCare,Saude
