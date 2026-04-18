@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
+import RecordDeleteModal from "./RecordDeleteModal";
 import { useToast } from "../../hooks/useToast";
 import RecordFormModal from "./RecordFormModal";
 import RecordList from "./RecordList";
@@ -13,6 +14,7 @@ type Props<TRecord extends { id?: string }, TPayload> = {
   records: TRecord[];
   formConfig: RecordFormConfig;
   isLoading: boolean;
+  listPageSize?: number;
   backRoute: string;
   backLabel?: string;
   addAriaLabel: string;
@@ -28,6 +30,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   records,
   formConfig,
   isLoading,
+  listPageSize,
   backRoute,
   backLabel = "Voltar ao dashboard",
   addAriaLabel,
@@ -43,6 +46,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const [busyRecordId, setBusyRecordId] = useState<string | null>(null);
+  const [pendingDeleteRecordId, setPendingDeleteRecordId] = useState<string | null>(null);
   const [formData, setFormData] = useState<RecordFormData>(() => ({
     ...formConfig.initialValues,
   }));
@@ -67,6 +71,16 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   const recordItemsById = useMemo(() => {
     return new Map(listGroup.items.map((item) => [item.id, item.title]));
   }, [listGroup.items]);
+  const resolvedFields = useMemo(
+    () =>
+      formConfig.resolveFields
+        ? formConfig.resolveFields(formData, { isEditing })
+        : formConfig.fields,
+    [formConfig, formData, isEditing]
+  );
+  const pendingDeleteRecordLabel = pendingDeleteRecordId
+    ? recordItemsById.get(pendingDeleteRecordId) ?? formConfig.entityLabel
+    : "";
 
   const openCreateModal = () => {
     setActiveRecordId(null);
@@ -80,9 +94,23 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     setFormData({ ...formConfig.initialValues });
   };
 
-  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const closeDeleteModal = () => {
+    if (busyRecordId && busyRecordId === pendingDeleteRecordId) {
+      return;
+    }
+
+    setPendingDeleteRecordId(null);
+  };
+
+  const handleInputChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = event.target;
-    setFormData((currentData) => ({ ...currentData, [name]: value }));
+    setFormData((currentData) =>
+      formConfig.mapInput
+        ? formConfig.mapInput({ name, value, currentData, isEditing })
+        : { ...currentData, [name]: value }
+    );
   };
 
   const handleEditRecord = (recordId: string) => {
@@ -98,19 +126,26 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     setIsFormModalOpen(true);
   };
 
-  const handleDeleteRecord = async (recordId: string) => {
-    const recordLabel = recordItemsById.get(recordId) ?? formConfig.entityLabel;
-    const hasConfirmedDelete = window.confirm(`Deseja realmente excluir "${recordLabel}"?`);
-
-    if (!hasConfirmedDelete) {
+  const handleDeleteRecord = (recordId: string) => {
+    if (!recordsById.has(recordId)) {
+      toast.warning("Nao foi possivel localizar o registro.");
       return;
     }
 
-    setBusyRecordId(recordId);
+    setPendingDeleteRecordId(recordId);
+  };
+
+  const handleConfirmDeleteRecord = async () => {
+    if (!pendingDeleteRecordId) {
+      return;
+    }
+
+    setBusyRecordId(pendingDeleteRecordId);
 
     try {
-      await onDelete(recordId);
+      await onDelete(pendingDeleteRecordId);
       toast.success(formConfig.deleteSuccessMessage);
+      setPendingDeleteRecordId(null);
     } catch {
       toast.warning("Nao foi possivel excluir o registro agora.");
     } finally {
@@ -121,7 +156,11 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   const handleSubmitRecord = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (formConfig.fields.some((field) => !String(formData[field.name] ?? "").trim())) {
+    if (
+      resolvedFields.some(
+        (field) => !field.disabled && !String(formData[field.name] ?? "").trim()
+      )
+    ) {
       toast.warning("Preencha todos os campos antes de salvar.");
       return;
     }
@@ -164,6 +203,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
       <RecordList
         {...listGroup}
         isLoading={isLoading}
+        pageSize={listPageSize}
         busyRecordId={busyRecordId}
         className="record-panel--page"
         onEditRecord={handleEditRecord}
@@ -183,12 +223,21 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
         open={isFormModalOpen}
         title={modalTitle}
         submitLabel={modalSubmitLabel}
-        fields={formConfig.fields}
+        fields={resolvedFields}
         data={formData}
         isSubmitting={isSubmitting}
         onClose={closeFormModal}
         onInputChange={handleInputChange}
         onSubmit={handleSubmitRecord}
+      />
+
+      <RecordDeleteModal
+        open={Boolean(pendingDeleteRecordId)}
+        entityLabel={formConfig.entityLabel}
+        recordLabel={pendingDeleteRecordLabel}
+        isSubmitting={busyRecordId === pendingDeleteRecordId}
+        onClose={closeDeleteModal}
+        onConfirm={handleConfirmDeleteRecord}
       />
     </section>
   );

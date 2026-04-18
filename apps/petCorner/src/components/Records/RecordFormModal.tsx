@@ -12,7 +12,7 @@ type Props = {
   data: RecordFormData;
   isSubmitting?: boolean;
   onClose: () => void;
-  onInputChange: ChangeEventHandler<HTMLInputElement>;
+  onInputChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
   onSubmit: FormEventHandler;
 };
 
