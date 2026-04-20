@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import DatePicker from "react-datepicker";
 import { IMaskInput } from "react-imask";
 import { Tooltip } from "react-tooltip";
@@ -64,6 +65,7 @@ function ComboboxInputField({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const listboxRef = useRef<HTMLUListElement | null>(null);
   const options = useMemo(() => field.options ?? [], [field.options]);
   const listboxId = `${field.name}-combobox-listbox`;
 
@@ -86,6 +88,12 @@ function ComboboxInputField({
 
   const canOpen = !field.disabled && filteredOptions.length > 0;
   const isExpanded = isOpen && canOpen;
+  const rowVirtualizer = useVirtualizer({
+    count: filteredOptions.length,
+    getScrollElement: () => listboxRef.current,
+    estimateSize: () => 46,
+    overscan: 8,
+  });
 
   useEffect(() => {
     if (!isExpanded) {
@@ -101,6 +109,14 @@ function ComboboxInputField({
       return previous >= filteredOptions.length ? filteredOptions.length - 1 : previous;
     });
   }, [filteredOptions.length, isExpanded]);
+
+  useEffect(() => {
+    if (!isExpanded || activeIndex < 0) {
+      return;
+    }
+
+    rowVirtualizer.scrollToIndex(activeIndex, { align: "auto" });
+  }, [activeIndex, isExpanded, rowVirtualizer]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -244,29 +260,45 @@ function ComboboxInputField({
         </div>
 
         {isExpanded ? (
-          <ul id={listboxId} className="form-combobox__menu" role="listbox">
-            {filteredOptions.map((option, index) => {
+          <ul id={listboxId} className="form-combobox__menu" role="listbox" ref={listboxRef}>
+            <li
+              className="form-combobox__virtual-space"
+              role="presentation"
+              style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const option = filteredOptions[virtualRow.index];
+
+                if (!option) {
+                  return null;
+                }
+
+                const index = virtualRow.index;
               const isSelected = option.value === value;
               const isActive = index === activeIndex;
 
               return (
-                <li key={`${field.name}-option-${option.value}`} role="presentation">
-                  <button
-                    id={`${field.name}-combobox-option-${index}`}
-                    type="button"
-                    className={`form-combobox__option${isSelected ? " is-selected" : ""}${
-                      isActive ? " is-active" : ""
-                    }`}
-                    role="option"
-                    aria-selected={isSelected}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => applyOptionValue(option)}
-                  >
-                    {option.label}
-                  </button>
-                </li>
+                <button
+                  key={`${field.name}-option-${option.value}`}
+                  id={`${field.name}-combobox-option-${index}`}
+                  type="button"
+                  className={`form-combobox__option${isSelected ? " is-selected" : ""}${
+                    isActive ? " is-active" : ""
+                  }`}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => applyOptionValue(option)}
+                  style={{
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  {option.label}
+                </button>
               );
-            })}
+              })}
+            </li>
           </ul>
         ) : null}
       </div>

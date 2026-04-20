@@ -108,7 +108,18 @@
   box-shadow: 0 14px 24px rgba(26, 47, 58, 0.16);
 }
 
+.form-combobox__virtual-space {
+  position: relative;
+  width: 100%;
+}
+
 .form-combobox__option {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
   width: 100%;
   border: 0;
   border-radius: 10px;
