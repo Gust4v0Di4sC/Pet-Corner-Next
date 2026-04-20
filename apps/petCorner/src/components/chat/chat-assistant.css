@@ -204,22 +204,37 @@
 
 @media (max-width: 768px) {
   .chat-assistant__fab {
+    right: 1rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem + 60px + 0.55rem);
     width: 58px;
     height: 58px;
     border-radius: 20px;
   }
 
   .chat-assistant__panel {
-    width: min(390px, calc(100vw - 1.5rem));
-    height: min(66dvh, 560px);
+    right: 0.75rem;
+    width: calc(100vw - 1.5rem);
+    max-width: 420px;
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1.25rem
+    );
+    height: min(72dvh, 620px);
     padding: 0.95rem;
+  }
+
+  .chat-assistant__fab--resource-anchor {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+
+  .chat-assistant__panel--resource-anchor {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem + 58px + 0.65rem);
   }
 }
 
 @media (max-width: 575px) {
   .chat-assistant__fab {
     right: 1rem;
-    bottom: calc(1rem + 60px + 0.55rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem + 60px + 0.55rem);
     width: 54px;
     height: 54px;
     border-radius: 18px;
@@ -227,12 +242,37 @@
 
   .chat-assistant__panel {
     right: 0.5rem;
-    bottom: calc(1rem + 60px + 0.55rem + 54px + 0.55rem);
-    width: calc(100vw - 1rem);
+    left: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem + 60px + 0.55rem + 54px + 0.55rem);
+    width: min(390px, calc(100vw - 1rem));
     height: min(62dvh, 520px);
-    border-radius: 20px;
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1rem
+    );
+    border-radius: 18px;
     gap: 0.8rem;
-    padding: 0.8rem;
+    padding: 0.8rem 0.8rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+    transform: translateX(calc(100% + 0.9rem));
+  }
+
+  .chat-assistant__header h2 {
+    font-size: 1.08rem;
+  }
+
+  .chat-assistant__messages {
+    padding: 0.2rem;
+    gap: 0.5rem;
+  }
+
+  .chat-assistant__message {
+    padding: 0.7rem 0.75rem;
+    border-radius: 14px;
+  }
+
+  .chat-assistant__form textarea {
+    min-height: 76px;
+    max-height: 22dvh;
+    padding: 0.72rem;
   }
 
   .chat-assistant__form button {
@@ -241,10 +281,10 @@
   }
 
   .chat-assistant__fab--resource-anchor {
-    bottom: 1rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
   }
 
   .chat-assistant__panel--resource-anchor {
-    bottom: calc(1rem + 54px + 0.55rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem + 54px + 0.55rem);
   }
 }
