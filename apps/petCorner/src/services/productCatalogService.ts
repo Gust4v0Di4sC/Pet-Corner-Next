@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   serverTimestamp,
+  setDoc,
   writeBatch,
 } from "firebase/firestore";
 
@@ -102,4 +103,29 @@ export async function clearProductCatalogItems(rota = "productCatalog"): Promise
   }
 
   return deleted;
+}
+
+export async function setProductCatalogItemImage(
+  codeNormalized: string,
+  imageUrl: string,
+  rota = "productCatalog"
+): Promise<void> {
+  const normalizedCode = codeNormalized.trim().toUpperCase();
+  const normalizedImageUrl = imageUrl.trim();
+
+  if (!normalizedCode || !normalizedImageUrl) {
+    return;
+  }
+
+  const db = await getFirestoreDB();
+  const catalogRef = doc(db, rota, normalizedCode);
+
+  await setDoc(
+    catalogRef,
+    {
+      imageUrl: normalizedImageUrl,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
 }

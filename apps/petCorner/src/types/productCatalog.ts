@@ -9,6 +9,7 @@ export type ProductCatalogItem = {
   quantity?: number;
   brand?: string;
   category?: string;
+  imageUrl?: string;
   sourceFileName: string;
   uploadedAt?: Timestamp | null;
   updatedAt?: Timestamp | null;

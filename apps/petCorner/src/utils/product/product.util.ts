@@ -13,4 +13,5 @@ export const normalizeProduct = (item: RawProductData): Product => ({
     typeof item.quantity === "number"
       ? item.quantity
       : Number(item.quantity ?? 0),
+  imageUrl: typeof item.imageUrl === "string" && item.imageUrl.trim() ? item.imageUrl.trim() : undefined,
 });

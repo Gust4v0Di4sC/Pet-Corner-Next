@@ -4,9 +4,31 @@ const COSMOS_API_BASE_URL = "https://api.cosmos.bluesoft.com.br";
 const COSMOS_SOURCE_FILE_NAME = "Cosmos API";
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const PRODUCT_IMAGE_KEY_PREFIX = "products";
+const PRODUCT_IMAGE_ROUTE_PREFIX = "/products/image";
 const FIREBASE_JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
 );
+
+const IMAGE_MIME_BY_EXTENSION = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  avif: "image/avif",
+};
+
+const IMAGE_EXTENSION_BY_MIME = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+};
+
+const ALLOWED_IMAGE_MIME_TYPES = new Set(Object.values(IMAGE_MIME_BY_EXTENSION));
 
 const COMMON_PET_SEARCHES = [
   { query: "racao caes", category: "Alimento para Caes" },
@@ -22,9 +44,9 @@ const COMMON_PET_SEARCHES = [
 
 const CHAT_COLLECTION_SCHEMAS = {
   clientes: {
-    filterableFields: ["id", "name", "email", "phone"],
+    filterableFields: ["id", "name", "email", "phone", "address"],
     numericFields: ["phone"],
-    sampleFields: ["id", "name", "email", "phone", "age"],
+    sampleFields: ["id", "name", "email", "phone", "address", "age"],
     label: "clientes",
   },
   dogs: {
@@ -34,9 +56,9 @@ const CHAT_COLLECTION_SCHEMAS = {
     label: "animais",
   },
   prods: {
-    filterableFields: ["id", "name", "code", "price", "quantity"],
+    filterableFields: ["id", "name", "code", "price", "quantity", "imageUrl"],
     numericFields: ["price", "quantity"],
-    sampleFields: ["id", "name", "code", "price", "quantity"],
+    sampleFields: ["id", "name", "code", "price", "quantity", "imageUrl"],
     label: "produtos",
   },
   productCatalog: {
@@ -49,6 +71,7 @@ const CHAT_COLLECTION_SCHEMAS = {
       "category",
       "price",
       "quantity",
+      "imageUrl",
       "sourceFileName",
       "isTemplate",
     ],
@@ -61,6 +84,7 @@ const CHAT_COLLECTION_SCHEMAS = {
       "category",
       "price",
       "quantity",
+      "imageUrl",
       "sourceFileName",
       "isTemplate",
     ],
@@ -105,6 +129,17 @@ function getChatConfig(env) {
   };
 }
 
+function getProductImageConfig(env) {
+  return {
+    maxBytes: toBoundedInteger(
+      env.PRODUCT_IMAGE_MAX_BYTES,
+      DEFAULT_PRODUCT_IMAGE_MAX_BYTES,
+      128 * 1024,
+      20 * 1024 * 1024
+    ),
+  };
+}
+
 function getAllowedOrigins(env) {
   return String(env.ALLOWED_ORIGINS ?? "")
     .split(",")
@@ -137,7 +172,7 @@ function createCorsHeaders(request, env) {
   const headers = new Headers();
   headers.set("Access-Control-Allow-Origin", allowedOrigin);
   headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   headers.set("Access-Control-Max-Age", "86400");
 
   if (allowedOrigin !== "*") {
@@ -167,6 +202,25 @@ function jsonResponse(request, env, body, init = {}) {
   });
 
   return new Response(JSON.stringify(body), {
+    ...init,
+    headers,
+  });
+}
+
+function responseWithCors(request, env, body, init = {}) {
+  const corsHeaders = createCorsHeaders(request, env);
+
+  if (!corsHeaders) {
+    return new Response(null, { status: 403 });
+  }
+
+  const headers = new Headers(init.headers);
+
+  corsHeaders.forEach((value, key) => {
+    headers.set(key, value);
+  });
+
+  return new Response(body, {
     ...init,
     headers,
   });
@@ -272,6 +326,282 @@ function extractBrand(product) {
   return undefined;
 }
 
+function getValidHttpImageUrl(candidate) {
+  if (typeof candidate !== "string") {
+    return undefined;
+  }
+
+  const trimmedCandidate = candidate.trim();
+
+  if (!trimmedCandidate) {
+    return undefined;
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedCandidate);
+
+    if (parsedUrl.protocol === "https:" || parsedUrl.protocol === "http:") {
+      return parsedUrl.toString();
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
+function extractImageUrl(product) {
+  const directCandidates = [
+    product?.thumbnail,
+    product?.thumbnail_url,
+    product?.image,
+    product?.image_url,
+    product?.photo,
+    product?.picture,
+  ];
+
+  for (const candidate of directCandidates) {
+    const resolvedUrl = getValidHttpImageUrl(candidate);
+
+    if (resolvedUrl) {
+      return resolvedUrl;
+    }
+  }
+
+  const nestedCandidates = [
+    product?.images,
+    product?.photos,
+    product?.pictures,
+    product?.gallery,
+  ];
+
+  for (const collection of nestedCandidates) {
+    if (!Array.isArray(collection) || !collection.length) {
+      continue;
+    }
+
+    const [firstItem] = collection;
+    const directUrl = getValidHttpImageUrl(firstItem);
+
+    if (directUrl) {
+      return directUrl;
+    }
+
+    if (firstItem && typeof firstItem === "object") {
+      const nestedUrlCandidates = [firstItem.url, firstItem.image, firstItem.src, firstItem.href];
+
+      for (const nestedCandidate of nestedUrlCandidates) {
+        const resolvedUrl = getValidHttpImageUrl(nestedCandidate);
+
+        if (resolvedUrl) {
+          return resolvedUrl;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeMimeType(contentType) {
+  return String(contentType ?? "")
+    .trim()
+    .toLowerCase()
+    .split(";")[0]
+    .trim();
+}
+
+function normalizeSupportedImageMimeType(contentType) {
+  const normalizedMimeType = normalizeMimeType(contentType);
+
+  if (normalizedMimeType === "image/jpg" || normalizedMimeType === "image/pjpeg") {
+    return "image/jpeg";
+  }
+
+  return normalizedMimeType;
+}
+
+function getFileExtensionFromName(fileName) {
+  const normalizedName = String(fileName ?? "")
+    .trim()
+    .toLowerCase();
+  const lastDotIndex = normalizedName.lastIndexOf(".");
+
+  if (lastDotIndex <= 0 || lastDotIndex === normalizedName.length - 1) {
+    return "";
+  }
+
+  return normalizedName.slice(lastDotIndex + 1);
+}
+
+function resolveImageMimeType(rawContentType, fileName) {
+  const normalizedMimeType = normalizeSupportedImageMimeType(rawContentType);
+
+  if (ALLOWED_IMAGE_MIME_TYPES.has(normalizedMimeType)) {
+    return normalizedMimeType;
+  }
+
+  const extension = getFileExtensionFromName(fileName);
+  const mimeTypeFromExtension = IMAGE_MIME_BY_EXTENSION[extension];
+
+  if (mimeTypeFromExtension) {
+    return mimeTypeFromExtension;
+  }
+
+  throw new HttpError(400, "Formato de imagem nao suportado. Use JPG, PNG, WEBP, GIF ou AVIF.");
+}
+
+function resolveImageExtension(rawContentType, fileName) {
+  const normalizedMimeType = normalizeSupportedImageMimeType(rawContentType);
+
+  if (normalizedMimeType && IMAGE_EXTENSION_BY_MIME[normalizedMimeType]) {
+    return IMAGE_EXTENSION_BY_MIME[normalizedMimeType];
+  }
+
+  const extension = getFileExtensionFromName(fileName);
+
+  if (extension && IMAGE_MIME_BY_EXTENSION[extension]) {
+    return extension === "jpeg" ? "jpg" : extension;
+  }
+
+  throw new HttpError(400, "Nao foi possivel identificar a extensao da imagem enviada.");
+}
+
+function slugifyPathSegment(value, fallback) {
+  const normalizedValue = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+
+  return normalizedValue || fallback;
+}
+
+function ensureProductImagesBucket(env) {
+  if (!env.PRODUCT_IMAGES_BUCKET) {
+    throw new HttpError(
+      500,
+      "O binding PRODUCT_IMAGES_BUCKET ainda nao foi configurado no Worker."
+    );
+  }
+
+  return env.PRODUCT_IMAGES_BUCKET;
+}
+
+function sanitizeR2Key(rawKey) {
+  const sanitizedKey = String(rawKey ?? "").trim().replace(/^\/+|\/+$/g, "");
+
+  if (!sanitizedKey || sanitizedKey.includes("..")) {
+    throw new HttpError(400, "Chave de imagem invalida.");
+  }
+
+  return sanitizedKey;
+}
+
+function encodePathSegments(path) {
+  return path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function createProductImageKey({ userId, codeHint, extension }) {
+  const safeUserSegment = slugifyPathSegment(userId, "admin");
+  const safeCodeSegment = slugifyPathSegment(codeHint, "produto");
+  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
+  const randomSegment = crypto.randomUUID().slice(0, 8);
+
+  return `${PRODUCT_IMAGE_KEY_PREFIX}/${safeUserSegment}/${safeCodeSegment}-${timestamp}-${randomSegment}.${extension}`;
+}
+
+function getProductImageRouteUrl(request, key) {
+  const requestUrl = new URL(request.url);
+  const encodedKey = encodePathSegments(key);
+  return `${requestUrl.origin}${PRODUCT_IMAGE_ROUTE_PREFIX}/${encodedKey}`;
+}
+
+function buildProductImageUrl(request, env, key) {
+  const publicBaseUrl = String(env.PRODUCT_IMAGES_PUBLIC_BASE_URL ?? "").trim();
+
+  if (publicBaseUrl) {
+    const normalizedPublicBaseUrl = publicBaseUrl.replace(/\/+$/, "");
+    const encodedKey = encodePathSegments(key);
+    return `${normalizedPublicBaseUrl}/${encodedKey}`;
+  }
+
+  return getProductImageRouteUrl(request, key);
+}
+
+function parseProductImageImportUrl(rawUrl) {
+  const normalizedUrl = String(rawUrl ?? "").trim();
+
+  if (!normalizedUrl) {
+    throw new HttpError(400, "Informe uma URL de imagem para importar.");
+  }
+
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(normalizedUrl);
+  } catch {
+    throw new HttpError(400, "URL de imagem invalida.");
+  }
+
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    throw new HttpError(400, "Use apenas URLs HTTP(S) para importar imagem.");
+  }
+
+  const lowerCaseHostname = parsedUrl.hostname.toLowerCase();
+
+  if (["localhost", "127.0.0.1", "::1"].includes(lowerCaseHostname)) {
+    throw new HttpError(400, "Hostname da URL de imagem nao permitido.");
+  }
+
+  return parsedUrl.toString();
+}
+
+async function fetchImageBufferFromUrl(sourceUrl, maxBytes) {
+  const response = await fetch(sourceUrl, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new HttpError(
+      400,
+      `Nao foi possivel baixar a imagem de origem (status ${response.status}).`
+    );
+  }
+
+  const contentType = resolveImageMimeType(
+    response.headers.get("content-type"),
+    sourceUrl
+  );
+  const contentLengthHeader = response.headers.get("content-length");
+  const contentLength = contentLengthHeader ? Number(contentLengthHeader) : null;
+
+  if (contentLength !== null && Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new HttpError(413, `Imagem maior que o limite permitido (${maxBytes} bytes).`);
+  }
+
+  const imageBuffer = await response.arrayBuffer();
+
+  if (imageBuffer.byteLength > maxBytes) {
+    throw new HttpError(413, `Imagem maior que o limite permitido (${maxBytes} bytes).`);
+  }
+
+  if (!imageBuffer.byteLength) {
+    throw new HttpError(400, "A URL informada nao retornou uma imagem valida.");
+  }
+
+  return {
+    imageBuffer,
+    contentType,
+    extension: resolveImageExtension(contentType, sourceUrl),
+  };
+}
+
 function normalizeCosmosProduct(product, fallbackCategory) {
   const code = extractCode(product);
   const name = String(product?.description ?? "").trim();
@@ -298,6 +628,7 @@ function normalizeCosmosProduct(product, fallbackCategory) {
     quantity: undefined,
     brand: extractBrand(product),
     category,
+    imageUrl: extractImageUrl(product),
     sourceFileName: COSMOS_SOURCE_FILE_NAME,
     isTemplate: false,
   };
@@ -344,6 +675,25 @@ async function fetchCosmosSearch(query, env) {
   }
 
   return [];
+}
+
+function findCosmosProductByCode(products, code) {
+  if (!Array.isArray(products) || !products.length) {
+    return null;
+  }
+
+  const normalizedCode = normalizeCatalogCode(code);
+  const exactMatch = products.find(
+    (product) => normalizeCatalogCode(extractCode(product)) === normalizedCode
+  );
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const imageFirstMatch = products.find((product) => Boolean(extractImageUrl(product)));
+
+  return imageFirstMatch ?? products[0] ?? null;
 }
 
 async function buildCatalogFromCosmos(env) {
@@ -1010,6 +1360,23 @@ async function parseRequestBody(request) {
   }
 }
 
+async function parseMultipartBody(request) {
+  try {
+    return await request.formData();
+  } catch {
+    throw new HttpError(400, "Envie o upload em multipart/form-data.");
+  }
+}
+
+function isFileLike(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    typeof value.arrayBuffer === "function" &&
+    typeof value.size === "number"
+  );
+}
+
 function toHttpError(error, fallbackMessage) {
   if (error instanceof HttpError) {
     return error;
@@ -1036,6 +1403,201 @@ function respondWithError(request, env, error, fallbackMessage) {
       headers,
     }
   );
+}
+
+async function storeProductImage({
+  request,
+  env,
+  userId,
+  codeHint,
+  imageBuffer,
+  contentType,
+  extension,
+  source,
+  originalUrl,
+}) {
+  const bucket = ensureProductImagesBucket(env);
+  const key = createProductImageKey({
+    userId,
+    codeHint,
+    extension,
+  });
+
+  await bucket.put(key, imageBuffer, {
+    httpMetadata: {
+      contentType,
+      cacheControl: "public, max-age=31536000, immutable",
+    },
+    customMetadata: {
+      source,
+      uploadedBy: userId,
+      originalUrl: originalUrl ?? "",
+    },
+  });
+
+  return {
+    imageUrl: buildProductImageUrl(request, env, key),
+    key,
+    contentType,
+    size: imageBuffer.byteLength,
+    source,
+    ...(originalUrl ? { originalUrl } : {}),
+  };
+}
+
+async function handleProductImageUpload(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use POST para enviar imagens de produtos." },
+      { status: 405 }
+    );
+  }
+
+  const imageConfig = getProductImageConfig(env);
+
+  try {
+    const idToken = getBearerToken(request);
+    const tokenPayload = await verifyAdminFirebaseToken(idToken, env);
+    const userId = String(tokenPayload.user_id ?? tokenPayload.sub ?? "admin");
+    const formData = await parseMultipartBody(request);
+    const fileField = formData.get("file");
+
+    if (!isFileLike(fileField)) {
+      throw new HttpError(400, "Selecione uma imagem no campo file.");
+    }
+
+    const file = fileField;
+    const fileName = String(file.name ?? "produto-imagem");
+    const contentType = resolveImageMimeType(file.type, fileName);
+    const extension = resolveImageExtension(contentType, fileName);
+
+    if (file.size <= 0) {
+      throw new HttpError(400, "A imagem enviada esta vazia.");
+    }
+
+    if (file.size > imageConfig.maxBytes) {
+      throw new HttpError(
+        413,
+        `Imagem maior que o limite permitido (${imageConfig.maxBytes} bytes).`
+      );
+    }
+
+    const imageBuffer = await file.arrayBuffer();
+
+    if (!imageBuffer.byteLength) {
+      throw new HttpError(400, "A imagem enviada esta vazia.");
+    }
+
+    if (imageBuffer.byteLength > imageConfig.maxBytes) {
+      throw new HttpError(
+        413,
+        `Imagem maior que o limite permitido (${imageConfig.maxBytes} bytes).`
+      );
+    }
+
+    const codeHint = String(formData.get("code") ?? "").trim() || "produto";
+    const payload = await storeProductImage({
+      request,
+      env,
+      userId,
+      codeHint,
+      imageBuffer,
+      contentType,
+      extension,
+      source: "upload",
+    });
+
+    return jsonResponse(request, env, payload, { status: 200 });
+  } catch (error) {
+    return respondWithError(
+      request,
+      env,
+      error,
+      "Nao foi possivel enviar a imagem para o bucket."
+    );
+  }
+}
+
+async function handleProductImageImportUrl(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use POST para importar imagem por URL." },
+      { status: 405 }
+    );
+  }
+
+  const imageConfig = getProductImageConfig(env);
+
+  try {
+    const idToken = getBearerToken(request);
+    const tokenPayload = await verifyAdminFirebaseToken(idToken, env);
+    const userId = String(tokenPayload.user_id ?? tokenPayload.sub ?? "admin");
+    const body = await parseRequestBody(request);
+    const sourceUrl = parseProductImageImportUrl(body?.sourceUrl);
+    const codeHint = String(body?.code ?? "").trim() || "produto";
+    const { imageBuffer, contentType, extension } = await fetchImageBufferFromUrl(
+      sourceUrl,
+      imageConfig.maxBytes
+    );
+    const payload = await storeProductImage({
+      request,
+      env,
+      userId,
+      codeHint,
+      imageBuffer,
+      contentType,
+      extension,
+      source: "remote",
+      originalUrl: sourceUrl,
+    });
+
+    return jsonResponse(request, env, payload, { status: 200 });
+  } catch (error) {
+    return respondWithError(
+      request,
+      env,
+      error,
+      "Nao foi possivel importar a imagem para o bucket."
+    );
+  }
+}
+
+async function handleProductImageGet(request, env, encodedImageKey) {
+  if (request.method !== "GET") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use GET para obter imagens de produtos." },
+      { status: 405 }
+    );
+  }
+
+  try {
+    const bucket = ensureProductImagesBucket(env);
+    const imageKey = sanitizeR2Key(decodeURIComponent(String(encodedImageKey ?? "")));
+    const imageObject = await bucket.get(imageKey);
+
+    if (!imageObject) {
+      throw new HttpError(404, "Imagem nao encontrada.");
+    }
+
+    const headers = new Headers();
+    imageObject.writeHttpMetadata(headers);
+    headers.set("ETag", imageObject.httpEtag);
+    headers.set("Cache-Control", headers.get("Cache-Control") ?? "public, max-age=31536000, immutable");
+    headers.set("Content-Type", headers.get("Content-Type") ?? "application/octet-stream");
+
+    return responseWithCors(request, env, imageObject.body, {
+      status: 200,
+      headers,
+    });
+  } catch (error) {
+    return respondWithError(request, env, error, "Nao foi possivel obter a imagem solicitada.");
+  }
 }
 
 async function handleCosmosSync(request, env) {
@@ -1068,6 +1630,66 @@ async function handleCosmosSync(request, env) {
       env,
       error,
       "Nao foi possivel sincronizar o catalogo da Cosmos."
+    );
+  }
+}
+
+async function handleCosmosProductImage(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use POST para consultar imagem de produto na Cosmos." },
+      { status: 405 }
+    );
+  }
+
+  if (!env.COSMOS_API_TOKEN) {
+    return jsonResponse(
+      request,
+      env,
+      { message: "O segredo COSMOS_API_TOKEN ainda nao foi configurado no Worker." },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const idToken = getBearerToken(request);
+    await verifyAdminFirebaseToken(idToken, env);
+
+    const body = await parseRequestBody(request);
+    const code = normalizeCatalogCode(body?.code);
+
+    if (!code || code.length < 3) {
+      throw new HttpError(400, "Informe um codigo valido para buscar imagem na Cosmos.");
+    }
+
+    const products = await fetchCosmosSearch(code, env);
+    const matchedProduct = findCosmosProductByCode(products, code);
+    const imageUrl = matchedProduct ? extractImageUrl(matchedProduct) ?? "" : "";
+    const resolvedCode = matchedProduct ? extractCode(matchedProduct) || code : code;
+    const description = matchedProduct
+      ? String(matchedProduct.description ?? "").trim() || undefined
+      : undefined;
+
+    return jsonResponse(
+      request,
+      env,
+      {
+        code: resolvedCode,
+        found: Boolean(matchedProduct),
+        hasImage: Boolean(imageUrl),
+        imageUrl,
+        description,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    return respondWithError(
+      request,
+      env,
+      error,
+      "Nao foi possivel consultar imagem do produto na Cosmos."
     );
   }
 }
@@ -1189,6 +1811,23 @@ export default {
     const { pathname } = new URL(request.url);
     const normalizedPathname = normalizePathname(pathname);
 
+    if (normalizedPathname === "/products/image/upload") {
+      return handleProductImageUpload(request, env);
+    }
+
+    if (normalizedPathname === "/products/image/import-url") {
+      return handleProductImageImportUrl(request, env);
+    }
+
+    if (pathname.startsWith(`${PRODUCT_IMAGE_ROUTE_PREFIX}/`)) {
+      const encodedImageKey = pathname.slice(`${PRODUCT_IMAGE_ROUTE_PREFIX}/`.length);
+      return handleProductImageGet(request, env, encodedImageKey);
+    }
+
+    if (normalizedPathname === "/cosmos/product-image") {
+      return handleCosmosProductImage(request, env);
+    }
+
     if (normalizedPathname === "/chat/query") {
       return handleChatQuery(request, env);
     }
@@ -1200,7 +1839,10 @@ export default {
     return jsonResponse(
       request,
       env,
-      { message: "Rota nao encontrada. Use /chat/query ou /cosmos/sync." },
+      {
+        message:
+          "Rota nao encontrada. Use /chat/query, /cosmos/sync, /cosmos/product-image, /products/image/upload ou /products/image/import-url.",
+      },
       { status: 404 }
     );
   },

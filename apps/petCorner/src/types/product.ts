@@ -4,6 +4,7 @@ export type Product = {
   price: number
   code: string
   quantity: number
+  imageUrl?: string
 }
 
 

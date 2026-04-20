@@ -4,8 +4,16 @@
   "main": "src/index.js",
   "compatibility_date": "2026-04-18",
   "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "PRODUCT_IMAGES_BUCKET",
+      "bucket_name": "petcornerimages",
+      "preview_bucket_name": "petcornerimages"
+    }
+  ],
   "vars": {
     "FIREBASE_PROJECT_ID": "petcorner-219fc",
-    "ALLOWED_ORIGINS": "http://localhost:3001,http://localhost:5173"
+    "ALLOWED_ORIGINS": "http://localhost:3001,http://localhost:5173",
+    "PRODUCT_IMAGE_MAX_BYTES": "5242880"
   }
 }

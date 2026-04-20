@@ -11,15 +11,16 @@ type ParsedCatalogFile = {
   sourceFileName: string;
 };
 
-type HeaderKey = "code" | "name" | "price" | "quantity" | "brand" | "category";
+type HeaderKey = "code" | "name" | "price" | "quantity" | "brand" | "category" | "imageUrl";
 
 const HEADER_ALIASES: Record<HeaderKey, string[]> = {
-  code: ["codigo", "code", "sku", "ean", "gtin"],
+  code: ["código", "code", "sku", "ean", "gtin"],
   name: ["nome", "descricao", "produto", "name"],
   price: ["preco", "valor", "price"],
   quantity: ["quantidade", "qty", "estoque"],
   brand: ["marca", "brand"],
   category: ["categoria", "category"],
+  imageUrl: ["imagem", "image", "image url", "url imagem", "url da imagem", "foto"],
 };
 
 function normalizeHeader(value: string): string {
@@ -61,6 +62,20 @@ function parseNumericValue(value: string): number | null {
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
+function parseImageUrl(value: string): string | undefined {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  return undefined;
+}
+
 function getNormalizedHeaders(row: Record<string, unknown>): Map<string, string> {
   return new Map(Object.keys(row).map((key) => [normalizeHeader(key), key]));
 }
@@ -97,6 +112,7 @@ function buildImportItem(
   const quantityValue = parseNumericValue(getRawValue(row, headers, HEADER_ALIASES.quantity));
   const brand = getRawValue(row, headers, HEADER_ALIASES.brand);
   const category = getRawValue(row, headers, HEADER_ALIASES.category);
+  const imageUrl = parseImageUrl(getRawValue(row, headers, HEADER_ALIASES.imageUrl));
 
   return {
     code,
@@ -106,6 +122,7 @@ function buildImportItem(
     quantity: quantityValue === null ? undefined : quantityValue,
     brand: brand || undefined,
     category: category || undefined,
+    imageUrl,
     sourceFileName,
     isTemplate: false,
   };
@@ -123,7 +140,7 @@ export async function parseProductCatalogFile(file: File): Promise<ParsedCatalog
   const [firstSheetName] = workbook.SheetNames;
 
   if (!firstSheetName) {
-    throw new Error("A planilha enviada nao possui abas validas.");
+    throw new Error("A planilha enviada não possui abas válidas.");
   }
 
   const sheet = workbook.Sheets[firstSheetName];
@@ -133,7 +150,7 @@ export async function parseProductCatalogFile(file: File): Promise<ParsedCatalog
   });
 
   if (!rows.length) {
-    throw new Error("A planilha enviada nao possui linhas para importar.");
+    throw new Error("A planilha enviada não possui linhas para importar.");
   }
 
   const headers = getNormalizedHeaders(rows[0]);

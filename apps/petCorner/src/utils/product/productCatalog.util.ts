@@ -12,6 +12,24 @@ function getOptionalText(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function getOptionalUrl(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  return undefined;
+}
+
 function getOptionalNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -39,8 +57,9 @@ export const normalizeProductCatalogItem = (
   quantity: getOptionalNumber(item.quantity),
   brand: getOptionalText(item.brand),
   category: getOptionalText(item.category),
+  imageUrl: getOptionalUrl(item.imageUrl),
   sourceFileName:
-    typeof item.sourceFileName === "string" ? item.sourceFileName : "catalogo.csv",
+    typeof item.sourceFileName === "string" ? item.sourceFileName : "catálogo.csv",
   uploadedAt: getOptionalTimestamp(item.uploadedAt) ?? null,
   updatedAt: getOptionalTimestamp(item.updatedAt) ?? null,
   isTemplate: item.isTemplate === true,
