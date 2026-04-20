@@ -91,7 +91,7 @@ function getOverviewChart(
     {
       label: "Produtos",
       value: products.length,
-      helper: `${formatNumber(products.length)} no catalogo`,
+      helper: `${formatNumber(products.length)} no catálogo`,
       accent: "#1A2F3A",
     },
   ];
@@ -104,7 +104,7 @@ function getInventoryChart(products: Product[]): DashboardChartData[] {
     .map((product, index) => ({
       label: product.name || `Produto ${index + 1}`,
       value: Math.max(product.quantity, 0),
-      helper: `Codigo ${product.code || "sem codigo"}`,
+      helper: `Código ${product.code || "sem código"}`,
       accent: index % 2 === 0 ? "#FB8B24" : "#F6A04D",
     }));
 }
@@ -124,7 +124,7 @@ export function getSummaryCards(
       title: "Clientes registrados",
       value: formatNumber(clients.length),
       helper: clients.length
-        ? `${formatDecimal(averageClientAge, " anos")} de idade media`
+        ? `${formatDecimal(averageClientAge, " anos")} de idade média`
         : "Nenhum cliente cadastrado",
       accent: "#FB8B24",
     },
@@ -133,7 +133,7 @@ export function getSummaryCards(
       title: "Animais registrados",
       value: formatNumber(dogs.length),
       helper: dogs.length
-        ? `${formatDecimal(averageDogAge, " anos")} de idade media`
+        ? `${formatDecimal(averageDogAge, " anos")} de idade média`
         : "Nenhum animal cadastrado",
       accent: "#E36414",
     },
@@ -159,18 +159,20 @@ export function getChartSections(clients: Client[], dogs: Dog[], products: Produ
       emptyMessage: "Cadastre registros para acompanhar o volume geral.",
     },
     {
-      title: "Faixa etaria dos clientes",
-      subtitle: "Distribuicao baseada nas datas de nascimento ja salvas",
+      title: "Faixa etária dos clientes",
+      subtitle: "Distribuição baseada nas datas de nascimento já salvas",
       kind: "bar",
       data: getClientAgeChart(clients).filter((item) => item.value > 0),
-      emptyMessage: "Sem clientes suficientes para montar a faixa etaria.",
+      emptyMessage: "Sem clientes suficientes para montar a faixa etária.",
     },
     {
       title: "Produtos com maior estoque",
-      subtitle: "Top 5 itens com mais unidades disponiveis agora",
+      subtitle: "Top 5 itens com mais unidades disponíveis agora",
       kind: "bar",
       data: getInventoryChart(products),
       emptyMessage: "Sem produtos cadastrados para comparar estoque.",
     },
   ] satisfies DashboardChartSection[];
 }
+
+

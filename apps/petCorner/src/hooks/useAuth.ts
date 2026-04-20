@@ -341,7 +341,7 @@ export const useAuth = (): AuthHookReturn => {
       const recaptchaContainer = document.getElementById(recaptchaContainerId);
 
       if (!recaptchaContainer) {
-        throw new Error("Nao foi possivel iniciar a verificacao por SMS.");
+        throw new Error("Não foi possível iniciar a verificação por SMS.");
       }
 
       recaptchaContainer.innerHTML = "";

@@ -106,35 +106,35 @@ export default function LoginPage() {
     if (error instanceof FirebaseError) {
       switch (error.code) {
         case "auth/user-not-found":
-          return "Nao encontramos uma conta com esse e-mail.";
+          return "Não encontramos uma conta com esse e-mail.";
         case "auth/wrong-password":
           return "Senha incorreta.";
         case "auth/invalid-credential":
-          return "E-mail ou senha invalidos.";
+          return "E-mail ou senha inválidos.";
         case "auth/invalid-email":
           return "Informe um e-mail valido.";
         case "auth/operation-not-allowed":
-          return "O login por telefone nao esta habilitado no Firebase.";
+          return "O login por telefone não esta habilitado no Firebase.";
         case "auth/unauthorized-continue-uri":
-          return "O dominio atual nao esta autorizado no Firebase para redefinicao de senha.";
+          return "O domínio atual não esta autorizado no Firebase para redefinição de senha.";
         case "auth/invalid-continue-uri":
-          return "O link de retorno da redefinicao de senha esta invalido.";
+          return "O link de retorno da redefinição de senha esta inválido.";
         case "auth/invalid-phone-number":
           return "Informe o telefone no formato +55 11 99999-9999.";
         case "auth/missing-phone-number":
-          return "Informe um telefone para receber o codigo.";
+          return "Informe um telefone para receber o código.";
         case "auth/too-many-requests":
           return "Muitas tentativas seguidas. Aguarde um pouco e tente novamente.";
         case "auth/quota-exceeded":
           return "A cota de SMS do Firebase foi atingida.";
         case "auth/captcha-check-failed":
-          return "A verificacao reCAPTCHA falhou. Tente novamente.";
+          return "A verificação reCAPTCHA falhou. Tente novamente.";
         case "auth/invalid-verification-code":
-          return "O codigo informado e invalido.";
+          return "O código informado e inválido.";
         case "auth/code-expired":
-          return "O codigo SMS expirou. Solicite um novo envio.";
+          return "O código SMS expirou. Solicite um novo envio.";
         case "auth/session-expired":
-          return "A sessao de verificacao expirou. Solicite um novo codigo.";
+          return "A sessão de verificação expirou. Solicite um novo código.";
         default:
           return fallbackMessage;
       }
@@ -281,7 +281,7 @@ export default function LoginPage() {
       setIsResetModalOpen(false);
     } catch (error) {
       toast.error(
-        getFirebaseErrorMessage(error, "Nao foi possivel enviar o e-mail de redefinicao.")
+        getFirebaseErrorMessage(error, "Não foi possível enviar o e-mail de redefinição.")
       );
     } finally {
       setIsSendingResetEmail(false);
@@ -311,9 +311,9 @@ export default function LoginPage() {
       );
 
       setPhoneConfirmationResult(confirmationResult);
-      toast.success("Codigo SMS enviado. Digite o codigo recebido para entrar.");
+      toast.success("Código SMS enviado. Digite o código recebido para entrar.");
     } catch (error) {
-      toast.error(getFirebaseErrorMessage(error, "Nao foi possivel enviar o codigo SMS agora."));
+      toast.error(getFirebaseErrorMessage(error, "Não foi possível enviar o código SMS agora."));
     } finally {
       setIsSendingPhoneCode(false);
     }
@@ -323,14 +323,14 @@ export default function LoginPage() {
     event.preventDefault();
 
     if (!phoneConfirmationResult) {
-      toast.error("Solicite o codigo SMS antes de confirmar o acesso.");
+      toast.error("Solicite o código SMS antes de confirmar o acesso.");
       return;
     }
 
     const sanitizedVerificationCode = smsVerificationCode.trim();
 
     if (!sanitizedVerificationCode) {
-      toast.error("Digite o codigo recebido por SMS.");
+      toast.error("Digite o código recebido por SMS.");
       return;
     }
 
@@ -343,7 +343,7 @@ export default function LoginPage() {
       resetPhoneRecoveryState();
       setIsResetModalOpen(false);
     } catch (error) {
-      toast.error(getFirebaseErrorMessage(error, "Nao foi possivel validar o codigo SMS."));
+      toast.error(getFirebaseErrorMessage(error, "Não foi possível validar o código SMS."));
     } finally {
       setIsConfirmingPhoneCode(false);
     }
@@ -477,7 +477,7 @@ export default function LoginPage() {
               </h2>
               <p>
                 {recoveryMethod === "email"
-                  ? "Informe o e-mail para receber o link de redefinicao de senha."
+                  ? "Informe o e-mail para receber o link de redefinição de senha."
                   : "Valide o acesso do admin por SMS usando um telefone habilitado no Firebase."}
               </p>
             </div>
@@ -518,7 +518,7 @@ export default function LoginPage() {
                     />
 
                     <button type="submit" className="btn-primary" disabled={isSendingPhoneCode}>
-                      {isSendingPhoneCode ? "Enviando codigo..." : "Enviar codigo SMS"}
+                      {isSendingPhoneCode ? "Enviando código..." : "Enviar código SMS"}
                     </button>
                   </form>
                 ) : (
@@ -526,7 +526,7 @@ export default function LoginPage() {
                     <input
                       type="text"
                       name="sms-verification-code"
-                      placeholder="Digite o codigo de 6 digitos"
+                      placeholder="Digite o código de 6 dígitos"
                       value={smsVerificationCode}
                       onChange={(event) => setSmsVerificationCode(event.target.value)}
                       disabled={isConfirmingPhoneCode}

@@ -2,11 +2,11 @@ import type { RecordFormOption } from "../../components/Records/record.types";
 
 export const DEFAULT_ANIMAL_TYPE = "Cachorro";
 export const MANUAL_BREED_OPTION = "Outro";
-const DEFAULT_BREED_VALUES = ["Sem raca definida"];
+const DEFAULT_BREED_VALUES = ["Sem raça definida"];
 
 const BREEDS_BY_ANIMAL_TYPE: Record<string, string[]> = {
   Cachorro: [
-    "Sem raca definida",
+    "Sem raça definida",
     "Shih Tzu",
     "Yorkshire Terrier",
     "Poodle",
@@ -20,7 +20,7 @@ const BREEDS_BY_ANIMAL_TYPE: Record<string, string[]> = {
     "Pastor Alemao",
   ],
   Gato: [
-    "Sem raca definida",
+    "Sem raça definida",
     "Siames",
     "Persa",
     "Maine Coon",
@@ -31,7 +31,7 @@ const BREEDS_BY_ANIMAL_TYPE: Record<string, string[]> = {
     "British Shorthair",
   ],
   Coelho: [
-    "Sem raca definida",
+    "Sem raça definida",
     "Mini Lop",
     "Lionhead",
     "Netherland Dwarf",
@@ -53,7 +53,7 @@ const BREEDS_BY_ANIMAL_TYPE: Record<string, string[]> = {
   ],
   Hamster: [
     "Sirio",
-    "Anao Russo",
+    "Anão Russo",
     "Roborovski",
     "Chines",
   ],

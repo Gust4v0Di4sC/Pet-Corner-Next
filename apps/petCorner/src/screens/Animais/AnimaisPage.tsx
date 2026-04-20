@@ -39,9 +39,9 @@ const dogFields: RecordFormField[] = [
   },
   {
     name: "breed",
-    label: "Raca",
+    label: "Raça",
     type: "select",
-    placeholder: "Selecione a raca mais comum",
+    placeholder: "Selecione a raça mais comum",
     options: [],
   },
   {
@@ -89,7 +89,7 @@ const dogFormConfig: RecordFormConfig = {
   createSubmitLabel: "Adicionar animal",
   createSuccessMessage: "Animal cadastrado com sucesso!",
   editTitle: "Editar animal",
-  editSubmitLabel: "Salvar alteracoes",
+  editSubmitLabel: "Salvar alterações",
   editSuccessMessage: "Animal atualizado com sucesso!",
   deleteSuccessMessage: "Animal removido com sucesso!",
   fields: dogFields,
@@ -102,8 +102,8 @@ const dogFormConfig: RecordFormConfig = {
             type: formData.breedSelection === MANUAL_BREED_OPTION ? "text" : "select",
             placeholder:
               formData.breedSelection === MANUAL_BREED_OPTION
-                ? "Digite a raca manualmente"
-                : "Selecione a raca mais comum",
+                ? "Digite a raça manualmente"
+                : "Selecione a raça mais comum",
             options:
               formData.breedSelection === MANUAL_BREED_OPTION
                 ? undefined
@@ -164,14 +164,14 @@ function buildDogListGroup(dogs: Dog[]): RecordListGroup {
   return {
     title: "Lista de animais",
     subtitle: `${dogs.length} registros encontrados`,
-    emptyMessage: "Nenhum animal registrado ate o momento.",
+    emptyMessage: "Nenhum animal registrado até o momento.",
     items: [...dogs]
       .filter((dog): dog is Dog & { id: string } => typeof dog.id === "string" && Boolean(dog.id))
       .sort((left, right) => left.name.localeCompare(right.name))
       .map((dog) => ({
         id: dog.id,
         title: dog.name || "Animal sem nome",
-        subtitle: `${dog.animalType || DEFAULT_ANIMAL_TYPE} | ${dog.breed || "Raca nao informada"}`,
+        subtitle: `${dog.animalType || DEFAULT_ANIMAL_TYPE} | ${dog.breed || "Raça não informada"}`,
         detail: `${formatAge(dog.age)} | ${formatDecimal(dog.weight, " kg")}`,
         badge: `${formatDecimal(dog.weight, " kg")}`,
       })),

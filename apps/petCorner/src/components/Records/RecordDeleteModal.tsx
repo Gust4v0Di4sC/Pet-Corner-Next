@@ -75,10 +75,10 @@ export default function RecordDeleteModal({
             <p className="record-confirm-modal__eyebrow">Confirmar exclusao</p>
             <h2 id="record-delete-modal-title">Excluir {entityLabel}?</h2>
             <p id="record-delete-modal-description">
-              Voce esta prestes a remover <strong>{recordLabel}</strong> permanentemente.
+              Você esta prestes a remover <strong>{recordLabel}</strong> permanentemente.
             </p>
             <p className="record-confirm-modal__warning">
-              Essa acao nao pode ser desfeita.
+              Essa ação não pode ser desfeita.
             </p>
           </div>
 

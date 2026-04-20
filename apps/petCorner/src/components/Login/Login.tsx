@@ -32,7 +32,7 @@ export default function Login() {
       if (error instanceof FirebaseError) {
         const errorMessage =
           error.code === "auth/user-not-found"
-            ? "Usuario nao encontrado"
+            ? "Usuário não encontrado"
             : error.code === "auth/wrong-password"
               ? "Senha incorreta"
               : "Erro ao fazer login";

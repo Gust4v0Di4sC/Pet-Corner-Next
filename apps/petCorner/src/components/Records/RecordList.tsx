@@ -125,7 +125,7 @@ export default function RecordList({
                 onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 disabled={currentPage === totalPages}
               >
-                Proxima
+                Próxima
               </button>
             </div>
           ) : null}

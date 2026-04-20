@@ -21,7 +21,7 @@ declare global {
 
 function required(name: keyof FirebaseRuntimeConfig, value: string | undefined) {
   if (!value) {
-    throw new Error(`Configuracao ausente em runtime-config.js: ${name}`);
+    throw new Error(`Configuração ausente em runtime-config.js: ${name}`);
   }
 
   return value;
@@ -29,13 +29,13 @@ function required(name: keyof FirebaseRuntimeConfig, value: string | undefined) 
 
 function getRuntimeConfig(): Partial<AppRuntimeConfig> {
   if (typeof window === "undefined") {
-    throw new Error("A configuracao do Firebase so pode ser carregada no navegador.");
+    throw new Error("A configuração do Firebase só pode ser carregada no navegador.");
   }
 
   const runtimeConfig = window.__PETCORNER_RUNTIME_CONFIG__;
 
   if (!runtimeConfig) {
-    throw new Error("runtime-config.js nao foi carregado antes da aplicacao.");
+    throw new Error("runtime-config.js não foi carregado antes da aplicação.");
   }
 
   return runtimeConfig;
@@ -60,7 +60,7 @@ export function getCosmosSyncUrl(): string {
 
   if (!value) {
     throw new Error(
-      "Configure VITE_COSMOS_SYNC_URL no ambiente para usar a sincronizacao via Cloudflare."
+      "Configure VITE_COSMOS_SYNC_URL no ambiente para usar a sincronização via Cloudflare."
     );
   }
 
@@ -76,3 +76,4 @@ export function getChatWorkerUrl(): string {
 
   return value;
 }
+

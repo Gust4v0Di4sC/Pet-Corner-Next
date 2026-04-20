@@ -95,7 +95,7 @@ export async function queryChat(payload: ChatQueryPayload): Promise<ChatQueryRes
     });
   } catch {
     throw new Error(
-      "Nao foi possivel conectar ao Worker de chat. Verifique a URL configurada e a publicacao do Worker."
+      "Não foi possível conectar ao Worker de chat. Verifique a URL configurada e a publicação do Worker."
     );
   }
 
@@ -109,12 +109,12 @@ export async function queryChat(payload: ChatQueryPayload): Promise<ChatQueryRes
 
   if (!response.ok) {
     throw new Error(
-      getErrorMessage(responsePayload, "Nao foi possivel consultar o chat agora.")
+      getErrorMessage(responsePayload, "Não foi possível consultar o chat agora.")
     );
   }
 
   if (!isChatResponse(responsePayload)) {
-    throw new Error("O Worker de chat retornou um payload invalido.");
+    throw new Error("O Worker de chat retornou um payload inválido.");
   }
 
   return responsePayload;

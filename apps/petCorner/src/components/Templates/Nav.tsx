@@ -53,7 +53,7 @@ const Nav: React.FC = () => {
           </button>
 
           <div className="menu__brand">
-            <span>Navegacao</span>
+            <span>Navegação</span>
             <strong>PetCorner</strong>
           </div>
         </div>
