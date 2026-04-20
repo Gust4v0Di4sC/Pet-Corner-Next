@@ -9,15 +9,21 @@ type Props = {
   logoSrc: string;
   children: ReactNode;
   className?: string;
+  chatFabPlacement?: "default" | "resource-fab";
 };
 
-export default function AppShell({ logoSrc, children, className = "app" }: Props) {
+export default function AppShell({
+  logoSrc,
+  children,
+  className = "app",
+  chatFabPlacement = "default",
+}: Props) {
   return (
     <div className={className}>
       <Logo src={logoSrc} />
       <Nav />
       {children}
-      <ChatAssistant />
+      <ChatAssistant placement={chatFabPlacement} />
     </div>
   );
 }

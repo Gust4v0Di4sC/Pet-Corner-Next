@@ -25,6 +25,10 @@
   box-shadow: 0 24px 44px rgba(26, 47, 58, 0.43);
 }
 
+.chat-assistant__fab--resource-anchor {
+  bottom: calc(1.5rem + var(--footer-height));
+}
+
 .chat-assistant__panel {
   position: fixed;
   right: 2rem;
@@ -45,6 +49,10 @@
   opacity: 0;
   pointer-events: none;
   transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.chat-assistant__panel--resource-anchor {
+  bottom: calc(1.5rem + var(--footer-height) + 62px + 0.65rem);
 }
 
 .chat-assistant__panel.is-open {
@@ -230,5 +238,13 @@
   .chat-assistant__form button {
     width: 100%;
     justify-self: stretch;
+  }
+
+  .chat-assistant__fab--resource-anchor {
+    bottom: 1rem;
+  }
+
+  .chat-assistant__panel--resource-anchor {
+    bottom: calc(1rem + 54px + 0.55rem);
   }
 }

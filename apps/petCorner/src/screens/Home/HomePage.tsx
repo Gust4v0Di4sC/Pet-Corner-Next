@@ -5,7 +5,7 @@ import Main from "../../components/Templates/Main";
 
 export default function HomePage() {
   return (
-    <AppShell logoSrc={logoimg}>
+    <AppShell logoSrc={logoimg} chatFabPlacement="resource-fab">
       <Main
         icon="home"
         title="Dashboard"

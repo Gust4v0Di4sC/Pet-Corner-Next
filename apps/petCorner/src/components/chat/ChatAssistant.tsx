@@ -14,11 +14,15 @@ type ChatMessage = {
   rowsSample?: Array<Record<string, unknown>>;
 };
 
+type Props = {
+  placement?: "default" | "resource-fab";
+};
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
   text:
-    "Oi! Pergunte sobre clientes, animais, produtos e catalogo. Exemplo: Quantos clientes temos?",
+    "Oi! Pergunte sobre clientes, animais, produtos e catálogo. Exemplo: Quantos clientes temos?",
 };
 
 function makeMessageId() {
@@ -39,7 +43,7 @@ function toAssistantMessage(response: ChatQueryResult): ChatMessage {
   };
 }
 
-export default function ChatAssistant() {
+export default function ChatAssistant({ placement = "default" }: Props) {
   const toast = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [question, setQuestion] = useState("");
@@ -103,7 +107,7 @@ export default function ChatAssistant() {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel consultar o chat agora.";
+          : "Não foi possível consultar o chat agora.";
 
       setMessages((current) => [
         ...current,
@@ -123,7 +127,9 @@ export default function ChatAssistant() {
     <>
       <button
         type="button"
-        className="chat-assistant__fab"
+        className={`chat-assistant__fab${
+          placement === "resource-fab" ? " chat-assistant__fab--resource-anchor" : ""
+        }`}
         onClick={() => setIsOpen((current) => !current)}
         aria-label={isOpen ? "Fechar chat de consultas" : "Abrir chat de consultas"}
         title="Chat de consultas"
@@ -132,7 +138,9 @@ export default function ChatAssistant() {
       </button>
 
       <section
-        className={`chat-assistant__panel${isOpen ? " is-open" : ""}`}
+        className={`chat-assistant__panel${
+          placement === "resource-fab" ? " chat-assistant__panel--resource-anchor" : ""
+        }${isOpen ? " is-open" : ""}`}
         aria-label="Chat de consultas do sistema"
         aria-hidden={!isOpen}
       >
@@ -162,7 +170,7 @@ export default function ChatAssistant() {
               <p>{message.text}</p>
 
               {message.intent ? (
-                <small className="chat-assistant__intent">Intencao: {message.intent}</small>
+                <small className="chat-assistant__intent">Intenção: {message.intent}</small>
               ) : null}
 
               {message.role === "assistant" && message.rowsSample?.length ? (
