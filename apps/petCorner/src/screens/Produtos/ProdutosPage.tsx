@@ -1,4 +1,5 @@
 import { useMemo, useRef, type ChangeEvent } from "react";
+import { useNavigate } from "react-router-dom";
 
 import logoimg from "../../assets/Logo.svg";
 import RecordManagementView from "../../components/Records/RecordManagementView";
@@ -114,6 +115,7 @@ function buildProductPayload(formData: RecordFormData): Omit<Product, "id"> {
 }
 
 export default function ProdutosPage() {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const toast = useToast();
   const { items, isLoading, create, update, remove } = useProducts();
@@ -124,8 +126,11 @@ export default function ProdutosPage() {
     isImporting,
     syncCosmosCatalog,
     isSyncingCosmos,
+    clearCatalog,
+    isClearingCatalog,
     lastImportSummary,
   } = useProductCatalog();
+  const isCatalogMutating = isImporting || isSyncingCosmos || isClearingCatalog;
 
   const catalogOptions = useMemo(
     () =>
@@ -223,6 +228,34 @@ export default function ProdutosPage() {
     }
   };
 
+  const handleClearCatalog = async () => {
+    if (!catalogItems.length) {
+      toast.info("Nao ha codigos importados para limpar.");
+      return;
+    }
+
+    const shouldClear = window.confirm(
+      "Deseja realmente limpar todas as importacoes do catalogo? Essa acao remove a lista de codigos de autopreenchimento."
+    );
+
+    if (!shouldClear) {
+      return;
+    }
+
+    try {
+      const deletedItems = await clearCatalog();
+      toast.success(
+        `Catalogo limpo com sucesso. ${numberFormatter.format(deletedItems)} registro(s) removido(s).`
+      );
+    } catch (error) {
+      toast.warning(
+        error instanceof Error && error.message
+          ? error.message
+          : "Nao foi possivel limpar as importacoes agora."
+      );
+    }
+  };
+
   const handleCatalogUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
@@ -247,6 +280,11 @@ export default function ProdutosPage() {
   };
 
   const templateHref = `${import.meta.env.BASE_URL}product-catalog-template.csv`;
+  const importCatalogTooltip = "Importar catalogo via arquivo CSV ou XLSX";
+  const cosmosSyncTooltip =
+    "Sincroniza o catalogo base da Cosmos e atualiza os codigos no sistema.";
+  const clearCatalogTooltip =
+    "Remove todos os codigos importados para reiniciar o catalogo.";
 
   return (
     <AppShell logoSrc={logoimg}>
@@ -261,7 +299,14 @@ export default function ProdutosPage() {
           <section className="product-catalog-card">
             <div className="product-catalog-card__content">
               <div>
-                <p className="product-catalog-card__eyebrow">Catalogo base</p>
+                <button
+                  type="button"
+                  className="product-catalog-card__back"
+                  onClick={() => navigate(DASHBOARD_ROUTE)}
+                >
+                  <i className="fa fa-arrow-left" aria-hidden="true" />
+                  Voltar ao dashboard
+                </button>
                 <h3>Importe uma tabela de produtos do pet shop</h3>
                 <p className="product-catalog-card__description">
                   Envie um arquivo CSV ou XLSX, sincronize com a API do Cosmos ou
@@ -272,21 +317,44 @@ export default function ProdutosPage() {
               <div className="product-catalog-card__actions">
                 <button
                   type="button"
-                  className="product-catalog-card__button"
+                  className="product-catalog-card__button product-catalog-card__button--icon"
                   onClick={handleOpenFilePicker}
-                  disabled={isImporting || isSyncingCosmos}
+                  disabled={isCatalogMutating}
+                  title={importCatalogTooltip}
+                  aria-label={isImporting ? "Importando catalogo" : "Importar catalogo"}
                 >
-                  {isImporting ? "Importando..." : "Importar catalogo"}
+                  <i
+                    className={`fa ${isImporting ? "fa-spinner fa-spin" : "fa-file-arrow-up"}`}
+                    aria-hidden="true"
+                  />
                 </button>
 
                 <button
                   type="button"
-                  className="product-catalog-card__button product-catalog-card__button--secondary"
+                  className="product-catalog-card__button product-catalog-card__button--secondary product-catalog-card__button--icon"
                   onClick={handleCosmosSync}
-                  disabled={isImporting || isSyncingCosmos}
-                  title="Sincroniza o catalogo base da Cosmos e atualiza os codigos no sistema."
+                  disabled={isCatalogMutating}
+                  title={cosmosSyncTooltip}
+                  aria-label={isSyncingCosmos ? "Sincronizando via Cosmos" : "Sincronizar via Cosmos"}
                 >
-                  {isSyncingCosmos ? "Sincronizando..." : "Sincronizar via Cosmos"}
+                  <i
+                    className={`fa ${isSyncingCosmos ? "fa-spinner fa-spin" : "fa-arrows-rotate"}`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  className="product-catalog-card__button product-catalog-card__button--danger product-catalog-card__button--icon"
+                  onClick={handleClearCatalog}
+                  disabled={isCatalogMutating || catalogItems.length === 0}
+                  title={clearCatalogTooltip}
+                  aria-label={isClearingCatalog ? "Limpando importacoes" : "Limpar importacoes"}
+                >
+                  <i
+                    className={`fa ${isClearingCatalog ? "fa-spinner fa-spin" : "fa-trash-can"}`}
+                    aria-hidden="true"
+                  />
                 </button>
 
                 <a className="product-catalog-card__link" href={templateHref} download>
@@ -329,6 +397,7 @@ export default function ProdutosPage() {
             isLoading={isLoading}
             listPageSize={4}
             backRoute={DASHBOARD_ROUTE}
+            showBackButton={false}
             addAriaLabel="Adicionar novo produto"
             getFormData={getProductFormData}
             buildPayload={buildProductPayload}

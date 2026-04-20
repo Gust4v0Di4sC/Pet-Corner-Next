@@ -17,6 +17,7 @@ type Props<TRecord extends { id?: string }, TPayload> = {
   listPageSize?: number;
   backRoute: string;
   backLabel?: string;
+  showBackButton?: boolean;
   addAriaLabel: string;
   getFormData: (record: TRecord) => RecordFormData;
   buildPayload: (formData: RecordFormData) => TPayload;
@@ -33,6 +34,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   listPageSize,
   backRoute,
   backLabel = "Voltar ao dashboard",
+  showBackButton = true,
   addAriaLabel,
   getFormData,
   buildPayload,
@@ -192,13 +194,15 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 
   return (
     <section className="record-management">
-      <button
-        type="button"
-        className="record-management__back"
-        onClick={() => navigate(backRoute)}
-      >
-        <i className="fa fa-arrow-left" aria-hidden="true" /> {backLabel}
-      </button>
+      {showBackButton ? (
+        <button
+          type="button"
+          className="record-management__back"
+          onClick={() => navigate(backRoute)}
+        >
+          <i className="fa fa-arrow-left" aria-hidden="true" /> {backLabel}
+        </button>
+      ) : null}
 
       <RecordList
         {...listGroup}

@@ -81,3 +81,25 @@ export async function upsertProductCatalogItems(
 
   return { imported, updated };
 }
+
+export async function clearProductCatalogItems(rota = "productCatalog"): Promise<number> {
+  const db = await getFirestoreDB();
+  const snapshot = await getDocs(collection(db, rota));
+
+  if (snapshot.empty) {
+    return 0;
+  }
+
+  let deleted = 0;
+
+  for (const chunk of chunkItems(snapshot.docs, BATCH_LIMIT)) {
+    const batch = writeBatch(db);
+    chunk.forEach((catalogDoc) => {
+      batch.delete(doc(db, rota, catalogDoc.id));
+    });
+    await batch.commit();
+    deleted += chunk.length;
+  }
+
+  return deleted;
+}

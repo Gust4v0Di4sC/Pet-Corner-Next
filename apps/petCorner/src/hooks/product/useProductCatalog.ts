@@ -2,7 +2,11 @@ import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { fetchCommonProductsFromCosmos } from "../../services/cosmosCatalogService";
-import { getAllProductCatalogItems, upsertProductCatalogItems } from "../../services/productCatalogService";
+import {
+  clearProductCatalogItems,
+  getAllProductCatalogItems,
+  upsertProductCatalogItems,
+} from "../../services/productCatalogService";
 import type {
   ProductCatalogImportSummary,
   ProductCatalogItem,
@@ -70,6 +74,14 @@ export function useProductCatalog(rota = "productCatalog") {
     },
   });
 
+  const clearCatalogMutation = useMutation<number, Error>({
+    mutationFn: async () => clearProductCatalogItems(rota),
+    onSuccess: () => {
+      setLastImportSummary(null);
+      queryClient.invalidateQueries({ queryKey: productCatalogKeys(rota) });
+    },
+  });
+
   const importCatalog = useCallback(
     async (file: File) => importMutation.mutateAsync(file),
     [importMutation]
@@ -77,6 +89,10 @@ export function useProductCatalog(rota = "productCatalog") {
   const syncCosmosCatalog = useCallback(
     async () => cosmosSyncMutation.mutateAsync(),
     [cosmosSyncMutation]
+  );
+  const clearCatalog = useCallback(
+    async () => clearCatalogMutation.mutateAsync(),
+    [clearCatalogMutation]
   );
 
   return {
@@ -86,6 +102,8 @@ export function useProductCatalog(rota = "productCatalog") {
     isImporting: importMutation.isPending,
     syncCosmosCatalog,
     isSyncingCosmos: cosmosSyncMutation.isPending,
+    clearCatalog,
+    isClearingCatalog: clearCatalogMutation.isPending,
     lastImportSummary,
   };
 }
