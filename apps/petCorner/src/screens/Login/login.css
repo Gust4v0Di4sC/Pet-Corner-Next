@@ -280,7 +280,7 @@
   width: 100%;
   padding: 0.95rem 1.1rem;
   margin: 0;
-  border-radius: 20px;
+  border-radius: var(--pc-input-radius);
   border: 1.5px solid rgba(26, 47, 58, 0.12);
   background: rgba(255, 255, 255, 0.92);
   color: var(--login-text);
@@ -450,7 +450,7 @@
 .login-reset-modal__form input {
   width: 100%;
   padding: 0.95rem 1.1rem;
-  border-radius: 18px;
+  border-radius: var(--pc-input-radius);
   border: 1.5px solid rgba(26, 47, 58, 0.12);
   background: rgba(255, 255, 255, 0.92);
   color: var(--login-text);

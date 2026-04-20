@@ -1,0 +1,9 @@
+:root {
+  --pc-input-radius: 18px;
+}
+
+form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+form select,
+form textarea {
+  border-radius: var(--pc-input-radius);
+}

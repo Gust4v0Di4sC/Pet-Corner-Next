@@ -26,13 +26,106 @@
 
 .form input,
 .form select {
+  width: 100%;
   padding: 16px 24px;
   margin-bottom: 16px;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: var(--pc-input-radius);
   outline: none;
   font-size: 1rem;
   background: #fff;
+}
+
+.form-combobox {
+  position: relative;
+}
+
+.form-combobox__control {
+  position: relative;
+  width: 100%;
+}
+
+.form-combobox__control input {
+  width: 100%;
+  padding-right: 3rem;
+  margin-bottom: 16px;
+}
+
+.form-combobox__toggle {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 2.3rem;
+  height: calc(100% - 1.2rem - 16px);
+  border: 0;
+  border-radius: 12px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(26, 47, 58, 0.06);
+  color: #1a2f3a;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.form-combobox__toggle:hover:not(:disabled) {
+  background: rgba(26, 47, 58, 0.12);
+}
+
+.form-combobox__toggle:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.form-combobox__chevron {
+  width: 0.85rem;
+  height: 0.6rem;
+  fill: none;
+  stroke: #55616b;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+
+.form-combobox__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.form-combobox__menu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  max-height: 16rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  border: 1px solid rgba(26, 47, 58, 0.18);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 14px 24px rgba(26, 47, 58, 0.16);
+}
+
+.form-combobox__option {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  color: #1a2f3a;
+  text-align: left;
+}
+
+.form-combobox__option.is-active,
+.form-combobox__option:hover {
+  background: rgba(251, 139, 36, 0.12);
+}
+
+.form-combobox__option.is-selected {
+  font-weight: 700;
+  color: #b45909;
 }
 
 .form__helper {

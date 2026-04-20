@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import DatePicker from "react-datepicker";
 import { IMaskInput } from "react-imask";
 import { Tooltip } from "react-tooltip";
 import "react-datepicker/dist/react-datepicker.css";
 
-import type { RecordFormField, RecordFormMask } from "../Records/record.types";
+import type { RecordFormField, RecordFormMask, RecordFormOption } from "../Records/record.types";
 import "./form.css";
 
 type FormProps = {
@@ -50,6 +50,229 @@ function formatDateToString(date: Date): string {
 
 function getFieldMask(field: RecordFormField): RecordFormMask | undefined {
   return field.mask ?? defaultMaskByType[field.type];
+}
+
+function ComboboxInputField({
+  field,
+  value,
+  onChange,
+}: {
+  field: RecordFormField;
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const options = useMemo(() => field.options ?? [], [field.options]);
+  const listboxId = `${field.name}-combobox-listbox`;
+
+  const filteredOptions = useMemo(() => {
+    const normalizedValue = value.trim().toLowerCase();
+
+    if (!normalizedValue) {
+      return options;
+    }
+
+    return options.filter((option) => {
+      const normalizedOptionValue = option.value.toLowerCase();
+      const normalizedOptionLabel = option.label.toLowerCase();
+      return (
+        normalizedOptionValue.includes(normalizedValue) ||
+        normalizedOptionLabel.includes(normalizedValue)
+      );
+    });
+  }, [options, value]);
+
+  const canOpen = !field.disabled && filteredOptions.length > 0;
+  const isExpanded = isOpen && canOpen;
+
+  useEffect(() => {
+    if (!isExpanded) {
+      setActiveIndex(-1);
+      return;
+    }
+
+    setActiveIndex((previous) => {
+      if (previous < 0) {
+        return 0;
+      }
+
+      return previous >= filteredOptions.length ? filteredOptions.length - 1 : previous;
+    });
+  }, [filteredOptions.length, isExpanded]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!containerRef.current) {
+        return;
+      }
+
+      if (!containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
+
+  const applyOptionValue = (option: RecordFormOption) => {
+    const syntheticEvent = {
+      target: {
+        name: field.name,
+        value: option.value,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    onChange(syntheticEvent);
+    setIsOpen(false);
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(event);
+
+    if (!field.disabled) {
+      setIsOpen(true);
+    }
+  };
+
+  const handleInputFocus = () => {
+    if (!field.disabled && options.length > 0) {
+      setIsOpen(true);
+    }
+  };
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (field.disabled || filteredOptions.length === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setIsOpen(true);
+      setActiveIndex((previous) =>
+        previous >= filteredOptions.length - 1 ? 0 : previous + 1
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setIsOpen(true);
+      setActiveIndex((previous) =>
+        previous <= 0 ? filteredOptions.length - 1 : previous - 1
+      );
+      return;
+    }
+
+    if (event.key === "Enter" && isExpanded && activeIndex >= 0) {
+      const selectedOption = filteredOptions[activeIndex];
+
+      if (selectedOption) {
+        event.preventDefault();
+        applyOptionValue(selectedOption);
+      }
+
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setIsOpen(false);
+    }
+  };
+
+  const toggleDropdown = () => {
+    if (field.disabled || options.length === 0) {
+      return;
+    }
+
+    setIsOpen((current) => !current);
+  };
+
+  return (
+    <div className="box-input">
+      <label htmlFor={field.name}>{field.label}</label>
+      <div
+        className={`form-combobox${isExpanded ? " is-open" : ""}${
+          field.disabled ? " is-disabled" : ""
+        }`}
+        ref={containerRef}
+      >
+        <div className="form-combobox__control">
+          <input
+            id={field.name}
+            name={field.name}
+            type="text"
+            inputMode={field.inputMode ?? "text"}
+            value={value}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            onKeyDown={handleInputKeyDown}
+            required
+            placeholder={field.placeholder}
+            autoComplete="off"
+            disabled={field.disabled}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls={listboxId}
+            aria-expanded={isExpanded}
+            aria-haspopup="listbox"
+            aria-activedescendant={
+              isExpanded && activeIndex >= 0
+                ? `${field.name}-combobox-option-${activeIndex}`
+                : undefined
+            }
+          />
+          <button
+            type="button"
+            className="form-combobox__toggle"
+            onClick={toggleDropdown}
+            disabled={field.disabled || options.length === 0}
+            aria-label={`Abrir opcoes de ${field.label.toLowerCase()}`}
+            tabIndex={-1}
+          >
+            <svg
+              className={`form-combobox__chevron${isExpanded ? " is-open" : ""}`}
+              viewBox="0 0 12 8"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M1 1.25L6 6.25L11 1.25" />
+            </svg>
+          </button>
+        </div>
+
+        {isExpanded ? (
+          <ul id={listboxId} className="form-combobox__menu" role="listbox">
+            {filteredOptions.map((option, index) => {
+              const isSelected = option.value === value;
+              const isActive = index === activeIndex;
+
+              return (
+                <li key={`${field.name}-option-${option.value}`} role="presentation">
+                  <button
+                    id={`${field.name}-combobox-option-${index}`}
+                    type="button"
+                    className={`form-combobox__option${isSelected ? " is-selected" : ""}${
+                      isActive ? " is-active" : ""
+                    }`}
+                    role="option"
+                    aria-selected={isSelected}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => applyOptionValue(option)}
+                  >
+                    {option.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </div>
+      {field.helperText ? <small className="form__helper">{field.helperText}</small> : null}
+    </div>
+  );
 }
 
 function MaskedInputField({
@@ -110,36 +333,7 @@ function MaskedInputField({
   }
 
   if (field.type === "autocomplete") {
-    const listId = `${field.name}-options`;
-
-    return (
-      <div className="box-input">
-        <label htmlFor={field.name}>{field.label}</label>
-        <input
-          id={field.name}
-          name={field.name}
-          type="text"
-          list={listId}
-          inputMode={field.inputMode ?? "text"}
-          value={value}
-          onChange={onChange}
-          required
-          placeholder={field.placeholder}
-          autoComplete="off"
-          disabled={field.disabled}
-        />
-        <datalist id={listId}>
-          {(field.options ?? []).map((option) => (
-            <option
-              key={`${field.name}-${option.value}`}
-              value={option.value}
-              label={option.label}
-            />
-          ))}
-        </datalist>
-        {field.helperText ? <small className="form__helper">{field.helperText}</small> : null}
-      </div>
-    );
+    return <ComboboxInputField field={field} value={value} onChange={onChange} />;
   }
 
   const mask = getFieldMask(field);
