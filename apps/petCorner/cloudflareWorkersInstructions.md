@@ -5,6 +5,7 @@ Este guia resume como publicar e manter a integracao da Cosmos usando Cloudflare
 ## O que cada autenticacao faz
 
 - `COSMOS_API_TOKEN`: segredo da API da Cosmos. Fica salvo no Cloudflare Worker como secret. Nunca vai para o frontend.
+- `GEMINI_API_KEY`: chave da API Gemini usada apenas no endpoint `POST /chat/query` do Worker.
 - `Firebase ID token`: token do usuario logado no app. O frontend envia esse token para o Worker ao clicar em `Sincronizar via Cosmos`.
 - `Cloudflare login`: autenticacao da sua conta Cloudflare para publicar e gerenciar o Worker com o Wrangler.
 
@@ -14,13 +15,16 @@ Este guia resume como publicar e manter a integracao da Cosmos usando Cloudflare
 2. O app pega o `idToken` do Firebase.
 3. O frontend chama o Worker com `Authorization: Bearer <idToken>`.
 4. O Worker valida o token do Firebase usando as chaves publicas do Google.
-5. Se o usuario tiver claim `admin == true`, o Worker consulta a Cosmos com o segredo salvo no Cloudflare.
-6. O Worker devolve os itens ao frontend.
-7. O frontend grava os itens no Firestore `productCatalog`.
+5. Se o usuario tiver claim `admin == true`, o Worker pode:
+   - consultar a Cosmos com o segredo `COSMOS_API_TOKEN` (`POST /cosmos/sync`)
+   - consultar o Gemini para interpretar perguntas e ler dados do Firestore (`POST /chat/query`)
+6. O Worker devolve os dados para o frontend.
+7. No fluxo da Cosmos, o frontend grava os itens no Firestore `productCatalog`.
 
 ## O que precisa existir no Worker
 
 - Secret: `COSMOS_API_TOKEN`
+- Secret: `GEMINI_API_KEY`
 - Variavel: `FIREBASE_PROJECT_ID=petcorner-219fc`
 - Variavel: `ALLOWED_ORIGINS=<urls permitidas do app>`
 
@@ -57,6 +61,12 @@ npx wrangler login
 npx wrangler secret put COSMOS_API_TOKEN
 ```
 
+6.1 Gravar o segredo do Gemini:
+
+```bash
+npx wrangler secret put GEMINI_API_KEY
+```
+
 7. Ajustar `ALLOWED_ORIGINS` em `wrangler.jsonc`.
 8. Publicar o Worker:
 
@@ -69,6 +79,7 @@ npm run deploy
 
 ```env
 VITE_COSMOS_SYNC_URL=https://petcorner-cosmos-sync.<seu-subdominio>.workers.dev
+VITE_CHAT_WORKER_URL=https://petcorner-cosmos-sync.<seu-subdominio>.workers.dev
 ```
 
 11. Reiniciar o app depois de atualizar o `.env`.
@@ -99,6 +110,7 @@ No painel:
 Voce deve ver:
 
 - Secret `COSMOS_API_TOKEN`
+- Secret `GEMINI_API_KEY`
 - Variavel `FIREBASE_PROJECT_ID`
 - Variavel `ALLOWED_ORIGINS`
 
@@ -116,6 +128,7 @@ cd "D:\meus projetos\PertCornerNext\apps\petCorner\cloudflare\cosmos-sync"
 npm install
 npx wrangler login
 npx wrangler secret put COSMOS_API_TOKEN
+npx wrangler secret put GEMINI_API_KEY
 npm run deploy
 ```
 
