@@ -439,7 +439,12 @@ export default function LoginPage() {
           onOpenPhoneLoginModal={handleOpenPhoneLoginModal}
           onHoverLogin={setShowAnimation}
           showAnimation={showAnimation}
-          header={<Logo src={logoimg} />}
+          header={
+            <div className="login-form-header">
+              <Logo src={logoimg} />
+              <span className="login-form-admin-badge">Acesso administrativo</span>
+            </div>
+          }
         />
       </div>
 

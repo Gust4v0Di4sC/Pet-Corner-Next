@@ -36,10 +36,11 @@
   z-index: 1;
   background-image:
     linear-gradient(115deg, rgba(253, 246, 242, 0.2) 0%, rgba(253, 246, 242, 0.08) 42%, rgba(253, 246, 242, 0.24) 100%),
-    url("../../assets/pets.png");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+    url("../../assets/pets.png"),
+    url("../../assets/bghome.jpg");
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-size: cover, cover, cover;
   opacity: 0;
   transform: scale(1.08);
   transform-origin: center;
@@ -239,6 +240,30 @@
   filter: drop-shadow(0 16px 24px rgba(26, 47, 58, 0.12));
 }
 
+.login-form-header {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.login-form-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.95rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 220, 190, 0.5);
+  background: rgba(251, 139, 36, 0.2);
+  color: #fff1e5;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
 .box {
   display: grid;
   gap: 1rem;
@@ -246,7 +271,12 @@
   margin: 0;
 }
 
-.box input {
+.login-field {
+  width: 100%;
+}
+
+.box input,
+.login-field__input {
   width: 100%;
   padding: 0.95rem 1.1rem;
   margin: 0;
@@ -259,14 +289,39 @@
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.box input::placeholder {
+.box input::placeholder,
+.login-field__input::placeholder {
   color: rgba(26, 47, 58, 0.52);
 }
 
-.box input:focus {
+.box input:focus,
+.login-field__input:focus {
   border-color: var(--login-accent);
   box-shadow: 0 0 0 4px rgba(251, 139, 36, 0.14);
   transform: translateY(-1px);
+}
+
+.login-field.has-error .login-field__input {
+  border-color: rgba(255, 91, 110, 0.82);
+  background: rgba(255, 245, 247, 0.97);
+}
+
+.login-field.has-error .login-field__input:focus {
+  border-color: #ff4d63;
+  box-shadow: 0 0 0 4px rgba(255, 77, 99, 0.24);
+}
+
+.login-field__error {
+  display: block;
+  margin-top: 0.45rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgba(255, 139, 156, 0.5);
+  border-radius: 10px;
+  background: rgba(114, 19, 31, 0.36);
+  color: #ffe7ec;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .btn-primary {
@@ -554,7 +609,7 @@
 
 @media (max-width: 1024px) {
   .login-page::after {
-    background-position: 58% center;
+    background-position: center, 58% center, center;
   }
 
   .login-container {
@@ -574,17 +629,40 @@
 
 @media (max-width: 750px) {
   .login-page {
-    padding: 1.25rem;
+    place-items: end center;
+    padding:
+      max(1rem, env(safe-area-inset-top))
+      1rem
+      max(1rem, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .login-page::before {
+    background:
+      linear-gradient(180deg, rgba(253, 246, 242, 0.08) 0%, rgba(253, 246, 242, 0.24) 100%),
+      radial-gradient(circle at 50% 12%, rgba(251, 139, 36, 0.14) 0%, rgba(251, 139, 36, 0) 44%);
   }
 
   .login-page::after {
-    background-position: 62% center;
+    background-image:
+      linear-gradient(180deg, rgba(15, 20, 26, 0.22) 0%, rgba(15, 20, 26, 0.08) 42%, rgba(15, 20, 26, 0.28) 100%),
+      url("../../assets/bgphone.png");
+    background-position: center, center top;
+    background-repeat: no-repeat, no-repeat;
+    background-size: cover, cover;
+    transform: scale(1.03);
   }
 
   .login-container {
-    width: 100%;
-    padding: 1.5rem 1.25rem;
+    width: min(100%, 420px);
+    margin-top: auto;
+    padding: 1.4rem 1.1rem;
     border-radius: 24px;
+  }
+
+  .login-intro {
+    padding: 1.25rem 1rem;
   }
 
   .login-intro__logo {
@@ -611,6 +689,10 @@
     font-size: 0.98rem;
   }
 
+  .login-form-admin-badge {
+    font-size: 0.68rem;
+  }
+
   .box,
   .login-container .form {
     width: 100%;
@@ -627,7 +709,25 @@
 
 @media (max-width: 480px) {
   .login-page {
-    padding: 1rem;
+    padding:
+      max(0.85rem, env(safe-area-inset-top))
+      0.85rem
+      max(0.85rem, env(safe-area-inset-bottom));
+  }
+
+  .login-container {
+    width: 100%;
+    padding: 1.2rem 0.95rem;
+    border-radius: 20px;
+  }
+
+  .login-intro__brand {
+    padding: 0.95rem;
+  }
+
+  .login-intro__brand-box {
+    padding: 1.15rem 1rem;
+    border-radius: 24px;
   }
 
   .social-login {

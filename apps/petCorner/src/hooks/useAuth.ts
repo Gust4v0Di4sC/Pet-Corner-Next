@@ -14,11 +14,86 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { DASHBOARD_ROUTE } from "../components/Dashboard/dashboard.domain";
+import { SESSION_STORAGE_KEY, SESSION_TTL_MS } from "../config/sessionConfig";
 import { getFirebaseAuth, googleProvider, microsoftProvider } from "../firebase";
 import { AdminAccessError, hasAdminAccess } from "../services/adminService";
 import type { AuthHookReturn, AuthUser, EmailCredentials } from "../types/Auth";
 
 const AUTH_QUERY_KEY = ["auth", "user"] as const;
+const SESSION_CHECK_INTERVAL_MS = 60 * 1000;
+
+type PersistedAuthSession = {
+  startedAt: number;
+  expiresAt: number;
+};
+type PersistedSessionStatus = "missing" | "valid" | "expired";
+
+const canUseStorage = (): boolean =>
+  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+
+const clearPersistedSession = () => {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+};
+
+const readPersistedSession = (): PersistedAuthSession | null => {
+  if (!canUseStorage()) {
+    return null;
+  }
+
+  const rawSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
+
+  if (!rawSession) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawSession) as Partial<PersistedAuthSession>;
+    if (typeof parsed.startedAt !== "number" || typeof parsed.expiresAt !== "number") {
+      clearPersistedSession();
+      return null;
+    }
+
+    return {
+      startedAt: parsed.startedAt,
+      expiresAt: parsed.expiresAt,
+    };
+  } catch {
+    clearPersistedSession();
+    return null;
+  }
+};
+
+const persistSession = (startTime = Date.now()) => {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  const session: PersistedAuthSession = {
+    startedAt: startTime,
+    expiresAt: startTime + SESSION_TTL_MS,
+  };
+
+  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+};
+
+const getPersistedSessionStatus = (): PersistedSessionStatus => {
+  const persistedSession = readPersistedSession();
+
+  if (!persistedSession) {
+    return "missing";
+  }
+
+  return persistedSession.expiresAt > Date.now() ? "valid" : "expired";
+};
+
+async function signOutAndClearSession(auth: Auth): Promise<void> {
+  await signOut(auth).catch(() => undefined);
+  clearPersistedSession();
+}
 
 const mapFirebaseUser = (user: FirebaseUser | null): AuthUser | null =>
   user ? { uid: user.uid, email: user.email, isAdmin: true } : null;
@@ -36,7 +111,7 @@ async function resolveAuthorizedUser(
     const isAdmin = await hasAdminAccess(firebaseUser, options?.forceRefresh === true);
 
     if (!isAdmin) {
-      await signOut(auth);
+      await signOutAndClearSession(auth);
 
       if (options?.throwOnDenied) {
         throw new AdminAccessError();
@@ -47,7 +122,7 @@ async function resolveAuthorizedUser(
 
     return mapFirebaseUser(firebaseUser);
   } catch (error) {
-    await signOut(auth).catch(() => undefined);
+    await signOutAndClearSession(auth);
 
     if (error instanceof AdminAccessError) {
       throw error;
@@ -59,6 +134,14 @@ async function resolveAuthorizedUser(
 
 const fetchCurrentUser = async (): Promise<AuthUser | null> => {
   const auth = await getFirebaseAuth();
+
+  if (!auth.currentUser) {
+    clearPersistedSession();
+  } else if (getPersistedSessionStatus() !== "valid") {
+    await signOutAndClearSession(auth);
+    return null;
+  }
+
   const current = await resolveAuthorizedUser(auth, auth.currentUser, {
     forceRefresh: true,
   });
@@ -72,6 +155,16 @@ const fetchCurrentUser = async (): Promise<AuthUser | null> => {
       auth,
       (firebaseUser) => {
         unsubscribe();
+
+        if (firebaseUser && getPersistedSessionStatus() === "expired") {
+          void signOutAndClearSession(auth).then(() => resolve(null));
+          return;
+        }
+
+        if (!firebaseUser) {
+          clearPersistedSession();
+        }
+
         resolveAuthorizedUser(auth, firebaseUser).then(resolve).catch(reject);
       },
       reject
@@ -106,6 +199,20 @@ export const useAuth = (): AuthHookReturn => {
 
       const syncAuthorizedUser = async (firebaseUser: FirebaseUser | null) => {
         try {
+          if (firebaseUser && getPersistedSessionStatus() === "expired") {
+            await signOutAndClearSession(auth);
+
+            if (!isDisposed) {
+              queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
+            }
+
+            return;
+          }
+
+          if (!firebaseUser) {
+            clearPersistedSession();
+          }
+
           const nextUser = await resolveAuthorizedUser(auth, firebaseUser);
 
           if (!isDisposed) {
@@ -135,10 +242,42 @@ export const useAuth = (): AuthHookReturn => {
     };
   }, [clearPhoneLoginVerifier]);
 
+  useEffect(() => {
+    let isDisposed = false;
+    const intervalId = window.setInterval(() => {
+      void (async () => {
+        const auth = await getFirebaseAuth();
+
+        if (!auth.currentUser) {
+          clearPersistedSession();
+          return;
+        }
+
+        if (getPersistedSessionStatus() !== "expired") {
+          return;
+        }
+
+        await signOutAndClearSession(auth);
+
+        if (!isDisposed) {
+          queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
+          navigate("/", { replace: true });
+        }
+      })();
+    }, SESSION_CHECK_INTERVAL_MS);
+
+    return () => {
+      isDisposed = true;
+      window.clearInterval(intervalId);
+    };
+  }, [navigate, queryClient]);
+
   const loginMutation = useMutation<boolean, Error, EmailCredentials>({
     mutationFn: async ({ email, password }) => {
       const auth = await getFirebaseAuth();
       const credential = await signInWithEmailAndPassword(auth, email, password);
+      persistSession();
+
       const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
         forceRefresh: true,
         throwOnDenied: true,
@@ -156,6 +295,8 @@ export const useAuth = (): AuthHookReturn => {
     mutationFn: async () => {
       const auth = await getFirebaseAuth();
       const credential = await signInWithPopup(auth, googleProvider);
+      persistSession();
+
       const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
         forceRefresh: true,
         throwOnDenied: true,
@@ -173,6 +314,8 @@ export const useAuth = (): AuthHookReturn => {
     mutationFn: async () => {
       const auth = await getFirebaseAuth();
       const credential = await signInWithPopup(auth, microsoftProvider);
+      persistSession();
+
       const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
         forceRefresh: true,
         throwOnDenied: true,
@@ -223,6 +366,8 @@ export const useAuth = (): AuthHookReturn => {
     mutationFn: async ({ confirmationResult, verificationCode }) => {
       const auth = await getFirebaseAuth();
       const credential = await confirmationResult.confirm(verificationCode);
+      persistSession();
+
       const authorizedUser = await resolveAuthorizedUser(auth, credential.user, {
         forceRefresh: true,
         throwOnDenied: true,
@@ -241,10 +386,11 @@ export const useAuth = (): AuthHookReturn => {
     mutationFn: async () => {
       const auth = await getFirebaseAuth();
       await signOut(auth);
+      clearPersistedSession();
     },
     onSuccess: () => {
       queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
-      navigate("/");
+      navigate("/", { replace: true });
     },
   });
 

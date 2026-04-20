@@ -7,12 +7,14 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 const LoginTextField = forwardRef<HTMLInputElement, Props>(
-  ({ error, ...props }, ref) => {
+  ({ error, className, ...props }, ref) => {
+    const inputClassName = className ? `login-field__input ${className}` : "login-field__input";
+
     return (
-      <div style={{ width: "100%" }}>
-        <input ref={ref} {...props} />
+      <div className={`login-field${error ? " has-error" : ""}`}>
+        <input ref={ref} className={inputClassName} {...props} />
         {error ? (
-          <small style={{ display: "block", marginTop: 6, color: "#ff6b6b" }}>
+          <small className="login-field__error" role="alert">
             {error}
           </small>
         ) : null}
