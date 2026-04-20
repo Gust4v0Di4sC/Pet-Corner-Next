@@ -8,19 +8,28 @@ import "react-datepicker/dist/react-datepicker.css";
 import type { RecordFormField, RecordFormMask, RecordFormOption } from "../Records/record.types";
 import "./form.css";
 
+type FileUploadHandler = (params: {
+  fieldName: string;
+  file: File;
+  currentValue: string;
+}) => Promise<string>;
+
 type FormProps = {
   data: Record<string, string>;
   fields: RecordFormField[];
   mode: "create" | "edit" | "exclude";
   handleInput: React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
+  handleFileUpload?: FileUploadHandler;
   handleSubmit: React.FormEventHandler;
   handleBack: () => void;
+  handleResetFields?: () => void;
   searchName?: string;
   setSearchName?: (value: string) => void;
   textTitle: string;
   textButton: string;
   className?: string;
   backButtonLabel?: string;
+  resetButtonLabel?: string;
   disableActions?: boolean;
 };
 
@@ -225,7 +234,7 @@ function ComboboxInputField({
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             onKeyDown={handleInputKeyDown}
-            required
+            required={field.required !== false}
             placeholder={field.placeholder}
             autoComplete="off"
             disabled={field.disabled}
@@ -245,7 +254,7 @@ function ComboboxInputField({
             className="form-combobox__toggle"
             onClick={toggleDropdown}
             disabled={field.disabled || options.length === 0}
-            aria-label={`Abrir opcoes de ${field.label.toLowerCase()}`}
+            aria-label={`Abrir opções de ${field.label.toLowerCase()}`}
             tabIndex={-1}
           >
             <svg
@@ -274,29 +283,29 @@ function ComboboxInputField({
                 }
 
                 const index = virtualRow.index;
-              const isSelected = option.value === value;
-              const isActive = index === activeIndex;
+                const isSelected = option.value === value;
+                const isActive = index === activeIndex;
 
-              return (
-                <button
-                  key={`${field.name}-option-${option.value}`}
-                  id={`${field.name}-combobox-option-${index}`}
-                  type="button"
-                  className={`form-combobox__option${isSelected ? " is-selected" : ""}${
-                    isActive ? " is-active" : ""
-                  }`}
-                  role="option"
-                  aria-selected={isSelected}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => applyOptionValue(option)}
-                  style={{
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
+                return (
+                  <button
+                    key={`${field.name}-option-${option.value}`}
+                    id={`${field.name}-combobox-option-${index}`}
+                    type="button"
+                    className={`form-combobox__option${isSelected ? " is-selected" : ""}${
+                      isActive ? " is-active" : ""
+                    }`}
+                    role="option"
+                    aria-selected={isSelected}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => applyOptionValue(option)}
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
               })}
             </li>
           </ul>
@@ -307,16 +316,164 @@ function ComboboxInputField({
   );
 }
 
-function MaskedInputField({
+function FileUploadField({
   field,
   value,
+  disableActions,
   onChange,
-  onDateChange,
+  onFileUpload,
 }: {
   field: RecordFormField;
   value: string;
+  disableActions: boolean;
+  onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onFileUpload?: FileUploadHandler;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [selectedFileName, setSelectedFileName] = useState("");
+  const hasImage = Boolean(value.trim());
+  const isDisabled = disableActions || field.disabled;
+  const fileInputId = `${field.name}-file`;
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const [selectedFile] = Array.from(event.target.files ?? []);
+
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!onFileUpload) {
+      setUploadError("Upload indisponivel no momento.");
+      event.target.value = "";
+      return;
+    }
+
+    setUploadError("");
+    setIsUploading(true);
+    setSelectedFileName(selectedFile.name);
+
+    try {
+      const uploadedImageUrl = await onFileUpload({
+        fieldName: field.name,
+        file: selectedFile,
+        currentValue: value,
+      });
+
+      const syntheticEvent = {
+        target: {
+          name: field.name,
+          value: uploadedImageUrl,
+        },
+      } as React.ChangeEvent<HTMLInputElement>;
+
+      onChange(syntheticEvent);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Não foi possível enviar a imagem."
+      );
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setUploadError("");
+    setSelectedFileName("");
+
+    const syntheticEvent = {
+      target: {
+        name: field.name,
+        value: "",
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    onChange(syntheticEvent);
+  };
+
+  return (
+    <div className="box-input">
+      <label htmlFor={fileInputId}>{field.label}</label>
+
+      <div className="form-file-upload">
+        <input
+          id={fileInputId}
+          className="form-file-upload__input"
+          type="file"
+          accept={field.accept ?? "image/*"}
+          disabled={isDisabled || isUploading}
+          onChange={handleFileChange}
+        />
+
+        <label
+          htmlFor={fileInputId}
+          className={`form-file-upload__dropzone${isDisabled || isUploading ? " is-disabled" : ""}`}
+          aria-disabled={isDisabled || isUploading}
+        >
+          <span className="form-file-upload__icon" aria-hidden="true">
+            <i className="fa fa-arrow-up-from-bracket" />
+          </span>
+          <span className="form-file-upload__droptext">Selecionar imagem</span>
+          <small className="form-file-upload__hint">JPG, PNG, WEBP, GIF ou AVIF</small>
+        </label>
+
+        {selectedFileName ? (
+          <small className="form-file-upload__status">
+            Arquivo selecionado: <strong>{selectedFileName}</strong>
+          </small>
+        ) : null}
+
+        <div className="form-file-upload__actions">
+          <button
+            type="button"
+            className="form-file-upload__button"
+            onClick={handleRemoveImage}
+            disabled={isDisabled || isUploading || !hasImage}
+          >
+            Remover imagem
+          </button>
+        </div>
+
+        {isUploading ? (
+          <small className="form-file-upload__status">
+            <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Enviando imagem...
+          </small>
+        ) : null}
+
+        {uploadError ? <small className="form-file-upload__error">{uploadError}</small> : null}
+
+        {hasImage ? (
+          <figure className="form-file-upload__preview">
+            <img src={value} alt={`Preview de ${field.label.toLowerCase()}`} loading="lazy" />
+            <figcaption>{value}</figcaption>
+          </figure>
+        ) : (
+          <small className="form-file-upload__status">Nenhuma imagem selecionada.</small>
+        )}
+      </div>
+
+      {field.helperText ? <small className="form__helper">{field.helperText}</small> : null}
+    </div>
+  );
+}
+
+function MaskedInputField({
+  field,
+  value,
+  disableActions,
+  onChange,
+  onDateChange,
+  onFileUpload,
+}: {
+  field: RecordFormField;
+  value: string;
+  disableActions: boolean;
   onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onDateChange: (fieldName: string, date: Date | null) => void;
+  onFileUpload?: FileUploadHandler;
 }) {
   if (field.type === "date") {
     return (
@@ -340,6 +497,18 @@ function MaskedInputField({
     );
   }
 
+  if (field.type === "file") {
+    return (
+      <FileUploadField
+        field={field}
+        value={value}
+        disableActions={disableActions}
+        onChange={onChange}
+        onFileUpload={onFileUpload}
+      />
+    );
+  }
+
   if (field.type === "select") {
     return (
       <div className="box-input">
@@ -349,7 +518,7 @@ function MaskedInputField({
           name={field.name}
           value={value}
           onChange={onChange}
-          required
+          required={field.required !== false}
           disabled={field.disabled}
         >
           <option value="">{field.placeholder ?? `Selecione ${field.label.toLowerCase()}`}</option>
@@ -388,7 +557,7 @@ function MaskedInputField({
           }
           autoComplete={field.type === "phone" ? "tel" : "off"}
           disabled={field.disabled}
-          required
+          required={field.required !== false}
           onAccept={(acceptedValue) => {
             const syntheticEvent = {
               target: {
@@ -418,7 +587,7 @@ function MaskedInputField({
         }
         value={value}
         onChange={onChange}
-        required
+        required={field.required !== false}
         placeholder={field.placeholder ?? (field.type === "email" ? "email@exemplo.com" : "")}
         autoComplete={field.type === "email" ? "email" : "off"}
         disabled={field.disabled}
@@ -433,14 +602,17 @@ export default function Form({
   fields,
   mode,
   handleInput,
+  handleFileUpload,
   handleSubmit,
   handleBack,
+  handleResetFields,
   searchName,
   setSearchName,
   textTitle,
   textButton,
   className = "",
   backButtonLabel = "Voltar",
+  resetButtonLabel = "Limpar campos",
   disableActions = false,
 }: FormProps) {
   const handleDateChange = (fieldName: string, date: Date | null) => {
@@ -482,8 +654,10 @@ export default function Form({
             key={field.name}
             field={field}
             value={data[field.name] ?? ""}
+            disableActions={disableActions}
             onChange={handleInput}
             onDateChange={handleDateChange}
+            onFileUpload={handleFileUpload}
           />
         ))}
 
@@ -491,6 +665,11 @@ export default function Form({
         <button type="submit" disabled={disableActions}>
           {textButton}
         </button>
+        {handleResetFields ? (
+          <button type="button" onClick={handleResetFields} disabled={disableActions}>
+            {resetButtonLabel}
+          </button>
+        ) : null}
         <button type="button" onClick={handleBack} disabled={disableActions}>
           {backButtonLabel}
         </button>

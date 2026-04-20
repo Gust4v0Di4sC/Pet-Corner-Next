@@ -8,11 +8,18 @@ type Props = {
   open: boolean;
   title: string;
   submitLabel: string;
+  resetButtonLabel?: string;
   fields: RecordFormField[];
   data: RecordFormData;
   isSubmitting?: boolean;
   onClose: () => void;
   onInputChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
+  onFileUpload?: (params: {
+    fieldName: string;
+    file: File;
+    currentValue: string;
+  }) => Promise<string>;
+  onResetFields?: () => void;
   onSubmit: FormEventHandler;
 };
 
@@ -20,11 +27,14 @@ export default function RecordFormModal({
   open,
   title,
   submitLabel,
+  resetButtonLabel,
   fields,
   data,
   isSubmitting = false,
   onClose,
   onInputChange,
+  onFileUpload,
+  onResetFields,
   onSubmit,
 }: Props) {
   useEffect(() => {
@@ -78,9 +88,12 @@ export default function RecordFormModal({
           fields={fields}
           mode="create"
           handleInput={onInputChange}
+          handleFileUpload={onFileUpload}
           handleSubmit={onSubmit}
           handleBack={onClose}
+          handleResetFields={onResetFields}
           textButton={isSubmitting ? "Salvando..." : submitLabel}
+          resetButtonLabel={resetButtonLabel}
           textTitle={title}
         />
       </div>

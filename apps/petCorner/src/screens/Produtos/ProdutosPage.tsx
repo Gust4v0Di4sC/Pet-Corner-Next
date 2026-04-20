@@ -1,4 +1,4 @@
-import { useMemo, useRef, type ChangeEvent } from "react";
+import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import logoimg from "../../assets/Logo.svg";
@@ -19,6 +19,12 @@ import Main from "../../components/Templates/Main";
 import { useToast } from "../../hooks/useToast";
 import { useProductCatalog } from "../../hooks/product/useProductCatalog";
 import { useProducts } from "../../hooks/useProducts";
+import { fetchCosmosProductImageByCode } from "../../services/cosmosCatalogService";
+import { setProductCatalogItemImage } from "../../services/productCatalogService";
+import {
+  importProductImageFromUrl,
+  uploadProductImage,
+} from "../../services/productImageService";
 import type { Product } from "../../types/product";
 import { normalizeCatalogCode } from "../../utils/product/productCatalog.util";
 import "./produtos.css";
@@ -44,7 +50,14 @@ const baseProductFields: RecordFormField[] = [
       mapToRadix: ["."],
     },
   },
-  { name: "code", label: "Codigo", type: "text", placeholder: "Ex.: PET-RA-001" },
+  { name: "code", label: "Código", type: "text", placeholder: "Ex.: PET-RA-001" },
+  {
+    name: "imageUrl",
+    label: "Imagem do produto",
+    type: "file",
+    required: false,
+    accept: "image/*",
+  },
   {
     name: "quantity",
     label: "Quantidade",
@@ -77,7 +90,7 @@ function buildProductListGroup(products: Product[]): RecordListGroup {
   return {
     title: "Lista de produtos",
     subtitle: `${numberFormatter.format(products.length)} produtos no painel`,
-    emptyMessage: "Nenhum produto cadastrado ate o momento.",
+    emptyMessage: "Nenhum produto cadastrado até o momento.",
     items: [...products]
       .filter(
         (product): product is Product & { id: string } =>
@@ -87,7 +100,7 @@ function buildProductListGroup(products: Product[]): RecordListGroup {
       .map((product) => ({
         id: product.id,
         title: product.name || "Produto sem nome",
-        subtitle: `Codigo ${product.code || "nao informado"}`,
+        subtitle: `Código ${product.code || "não informado"}`,
         detail: `${currencyFormatter.format(product.price)} | ${numberFormatter.format(
           product.quantity
         )} unidades`,
@@ -101,17 +114,30 @@ function getProductFormData(product: Product): RecordFormData {
     name: product.name ?? "",
     price: formatNumberForInput(product.price ?? 0, 2),
     code: product.code ?? "",
+    imageUrl: product.imageUrl ?? "",
     quantity: String(product.quantity ?? ""),
   };
 }
 
 function buildProductPayload(formData: RecordFormData): Omit<Product, "id"> {
+  const trimmedImageUrl = formData.imageUrl.trim();
+
   return {
     name: formData.name.trim(),
     price: parseNumberField(formData.price, "preco"),
     code: formData.code.trim(),
+    imageUrl: trimmedImageUrl,
     quantity: parseNumberField(formData.quantity, "quantidade"),
   };
+}
+
+function isWorkerManagedProductImageUrl(imageUrl: string): boolean {
+  try {
+    const parsedUrl = new URL(imageUrl);
+    return parsedUrl.pathname.includes("/products/image/");
+  } catch {
+    return false;
+  }
 }
 
 export default function ProdutosPage() {
@@ -131,6 +157,64 @@ export default function ProdutosPage() {
     lastImportSummary,
   } = useProductCatalog();
   const isCatalogMutating = isImporting || isSyncingCosmos || isClearingCatalog;
+  const isCatalogCountLoading = isCatalogLoading || isImporting || isSyncingCosmos;
+  const codeImageCacheRef = useRef(new Map<string, string>());
+  const codeLookupInFlightRef = useRef(new Set<string>());
+
+  const handleProductImageUpload = useCallback(
+    async ({ file }: { fieldName: string; file: File; currentValue: string }) => {
+      const uploaded = await uploadProductImage(file);
+      toast.success("Imagem enviada para o bucket com sucesso.");
+      return uploaded.imageUrl;
+    },
+    [toast]
+  );
+
+  const ensureProductImageInBucket = useCallback(
+    async (payload: Omit<Product, "id">): Promise<Omit<Product, "id">> => {
+      const normalizedImageUrl = payload.imageUrl?.trim();
+
+      if (!normalizedImageUrl) {
+        return {
+          ...payload,
+          imageUrl: "",
+        };
+      }
+
+      if (!/^https?:\/\//i.test(normalizedImageUrl) || isWorkerManagedProductImageUrl(normalizedImageUrl)) {
+        return {
+          ...payload,
+          imageUrl: normalizedImageUrl,
+        };
+      }
+
+      const imported = await importProductImageFromUrl(normalizedImageUrl, {
+        code: payload.code,
+      });
+
+      return {
+        ...payload,
+        imageUrl: imported.imageUrl,
+      };
+    },
+    []
+  );
+
+  const handleCreateProduct = useCallback(
+    async (payload: Omit<Product, "id">) => {
+      const payloadWithImage = await ensureProductImageInBucket(payload);
+      await create(payloadWithImage);
+    },
+    [create, ensureProductImageInBucket]
+  );
+
+  const handleUpdateProduct = useCallback(
+    async (recordId: string, payload: Omit<Product, "id">) => {
+      const payloadWithImage = await ensureProductImageInBucket(payload);
+      await update(recordId, payloadWithImage);
+    },
+    [ensureProductImageInBucket, update]
+  );
 
   const catalogOptions = useMemo(
     () =>
@@ -147,6 +231,97 @@ export default function ProdutosPage() {
     [catalogItems]
   );
 
+  const handleProductCodeImageFallback = useCallback(
+    async ({
+      name,
+      nextData,
+      isEditing,
+    }: {
+      name: string;
+      value: string;
+      currentData: RecordFormData;
+      nextData: RecordFormData;
+      isEditing: boolean;
+    }) => {
+      if (isEditing || name !== "code") {
+        return;
+      }
+
+      const selectedCode = nextData.code.trim();
+
+      if (!selectedCode) {
+        return {
+          imageUrl: "",
+        };
+      }
+
+      if (nextData.imageUrl.trim()) {
+        return;
+      }
+
+      const normalizedCode = normalizeCatalogCode(selectedCode);
+      const matchedCatalogItem = catalogByNormalizedCode.get(normalizedCode);
+
+      if (!matchedCatalogItem) {
+        return;
+      }
+
+      if (matchedCatalogItem.imageUrl?.trim()) {
+        return {
+          imageUrl: matchedCatalogItem.imageUrl,
+        };
+      }
+
+      if (codeImageCacheRef.current.has(normalizedCode)) {
+        const cachedImageUrl = codeImageCacheRef.current.get(normalizedCode) ?? "";
+        return cachedImageUrl
+          ? {
+              imageUrl: cachedImageUrl,
+            }
+          : undefined;
+      }
+
+      if (codeLookupInFlightRef.current.has(normalizedCode)) {
+        return;
+      }
+
+      codeLookupInFlightRef.current.add(normalizedCode);
+
+      try {
+        const cosmosImagePayload = await fetchCosmosProductImageByCode(matchedCatalogItem.code);
+
+        if (!cosmosImagePayload.hasImage || !cosmosImagePayload.imageUrl.trim()) {
+          codeImageCacheRef.current.set(normalizedCode, "");
+          return;
+        }
+
+        const importedAsset = await importProductImageFromUrl(cosmosImagePayload.imageUrl, {
+          code: matchedCatalogItem.code,
+        });
+        const importedImageUrl = importedAsset.imageUrl.trim();
+
+        if (!importedImageUrl) {
+          codeImageCacheRef.current.set(normalizedCode, "");
+          return;
+        }
+
+        codeImageCacheRef.current.set(normalizedCode, importedImageUrl);
+
+        void setProductCatalogItemImage(normalizedCode, importedImageUrl).catch(() => undefined);
+
+        return {
+          imageUrl: importedImageUrl,
+        };
+      } catch {
+        codeImageCacheRef.current.set(normalizedCode, "");
+        return;
+      } finally {
+        codeLookupInFlightRef.current.delete(normalizedCode);
+      }
+    },
+    [catalogByNormalizedCode]
+  );
+
   const productFormConfig = useMemo<RecordFormConfig>(
     () => ({
       entityLabel: "produto",
@@ -154,7 +329,7 @@ export default function ProdutosPage() {
       createSubmitLabel: "Adicionar produto",
       createSuccessMessage: "Produto cadastrado com sucesso!",
       editTitle: "Editar produto",
-      editSubmitLabel: "Salvar alteracoes",
+      editSubmitLabel: "Salvar alterações",
       editSuccessMessage: "Produto atualizado com sucesso!",
       deleteSuccessMessage: "Produto removido com sucesso!",
       fields: baseProductFields,
@@ -169,15 +344,15 @@ export default function ProdutosPage() {
                 placeholder: context.isEditing
                   ? "Ex.: PET-RA-001"
                   : catalogOptions.length
-                    ? "Digite ou selecione um codigo do catalogo"
+                    ? "Digite ou selecione um código do catálogo"
                     : "Importe uma planilha ou sincronize via Cosmos",
                 helperText: context.isEditing
                   ? undefined
                   : catalogOptions.length
                     ? `${numberFormatter.format(
                         catalogOptions.length
-                      )} codigos disponiveis para autopreenchimento.`
-                    : "Nenhum catalogo carregado. Importe CSV/XLSX ou sincronize via Cosmos.",
+                      )} códigos disponíveis para autopreenchimento.`
+                    : "Nenhum catálogo carregado. Importe CSV/XLSX ou sincronize via Cosmos.",
               }
         ),
       mapInput: ({ name, value, currentData, isEditing }) => {
@@ -197,6 +372,7 @@ export default function ProdutosPage() {
           ...nextData,
           code: matchedCatalogItem.code,
           name: matchedCatalogItem.name,
+          imageUrl: matchedCatalogItem.imageUrl ?? nextData.imageUrl,
           price: formatNumberForInput(matchedCatalogItem.price, 2),
           quantity:
             typeof matchedCatalogItem.quantity === "number"
@@ -223,19 +399,19 @@ export default function ProdutosPage() {
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel sincronizar o catalogo via Cosmos agora."
+          : "Não foi possível sincronizar o catálogo via Cosmos agora."
       );
     }
   };
 
   const handleClearCatalog = async () => {
     if (!catalogItems.length) {
-      toast.info("Nao ha codigos importados para limpar.");
+      toast.info("Não há códigos importados para limpar.");
       return;
     }
 
     const shouldClear = window.confirm(
-      "Deseja realmente limpar todas as importacoes do catalogo? Essa acao remove a lista de codigos de autopreenchimento."
+      "Deseja realmente limpar todas as importações do catálogo? Essa ação remove a lista de códigos de autopreenchimento."
     );
 
     if (!shouldClear) {
@@ -245,13 +421,13 @@ export default function ProdutosPage() {
     try {
       const deletedItems = await clearCatalog();
       toast.success(
-        `Catalogo limpo com sucesso. ${numberFormatter.format(deletedItems)} registro(s) removido(s).`
+        `Catálogo limpo com sucesso. ${numberFormatter.format(deletedItems)} registro(s) removido(s).`
       );
     } catch (error) {
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel limpar as importacoes agora."
+          : "Não foi possível limpar as importações agora."
       );
     }
   };
@@ -266,13 +442,13 @@ export default function ProdutosPage() {
     try {
       const summary = await importCatalog(file);
       toast.success(
-        `Catalogo importado: ${summary.imported} novos, ${summary.updated} atualizados e ${summary.ignored} ignorados.`
+        `Catálogo importado: ${summary.imported} novos, ${summary.updated} atualizados e ${summary.ignored} ignorados.`
       );
     } catch (error) {
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel importar o catalogo agora."
+          : "Não foi possível importar o catálogo agora."
       );
     } finally {
       event.target.value = "";
@@ -280,11 +456,11 @@ export default function ProdutosPage() {
   };
 
   const templateHref = `${import.meta.env.BASE_URL}product-catalog-template.csv`;
-  const importCatalogTooltip = "Importar catalogo via arquivo CSV ou XLSX";
+  const importCatalogTooltip = "Importar catálogo via arquivo CSV ou XLSX";
   const cosmosSyncTooltip =
-    "Sincroniza o catalogo base da Cosmos e atualiza os codigos no sistema.";
+    "Sincroniza o catálogo base da Cosmos e atualiza os códigos no sistema.";
   const clearCatalogTooltip =
-    "Remove todos os codigos importados para reiniciar o catalogo.";
+    "Remove todos os códigos importados para reiniciar o catálogo.";
 
   return (
     <AppShell logoSrc={logoimg}>
@@ -321,7 +497,7 @@ export default function ProdutosPage() {
                   onClick={handleOpenFilePicker}
                   disabled={isCatalogMutating}
                   title={importCatalogTooltip}
-                  aria-label={isImporting ? "Importando catalogo" : "Importar catalogo"}
+                  aria-label={isImporting ? "Importando catálogo" : "Importar catálogo"}
                 >
                   <i
                     className={`fa ${isImporting ? "fa-spinner fa-spin" : "fa-file-arrow-up"}`}
@@ -349,7 +525,7 @@ export default function ProdutosPage() {
                   onClick={handleClearCatalog}
                   disabled={isCatalogMutating || catalogItems.length === 0}
                   title={clearCatalogTooltip}
-                  aria-label={isClearingCatalog ? "Limpando importacoes" : "Limpar importacoes"}
+                  aria-label={isClearingCatalog ? "Limpando importações" : "Limpar importações"}
                 >
                   <i
                     className={`fa ${isClearingCatalog ? "fa-spinner fa-spin" : "fa-trash-can"}`}
@@ -373,8 +549,23 @@ export default function ProdutosPage() {
 
             <div className="product-catalog-card__stats">
               <article>
-                <strong>{numberFormatter.format(catalogItems.length)}</strong>
-                <span>codigos disponiveis</span>
+                <strong>
+                  {isCatalogCountLoading ? (
+                    <span
+                      className="product-catalog-card__paw-loader"
+                      role="status"
+                      aria-live="polite"
+                      aria-label="Carregando códigos disponíveis"
+                    >
+                      <i className="fa fa-paw" aria-hidden="true" />
+                      <i className="fa fa-paw" aria-hidden="true" />
+                      <i className="fa fa-paw" aria-hidden="true" />
+                    </span>
+                  ) : (
+                    numberFormatter.format(catalogItems.length)
+                  )}
+                </strong>
+                <span>códigos disponíveis</span>
               </article>
               <article>
                 <strong>{isCatalogLoading ? "..." : "CSV / XLSX / Cosmos"}</strong>
@@ -383,10 +574,10 @@ export default function ProdutosPage() {
             </div>
 
             <div className="product-catalog-card__summary">
-              <strong>Ultima importacao:</strong>{" "}
+              <strong>Última importação:</strong>{" "}
               {lastImportSummary
-                ? `${lastImportSummary.sourceFileName} | ${lastImportSummary.validRows} validos | ${lastImportSummary.imported} novos | ${lastImportSummary.updated} atualizados | ${lastImportSummary.ignored} ignorados`
-                : "nenhuma importacao realizada ainda."}
+                ? `${lastImportSummary.sourceFileName} | ${lastImportSummary.validRows} válidos | ${lastImportSummary.imported} novos | ${lastImportSummary.updated} atualizados | ${lastImportSummary.ignored} ignorados`
+                : "nenhuma importação realizada ainda."}
             </div>
           </section>
 
@@ -401,12 +592,15 @@ export default function ProdutosPage() {
             addAriaLabel="Adicionar novo produto"
             getFormData={getProductFormData}
             buildPayload={buildProductPayload}
-            onCreate={create}
-            onUpdate={update}
+            onCreate={handleCreateProduct}
+            onUpdate={handleUpdateProduct}
             onDelete={remove}
+            onFileUpload={handleProductImageUpload}
+            onInputAsyncEffect={handleProductCodeImageFallback}
           />
         </div>
       </Main>
     </AppShell>
   );
 }
+

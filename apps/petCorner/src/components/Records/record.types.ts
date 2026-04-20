@@ -23,13 +23,15 @@ export type RecordFormMask =
 export type RecordFormField = {
   name: string;
   label: string;
-  type: "text" | "email" | "phone" | "date" | "number" | "select" | "autocomplete";
+  type: "text" | "email" | "phone" | "date" | "number" | "select" | "autocomplete" | "file";
   placeholder?: string;
   inputMode?: "text" | "email" | "tel" | "numeric" | "decimal";
   options?: RecordFormOption[];
   mask?: RecordFormMask;
   disabled?: boolean;
   helperText?: string;
+  required?: boolean;
+  accept?: string;
 };
 
 export type RecordFormData = Record<string, string>;

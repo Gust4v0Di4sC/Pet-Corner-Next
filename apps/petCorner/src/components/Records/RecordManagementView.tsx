@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,6 +24,18 @@ type Props<TRecord extends { id?: string }, TPayload> = {
   onCreate: (payload: TPayload) => Promise<void>;
   onUpdate: (recordId: string, payload: TPayload) => Promise<void>;
   onDelete: (recordId: string) => Promise<void>;
+  onFileUpload?: (params: {
+    fieldName: string;
+    file: File;
+    currentValue: string;
+  }) => Promise<string>;
+  onInputAsyncEffect?: (params: {
+    name: string;
+    value: string;
+    currentData: RecordFormData;
+    nextData: RecordFormData;
+    isEditing: boolean;
+  }) => Promise<Partial<RecordFormData> | void> | Partial<RecordFormData> | void;
 };
 
 export default function RecordManagementView<TRecord extends { id?: string }, TPayload>({
@@ -41,6 +53,8 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   onCreate,
   onUpdate,
   onDelete,
+  onFileUpload,
+  onInputAsyncEffect,
 }: Props<TRecord, TPayload>) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -49,6 +63,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const [busyRecordId, setBusyRecordId] = useState<string | null>(null);
   const [pendingDeleteRecordId, setPendingDeleteRecordId] = useState<string | null>(null);
+  const latestInputEffectRequestRef = useRef(0);
   const [formData, setFormData] = useState<RecordFormData>(() => ({
     ...formConfig.initialValues,
   }));
@@ -96,6 +111,10 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     setFormData({ ...formConfig.initialValues });
   };
 
+  const handleResetFormFields = () => {
+    setFormData({ ...formConfig.initialValues });
+  };
+
   const closeDeleteModal = () => {
     if (busyRecordId && busyRecordId === pendingDeleteRecordId) {
       return;
@@ -108,18 +127,51 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = event.target;
-    setFormData((currentData) =>
-      formConfig.mapInput
-        ? formConfig.mapInput({ name, value, currentData, isEditing })
-        : { ...currentData, [name]: value }
-    );
+    const previousDataSnapshot = formData;
+    const nextDataSnapshot = formConfig.mapInput
+      ? formConfig.mapInput({ name, value, currentData: formData, isEditing })
+      : { ...formData, [name]: value };
+
+    setFormData(nextDataSnapshot);
+
+    if (!onInputAsyncEffect) {
+      return;
+    }
+
+    const requestId = ++latestInputEffectRequestRef.current;
+
+    void Promise.resolve(
+      onInputAsyncEffect({
+        name,
+        value,
+        currentData: previousDataSnapshot,
+        nextData: nextDataSnapshot,
+        isEditing,
+      })
+    ).then((patch) => {
+      if (!patch || requestId !== latestInputEffectRequestRef.current) {
+        return;
+      }
+
+      setFormData((currentData) => {
+        const nextData = { ...currentData };
+
+        Object.entries(patch).forEach(([fieldName, fieldValue]) => {
+          if (typeof fieldValue === "string") {
+            nextData[fieldName] = fieldValue;
+          }
+        });
+
+        return nextData;
+      });
+    });
   };
 
   const handleEditRecord = (recordId: string) => {
     const selectedRecord = recordsById.get(recordId);
 
     if (!selectedRecord) {
-      toast.warning("Nao foi possivel localizar o registro.");
+      toast.warning("Não foi possível localizar o registro.");
       return;
     }
 
@@ -130,7 +182,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 
   const handleDeleteRecord = (recordId: string) => {
     if (!recordsById.has(recordId)) {
-      toast.warning("Nao foi possivel localizar o registro.");
+      toast.warning("Não foi possível localizar o registro.");
       return;
     }
 
@@ -149,7 +201,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
       toast.success(formConfig.deleteSuccessMessage);
       setPendingDeleteRecordId(null);
     } catch {
-      toast.warning("Nao foi possivel excluir o registro agora.");
+      toast.warning("Não foi possível excluir o registro agora.");
     } finally {
       setBusyRecordId(null);
     }
@@ -160,7 +212,10 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 
     if (
       resolvedFields.some(
-        (field) => !field.disabled && !String(formData[field.name] ?? "").trim()
+        (field) =>
+          !field.disabled &&
+          field.required !== false &&
+          !String(formData[field.name] ?? "").trim()
       )
     ) {
       toast.warning("Preencha todos os campos antes de salvar.");
@@ -185,7 +240,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel salvar o registro agora."
+          : "Não foi possível salvar o registro agora."
       );
     } finally {
       setIsSubmitting(false);
@@ -227,11 +282,14 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
         open={isFormModalOpen}
         title={modalTitle}
         submitLabel={modalSubmitLabel}
+        resetButtonLabel="Limpar campos"
         fields={resolvedFields}
         data={formData}
         isSubmitting={isSubmitting}
         onClose={closeFormModal}
         onInputChange={handleInputChange}
+        onFileUpload={onFileUpload}
+        onResetFields={handleResetFormFields}
         onSubmit={handleSubmitRecord}
       />
 

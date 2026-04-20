@@ -272,7 +272,9 @@
   position: relative;
   width: min(680px, 100%);
   max-height: calc(100vh - 2rem);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: 1.5rem;
   border-radius: 26px;
   background: #ffffff;
@@ -285,16 +287,14 @@
 }
 
 .record-modal__close {
-  position: sticky;
-  top: 0;
-  left: calc(100% - 48px);
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
   z-index: 1;
   display: inline-grid;
   place-items: center;
   width: 42px;
   height: 42px;
-  margin-left: auto;
-  margin-bottom: 0.5rem;
   border: 0;
   border-radius: 14px;
   background: #eef2f4;
