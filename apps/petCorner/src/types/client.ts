@@ -10,6 +10,7 @@ export type Client = {
   age: Timestamp;
   email: string;
   phone: number;
+  address: string;
 };
 
 /**
@@ -42,6 +43,7 @@ export type ClientDisplay = {
   age: string; // dd/MM/yyyy
   email: string;
   phone: number;
+  address: string;
 };
 
 export type UseClientReturn = {

@@ -23,6 +23,7 @@ const clientFields: RecordFormField[] = [
   { name: "age", label: "Data de nascimento", type: "date" },
   { name: "email", label: "E-mail", type: "email" },
   { name: "phone", label: "Telefone", type: "phone" },
+  { name: "address", label: "Endereço", type: "text", placeholder: "Rua, número, bairro" },
 ];
 
 const clientFormConfig: RecordFormConfig = {
@@ -31,7 +32,7 @@ const clientFormConfig: RecordFormConfig = {
   createSubmitLabel: "Adicionar cliente",
   createSuccessMessage: "Cliente cadastrado com sucesso!",
   editTitle: "Editar cliente",
-  editSubmitLabel: "Salvar alteracoes",
+  editSubmitLabel: "Salvar alterações",
   editSuccessMessage: "Cliente atualizado com sucesso!",
   deleteSuccessMessage: "Cliente removido com sucesso!",
   fields: clientFields,
@@ -60,7 +61,7 @@ function buildClientListGroup(clients: Client[]): RecordListGroup {
   return {
     title: "Lista de clientes",
     subtitle: `${numberFormatter.format(clients.length)} registros encontrados`,
-    emptyMessage: "Nenhum cliente registrado ate o momento.",
+    emptyMessage: "Nenhum cliente registrado até o momento.",
     items: [...clients]
       .filter((client) => client.id)
       .sort((left, right) => left.name.localeCompare(right.name))
@@ -70,7 +71,7 @@ function buildClientListGroup(clients: Client[]): RecordListGroup {
         subtitle: client.email || "Sem e-mail cadastrado",
         detail: `Nascimento ${formatDateToString(client.age.toDate())} | Telefone ${String(
           client.phone || "-"
-        )}`,
+        )} | Endereço ${client.address || "-"}`,
         badge: `${getClientAgeInYears(client)} anos`,
       })),
   };
@@ -82,6 +83,7 @@ function getClientFormData(client: Client): RecordFormData {
     age: formatDateToString(client.age.toDate()),
     email: client.email ?? "",
     phone: String(client.phone ?? ""),
+    address: client.address ?? "",
   };
 }
 
@@ -91,6 +93,7 @@ function buildClientPayload(formData: RecordFormData): Omit<Client, "id"> {
     age: parseDateField(formData.age),
     email: formData.email.trim(),
     phone: parsePhoneField(formData.phone),
+    address: formData.address.trim(),
   };
 }
 

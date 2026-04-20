@@ -21,6 +21,7 @@ export const routeMapper: RouteMapper = {
       { header: "Data de Nascimento", accessor: "age" },
       { header: "Email", accessor: "email" },
       { header: "Telefone", accessor: "phone" },
+      { header: "Endereço", accessor: "address" },
     ] as ColumnType<"clientes">[]
   },
   "/caes": {

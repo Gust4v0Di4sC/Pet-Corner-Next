@@ -26,6 +26,7 @@ export function normalizeClient(item: RawClientData): Client {
     age: toTimestamp(item.age),
     email: typeof item.email === "string" ? item.email : "",
     phone: typeof item.phone === "number" ? item.phone : Number(item.phone ?? 0),
+    address: typeof item.address === "string" ? item.address : "",
   };
 }
 
@@ -47,6 +48,7 @@ export function toClientDisplay(raw: RawClientData | null | undefined): ClientDi
     age: formatDateToString(ageDate),
     email: typeof raw.email === "string" ? raw.email : "",
     phone: typeof raw.phone === "number" ? raw.phone : Number(raw.phone ?? 0),
+    address: typeof raw.address === "string" ? raw.address : "",
   };
 }
 

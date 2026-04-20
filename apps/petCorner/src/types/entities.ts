@@ -6,6 +6,7 @@ export type Client = {
   age: Timestamp
   email: string
   phone: number
+  address: string
 }
 
 export type Dog = {
@@ -23,6 +24,7 @@ export type Product = {
   price: number
   code: string
   quantity: number
+  imageUrl?: string
 }
 
 // src/types/entities.ts
