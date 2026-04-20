@@ -27,16 +27,6 @@ export default function Dashboard() {
 
   return (
     <section className="dashboard-view">
-      <div className="dashboard-hero">
-        <div>
-          <h2>Resumo em tempo real dos dados cadastrados</h2>
-          <p>
-            Acompanhe clientes, animais e produtos com uma leitura mais direta do
-            que ja foi cadastrado no sistema.
-          </p>
-        </div>
-      </div>
-
       {isInitialLoading ? (
         <AppLoader className="dashboard-loader" message="Carregando indicadores do dashboard..." />
       ) : (

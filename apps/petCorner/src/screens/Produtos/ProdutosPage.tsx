@@ -264,10 +264,8 @@ export default function ProdutosPage() {
                 <p className="product-catalog-card__eyebrow">Catalogo base</p>
                 <h3>Importe uma tabela de produtos do pet shop</h3>
                 <p className="product-catalog-card__description">
-                  Envie um arquivo CSV ou XLSX com codigo, nome e preco, ou sincronize
-                  uma base de produtos comuns pela API oficial da Cosmos. Os codigos
-                  carregados ficam disponiveis no formulario de novo produto para
-                  autopreencher o restante dos dados.
+                  Envie um arquivo CSV ou XLSX, sincronize com a API do Cosmos ou
+                  baixe um template.
                 </p>
               </div>
 
@@ -286,6 +284,7 @@ export default function ProdutosPage() {
                   className="product-catalog-card__button product-catalog-card__button--secondary"
                   onClick={handleCosmosSync}
                   disabled={isImporting || isSyncingCosmos}
+                  title="Sincroniza o catalogo base da Cosmos e atualiza os codigos no sistema."
                 >
                   {isSyncingCosmos ? "Sincronizando..." : "Sincronizar via Cosmos"}
                 </button>
@@ -313,24 +312,14 @@ export default function ProdutosPage() {
                 <strong>{isCatalogLoading ? "..." : "CSV / XLSX / Cosmos"}</strong>
                 <span>fontes aceitas</span>
               </article>
-              <article>
-                <strong>productCatalog</strong>
-                <span>colecao do Firestore</span>
-              </article>
             </div>
 
-            {lastImportSummary ? (
-              <div className="product-catalog-card__summary">
-                <strong>Ultima importacao:</strong> {lastImportSummary.sourceFileName} |{" "}
-                {lastImportSummary.validRows} validos | {lastImportSummary.imported} novos |{" "}
-                {lastImportSummary.updated} atualizados | {lastImportSummary.ignored} ignorados
-              </div>
-            ) : (
-              <div className="product-catalog-card__summary">
-                <strong>Integracao segura:</strong> a sincronizacao Cosmos usa um
-                Worker da Cloudflare com token protegido fora do navegador.
-              </div>
-            )}
+            <div className="product-catalog-card__summary">
+              <strong>Ultima importacao:</strong>{" "}
+              {lastImportSummary
+                ? `${lastImportSummary.sourceFileName} | ${lastImportSummary.validRows} validos | ${lastImportSummary.imported} novos | ${lastImportSummary.updated} atualizados | ${lastImportSummary.ignored} ignorados`
+                : "nenhuma importacao realizada ainda."}
+            </div>
           </section>
 
           <RecordManagementView
