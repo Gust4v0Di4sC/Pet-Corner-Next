@@ -190,15 +190,47 @@ aside.menu-area:not(.is-open) .menu__link.is-active{
     .menu{
         padding-top: calc(var(--logo-height) + 0.8rem);
     }
+
+    .menu-toggle{
+        width: 50px;
+        height: 50px;
+        border-radius: 16px;
+    }
 }
 
-@media(max-width: 576px){
+@media(max-width: 575px){
     .menu{
-        width: 76px;
-        padding-inline: 0.65rem;
+        width: var(--aside-width);
+        gap: 0.7rem;
+        padding-top: calc(var(--logo-height) + 0.65rem);
+        padding-inline: 0.5rem;
+        padding-bottom: calc(var(--footer-height) + 0.65rem);
     }
 
     aside.menu-area.is-open .menu{
-        width: min(calc(100vw - 12px), 288px);
+        width: min(calc(100vw - 12px), var(--drawer-width));
+    }
+
+    .menu-toggle{
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        font-size: 1rem;
+    }
+
+    .menu__link,
+    .menu__logout{
+        min-height: 48px;
+        border-radius: 14px;
+        padding: 0.8rem 0.85rem;
+    }
+
+    aside.menu-area:not(.is-open) .menu__link,
+    aside.menu-area:not(.is-open) .menu__logout{
+        padding-inline: 0;
+    }
+
+    .menu__tooltip{
+        display: none !important;
     }
 }

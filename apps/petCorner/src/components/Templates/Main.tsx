@@ -21,7 +21,7 @@ const Main: React.FC<MainProps> = ({
   contentClassName = "",
 }) => {
   const mainClassName = `content${fillHeight ? " content--fill" : ""}`;
-  const wrapperClassName = `p-3 mt-3 ${contentClassName}`.trim();
+  const wrapperClassName = `content__panel ${contentClassName}`.trim();
 
   return (
     <Fragment>

@@ -3,7 +3,35 @@ footer.footer{
     align-items: center;
     justify-content: flex-end;
     height: 100%;
-    padding: 0 25px;
+    min-height: var(--footer-height);
+    padding: 0 clamp(0.75rem, 2vw, 1.5rem);
     background-color: #fff;
     box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+footer.footer span{
+    max-width: 100%;
+    color: #1a2f3a;
+    font-size: 0.82rem;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px){
+    footer.footer span{
+        font-size: 0.76rem;
+    }
+}
+
+@media (max-width: 575px){
+    footer.footer{
+        justify-content: center;
+        padding: 0 0.5rem;
+    }
+
+    footer.footer span{
+        font-size: 0.68rem;
+        text-align: center;
+    }
 }

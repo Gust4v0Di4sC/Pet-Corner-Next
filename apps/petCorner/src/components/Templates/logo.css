@@ -25,14 +25,18 @@ aside.logo img{
     object-fit: contain;
 }
 
-@media (max-width: 576px){
-    aside.logo img{
-        max-width: 160px;
-    }
-}
-
 @media (max-width: 844px){
     aside.logo img{
         max-width: 64px;
+    }
+}
+
+@media (max-width: 575px){
+    .app aside.logo{
+        padding: 0.5rem;
+    }
+
+    aside.logo img{
+        max-width: 88px;
     }
 }
