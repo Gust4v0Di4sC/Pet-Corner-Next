@@ -2,9 +2,12 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const COSMOS_API_BASE_URL = "https://api.cosmos.bluesoft.com.br";
 const COSMOS_SOURCE_FILE_NAME = "Cosmos API";
+const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
 const FIREBASE_JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
 );
+
 const COMMON_PET_SEARCHES = [
   { query: "racao caes", category: "Alimento para Caes" },
   { query: "racao gatos", category: "Alimento para Gatos" },
@@ -16,6 +19,91 @@ const COMMON_PET_SEARCHES = [
   { query: "comedouro pet", category: "Acessorios" },
   { query: "brinquedo cachorro", category: "Brinquedos" },
 ];
+
+const CHAT_COLLECTION_SCHEMAS = {
+  clientes: {
+    filterableFields: ["id", "name", "email", "phone"],
+    numericFields: ["phone"],
+    sampleFields: ["id", "name", "email", "phone", "age"],
+    label: "clientes",
+  },
+  dogs: {
+    filterableFields: ["id", "name", "animalType", "breed", "age", "weight"],
+    numericFields: ["age", "weight"],
+    sampleFields: ["id", "name", "animalType", "breed", "age", "weight"],
+    label: "animais",
+  },
+  prods: {
+    filterableFields: ["id", "name", "code", "price", "quantity"],
+    numericFields: ["price", "quantity"],
+    sampleFields: ["id", "name", "code", "price", "quantity"],
+    label: "produtos",
+  },
+  productCatalog: {
+    filterableFields: [
+      "id",
+      "code",
+      "codeNormalized",
+      "name",
+      "brand",
+      "category",
+      "price",
+      "quantity",
+      "sourceFileName",
+      "isTemplate",
+    ],
+    numericFields: ["price", "quantity"],
+    sampleFields: [
+      "id",
+      "code",
+      "name",
+      "brand",
+      "category",
+      "price",
+      "quantity",
+      "sourceFileName",
+      "isTemplate",
+    ],
+    label: "catalogo de produtos",
+  },
+};
+
+const CHAT_RATE_LIMIT_STORE = new Map();
+const CHAT_ALLOWED_ACTIONS = new Set(["count", "list", "sum", "avg"]);
+const CHAT_ALLOWED_OPERATORS = new Set(["eq", "contains", "gt", "gte", "lt", "lte"]);
+const DEFAULT_CHAT_LIMIT = 5;
+
+class HttpError extends Error {
+  constructor(status, message, options = {}) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+    this.retryAfterSeconds = options.retryAfterSeconds;
+  }
+}
+
+function toBoundedInteger(value, fallback, min, max) {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return fallback;
+  }
+
+  const integerValue = Math.trunc(numberValue);
+  return Math.min(Math.max(integerValue, min), max);
+}
+
+function getChatConfig(env) {
+  return {
+    model: String(env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL).trim() || DEFAULT_GEMINI_MODEL,
+    maxQuestionLength: toBoundedInteger(env.CHAT_MAX_QUESTION_LENGTH, 500, 40, 2000),
+    maxDocumentsToScan: toBoundedInteger(env.CHAT_MAX_DOCUMENTS_SCAN, 300, 50, 1000),
+    maxRowsSample: toBoundedInteger(env.CHAT_MAX_ROWS_SAMPLE, 8, 1, 20),
+    maxFilters: toBoundedInteger(env.CHAT_MAX_FILTERS, 3, 1, 6),
+    rateLimitWindowMs: toBoundedInteger(env.CHAT_RATE_LIMIT_WINDOW_MS, 60000, 10000, 3600000),
+    rateLimitMaxRequests: toBoundedInteger(env.CHAT_RATE_LIMIT_MAX_REQUESTS, 8, 1, 120),
+  };
+}
 
 function getAllowedOrigins(env) {
   return String(env.ALLOWED_ORIGINS ?? "")
@@ -82,6 +170,48 @@ function jsonResponse(request, env, body, init = {}) {
     ...init,
     headers,
   });
+}
+
+function normalizePathname(pathname) {
+  const normalizedPathname = String(pathname ?? "").replace(/\/+$/, "");
+  return normalizedPathname || "/";
+}
+
+function getBearerToken(request) {
+  const authorization = request.headers.get("Authorization") ?? "";
+  const [scheme, token] = authorization.split(" ");
+
+  if (scheme !== "Bearer" || !token) {
+    throw new HttpError(401, "Envie um token Firebase valido no header Authorization.");
+  }
+
+  return token;
+}
+
+async function verifyAdminFirebaseToken(token, env) {
+  if (!env.FIREBASE_PROJECT_ID) {
+    throw new HttpError(500, "A variavel FIREBASE_PROJECT_ID nao foi configurada no Worker.");
+  }
+
+  try {
+    const verifiedToken = await jwtVerify(token, FIREBASE_JWKS, {
+      issuer: `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`,
+      audience: env.FIREBASE_PROJECT_ID,
+    });
+    const payload = verifiedToken.payload;
+
+    if (payload.admin !== true) {
+      throw new HttpError(403, "Acesso restrito a administradores.");
+    }
+
+    return payload;
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+
+    throw new HttpError(401, "Token Firebase invalido ou expirado.");
+  }
 }
 
 function normalizeCatalogCode(code) {
@@ -173,32 +303,6 @@ function normalizeCosmosProduct(product, fallbackCategory) {
   };
 }
 
-async function verifyAdminFirebaseToken(request, env) {
-  const authorization = request.headers.get("Authorization") ?? "";
-  const [scheme, token] = authorization.split(" ");
-
-  if (scheme !== "Bearer" || !token) {
-    throw new Error("Envie um token Firebase valido no header Authorization.");
-  }
-
-  let payload;
-
-  try {
-    const verifiedToken = await jwtVerify(token, FIREBASE_JWKS, {
-      issuer: `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`,
-      audience: env.FIREBASE_PROJECT_ID,
-    });
-
-    payload = verifiedToken.payload;
-  } catch {
-    throw new Error("Token Firebase invalido ou expirado.");
-  }
-
-  if (payload.admin !== true) {
-    throw new Error("A sincronizacao da Cosmos e restrita a administradores.");
-  }
-}
-
 async function fetchCosmosSearch(query, env) {
   const endpoint = new URL("/products", COSMOS_API_BASE_URL);
 
@@ -215,11 +319,14 @@ async function fetchCosmosSearch(query, env) {
   });
 
   if (response.status === 401 || response.status === 403) {
-    throw new Error("Token da Cosmos invalido ou sem permissao para consultar a API.");
+    throw new HttpError(500, "Token da Cosmos invalido ou sem permissao para consultar a API.");
   }
 
   if (!response.ok) {
-    throw new Error(`A API da Cosmos retornou erro ${response.status} durante a sincronizacao.`);
+    throw new HttpError(
+      500,
+      `A API da Cosmos retornou erro ${response.status} durante a sincronizacao.`
+    );
   }
 
   const payload = await response.json();
@@ -259,7 +366,7 @@ async function buildCatalogFromCosmos(env) {
   const items = Array.from(catalogItems.values());
 
   if (!items.length) {
-    throw new Error("A Cosmos respondeu, mas nao retornou produtos validos para sincronizar.");
+    throw new HttpError(500, "A Cosmos respondeu, mas nao retornou produtos validos para sincronizar.");
   }
 
   return {
@@ -269,6 +376,804 @@ async function buildCatalogFromCosmos(env) {
     ignored: Math.max(totalRows - items.length, 0),
     sourceFileName: COSMOS_SOURCE_FILE_NAME,
   };
+}
+
+function looksLikePromptInjection(question) {
+  return /\b(ignore|ignora|ignore all|system prompt|prompt interno|regras internas|api key|token|segredo|senha)\b/i.test(
+    question
+  );
+}
+
+function inferCollectionFromQuestion(question) {
+  const normalizedQuestion = question.toLowerCase();
+
+  if (/\bcliente(s)?\b/.test(normalizedQuestion)) {
+    return "clientes";
+  }
+
+  if (/\b(animal|animais|cao|cachorro|dog|gato)\b/.test(normalizedQuestion)) {
+    return "dogs";
+  }
+
+  if (/\b(catalogo|cosmos)\b/.test(normalizedQuestion)) {
+    return "productCatalog";
+  }
+
+  if (/\b(produto|produtos|estoque)\b/.test(normalizedQuestion)) {
+    return "prods";
+  }
+
+  return null;
+}
+
+function createFallbackIntent(question) {
+  const collection = inferCollectionFromQuestion(question);
+
+  if (!collection) {
+    return null;
+  }
+
+  if (/\b(media|average)\b/i.test(question)) {
+    return { action: "avg", collection };
+  }
+
+  if (/\b(soma|somatorio|somat[oó]rio|total de)\b/i.test(question)) {
+    return { action: "sum", collection };
+  }
+
+  if (/\b(lista|listar|mostre|mostrar|quais|quais sao)\b/i.test(question)) {
+    return { action: "list", collection, limit: 5 };
+  }
+
+  return { action: "count", collection };
+}
+
+function buildCollectionSummaryText() {
+  return Object.entries(CHAT_COLLECTION_SCHEMAS)
+    .map(([collection, schema]) => {
+      const filterableFields = schema.filterableFields.join(", ");
+      const numericFields = schema.numericFields.length ? schema.numericFields.join(", ") : "nenhum";
+      return `- ${collection}: filtros [${filterableFields}] | campos numericos [${numericFields}]`;
+    })
+    .join("\n");
+}
+
+function buildIntentPrompt(question) {
+  return [
+    "Voce e um classificador de consultas do sistema PetCorner.",
+    "Retorne SOMENTE um JSON valido, sem markdown e sem texto adicional.",
+    "Schema obrigatorio:",
+    '{ "action": "count|list|sum|avg", "collection": "clientes|dogs|prods|productCatalog", "filters": [{ "field": "campo", "op": "eq|contains|gt|gte|lt|lte", "value": "valor" }], "numericField": "campo numerico opcional", "limit": 5 }',
+    "Use apenas colecoes e campos permitidos.",
+    "Colecoes permitidas:",
+    buildCollectionSummaryText(),
+    "Se a pergunta nao for uma consulta de dados da pet shop, retorne:",
+    '{ "action": "blocked", "collection": null, "filters": [], "limit": 0 }',
+    `Pergunta: ${question}`,
+  ].join("\n");
+}
+
+function extractGeminiText(payload) {
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+  const firstCandidate = candidates[0];
+  const parts = Array.isArray(firstCandidate?.content?.parts) ? firstCandidate.content.parts : [];
+  const textPart = parts.find((part) => typeof part?.text === "string");
+  return textPart?.text ?? "";
+}
+
+function tryParseModelJson(rawText) {
+  const sanitizedText = String(rawText ?? "")
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  if (!sanitizedText) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(sanitizedText);
+  } catch {
+    return null;
+  }
+}
+
+async function inferIntentWithGemini(question, env, chatConfig) {
+  const endpoint = `${GEMINI_API_BASE_URL}/models/${encodeURIComponent(
+    chatConfig.model
+  )}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: buildIntentPrompt(question) }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 512,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+
+  if (response.status === 429) {
+    throw new HttpError(429, "Limite de cota do Gemini atingido. Tente novamente em instantes.");
+  }
+
+  if (!response.ok) {
+    throw new Error(`Falha ao consultar o Gemini (status ${response.status}).`);
+  }
+
+  const payload = await response.json();
+  const responseText = extractGeminiText(payload);
+  const parsedResponse = tryParseModelJson(responseText);
+
+  if (!parsedResponse || typeof parsedResponse !== "object") {
+    throw new Error("O Gemini retornou uma resposta invalida para classificacao.");
+  }
+
+  return parsedResponse;
+}
+
+function normalizeFilterOperator(operator) {
+  const normalizedOperator = String(operator ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!normalizedOperator) {
+    return "eq";
+  }
+
+  const mappedOperator =
+    normalizedOperator === "==" || normalizedOperator === "="
+      ? "eq"
+      : normalizedOperator === "equals"
+        ? "eq"
+        : normalizedOperator;
+
+  return CHAT_ALLOWED_OPERATORS.has(mappedOperator) ? mappedOperator : "eq";
+}
+
+function normalizeFilterValue(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    return trimmedValue;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  return null;
+}
+
+function normalizeAction(rawAction) {
+  const normalizedAction = String(rawAction ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!normalizedAction) {
+    return "count";
+  }
+
+  if (normalizedAction === "count_docs") {
+    return "count";
+  }
+
+  if (normalizedAction === "list_docs") {
+    return "list";
+  }
+
+  if (normalizedAction === "sum_field") {
+    return "sum";
+  }
+
+  if (normalizedAction === "average" || normalizedAction === "mean") {
+    return "avg";
+  }
+
+  return CHAT_ALLOWED_ACTIONS.has(normalizedAction) ? normalizedAction : "count";
+}
+
+function sanitizeIntent(rawIntent, question, chatConfig) {
+  if (looksLikePromptInjection(question)) {
+    throw new HttpError(400, "Pergunta bloqueada por politica de seguranca do chat.");
+  }
+
+  if (!rawIntent || typeof rawIntent !== "object") {
+    throw new HttpError(400, "Nao foi possivel interpretar a pergunta dentro do escopo permitido.");
+  }
+
+  const intent = rawIntent;
+  const action = normalizeAction(intent.action ?? intent.intent);
+
+  if (String(intent.action ?? "").trim().toLowerCase() === "blocked") {
+    throw new HttpError(400, "Pergunta fora do escopo permitido para consulta.");
+  }
+
+  const rawCollection = String(intent.collection ?? "")
+    .trim()
+    .toLowerCase();
+  const collection = CHAT_COLLECTION_SCHEMAS[rawCollection]
+    ? rawCollection
+    : inferCollectionFromQuestion(question);
+
+  if (!collection || !CHAT_COLLECTION_SCHEMAS[collection]) {
+    throw new HttpError(400, "Pergunta fora do escopo permitido para consulta.");
+  }
+
+  const schema = CHAT_COLLECTION_SCHEMAS[collection];
+  const rawFilters = Array.isArray(intent.filters) ? intent.filters : [];
+  const filters = rawFilters
+    .slice(0, chatConfig.maxFilters)
+    .map((rawFilter) => {
+      if (!rawFilter || typeof rawFilter !== "object") {
+        return null;
+      }
+
+      const field = String(rawFilter.field ?? "")
+        .trim()
+        .replace(/\s+/g, "");
+      const operator = normalizeFilterOperator(rawFilter.op ?? rawFilter.operator);
+      const value = normalizeFilterValue(rawFilter.value);
+
+      if (!field || !schema.filterableFields.includes(field) || value === null || value === "") {
+        return null;
+      }
+
+      return {
+        field,
+        op: operator,
+        value,
+      };
+    })
+    .filter(Boolean);
+
+  const limit = toBoundedInteger(intent.limit, DEFAULT_CHAT_LIMIT, 1, 20);
+
+  let numericField = String(intent.numericField ?? intent.field ?? "")
+    .trim()
+    .replace(/\s+/g, "");
+
+  if ((action === "sum" || action === "avg") && !schema.numericFields.includes(numericField)) {
+    numericField = schema.numericFields[0] ?? "";
+  }
+
+  if ((action === "sum" || action === "avg") && !numericField) {
+    throw new HttpError(400, "Nao existe campo numerico valido para essa consulta.");
+  }
+
+  return {
+    action,
+    collection,
+    filters,
+    limit,
+    numericField,
+  };
+}
+
+function decodeFirestoreValue(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  if ("nullValue" in value) {
+    return null;
+  }
+
+  if ("stringValue" in value) {
+    return String(value.stringValue);
+  }
+
+  if ("integerValue" in value) {
+    const parsedNumber = Number(value.integerValue);
+    return Number.isFinite(parsedNumber) ? parsedNumber : value.integerValue;
+  }
+
+  if ("doubleValue" in value) {
+    const parsedNumber = Number(value.doubleValue);
+    return Number.isFinite(parsedNumber) ? parsedNumber : null;
+  }
+
+  if ("booleanValue" in value) {
+    return Boolean(value.booleanValue);
+  }
+
+  if ("timestampValue" in value) {
+    return String(value.timestampValue);
+  }
+
+  if ("referenceValue" in value) {
+    return String(value.referenceValue);
+  }
+
+  if ("arrayValue" in value) {
+    const values = Array.isArray(value.arrayValue?.values) ? value.arrayValue.values : [];
+    return values.map((item) => decodeFirestoreValue(item));
+  }
+
+  if ("mapValue" in value) {
+    const fields = value.mapValue?.fields && typeof value.mapValue.fields === "object"
+      ? value.mapValue.fields
+      : {};
+    return decodeFirestoreFields(fields);
+  }
+
+  return null;
+}
+
+function decodeFirestoreFields(fields) {
+  const decoded = {};
+  const sourceFields = fields && typeof fields === "object" ? fields : {};
+
+  Object.entries(sourceFields).forEach(([fieldName, fieldValue]) => {
+    decoded[fieldName] = decodeFirestoreValue(fieldValue);
+  });
+
+  return decoded;
+}
+
+function decodeFirestoreDocument(document) {
+  const documentName = String(document?.name ?? "");
+  const pathParts = documentName.split("/");
+  const id = pathParts[pathParts.length - 1] || "";
+
+  return {
+    id,
+    ...decodeFirestoreFields(document?.fields),
+  };
+}
+
+function toComparableNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsedValue = Number(value.replace(",", "."));
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  return null;
+}
+
+function matchesFilter(record, filter) {
+  const leftValue = record?.[filter.field];
+  const rightValue = filter.value;
+
+  if (leftValue === undefined || leftValue === null) {
+    return false;
+  }
+
+  if (filter.op === "contains") {
+    return String(leftValue).toLowerCase().includes(String(rightValue).toLowerCase());
+  }
+
+  if (filter.op === "eq") {
+    if (typeof leftValue === "string" || typeof rightValue === "string") {
+      return String(leftValue).toLowerCase() === String(rightValue).toLowerCase();
+    }
+
+    return leftValue === rightValue;
+  }
+
+  const leftNumber = toComparableNumber(leftValue);
+  const rightNumber = toComparableNumber(rightValue);
+
+  if (leftNumber === null || rightNumber === null) {
+    return false;
+  }
+
+  if (filter.op === "gt") {
+    return leftNumber > rightNumber;
+  }
+
+  if (filter.op === "gte") {
+    return leftNumber >= rightNumber;
+  }
+
+  if (filter.op === "lt") {
+    return leftNumber < rightNumber;
+  }
+
+  if (filter.op === "lte") {
+    return leftNumber <= rightNumber;
+  }
+
+  return false;
+}
+
+function applyFilters(records, filters) {
+  if (!filters.length) {
+    return records;
+  }
+
+  return records.filter((record) => filters.every((filter) => matchesFilter(record, filter)));
+}
+
+function truncateValue(value, depth = 0) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value.length > 180 ? `${value.slice(0, 177)}...` : value;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    if (depth >= 2) {
+      return value.slice(0, 3);
+    }
+
+    return value.slice(0, 5).map((item) => truncateValue(item, depth + 1));
+  }
+
+  if (typeof value === "object") {
+    if (depth >= 2) {
+      return "[objeto]";
+    }
+
+    const compactObject = {};
+    Object.entries(value)
+      .slice(0, 8)
+      .forEach(([key, nestedValue]) => {
+        compactObject[key] = truncateValue(nestedValue, depth + 1);
+      });
+
+    return compactObject;
+  }
+
+  return String(value);
+}
+
+function buildRowsSample(records, collection, maxRows) {
+  const schema = CHAT_COLLECTION_SCHEMAS[collection];
+  const sampleFields = schema?.sampleFields ?? [];
+
+  return records.slice(0, maxRows).map((record) => {
+    const sample = {};
+
+    sampleFields.forEach((field) => {
+      if (field in record) {
+        sample[field] = truncateValue(record[field]);
+      }
+    });
+
+    return sample;
+  });
+}
+
+function formatNumber(value, maximumFractionDigits = 2) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits,
+  }).format(value);
+}
+
+function executeIntent(intent, records, chatConfig) {
+  const filteredRecords = applyFilters(records, intent.filters);
+  const schema = CHAT_COLLECTION_SCHEMAS[intent.collection];
+  const rowsSample = buildRowsSample(filteredRecords, intent.collection, Math.min(intent.limit, chatConfig.maxRowsSample));
+  let answer = "";
+
+  if (intent.action === "count") {
+    answer = `Encontrei ${formatNumber(filteredRecords.length, 0)} registro(s) em ${schema.label}.`;
+  } else if (intent.action === "list") {
+    if (!filteredRecords.length) {
+      answer = `Nao encontrei registros em ${schema.label} com os filtros solicitados.`;
+    } else {
+      answer = `Encontrei ${formatNumber(
+        filteredRecords.length,
+        0
+      )} registro(s) em ${schema.label} e trouxe ${formatNumber(rowsSample.length, 0)} exemplo(s).`;
+    }
+  } else if (intent.action === "sum" || intent.action === "avg") {
+    const numericValues = filteredRecords
+      .map((record) => toComparableNumber(record[intent.numericField]))
+      .filter((value) => value !== null);
+
+    if (!numericValues.length) {
+      answer = `Nao ha valores numericos suficientes no campo ${intent.numericField} para calcular ${
+        intent.action === "sum" ? "a soma" : "a media"
+      }.`;
+    } else if (intent.action === "sum") {
+      const sum = numericValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+      answer = `A soma de ${intent.numericField} em ${schema.label} e ${formatNumber(sum, 2)}.`;
+    } else {
+      const sum = numericValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+      const average = sum / numericValues.length;
+      answer = `A media de ${intent.numericField} em ${schema.label} e ${formatNumber(average, 2)}.`;
+    }
+  }
+
+  return {
+    answer,
+    intentLabel: `${intent.action}:${intent.collection}`,
+    rowsSample,
+    matchedDocuments: filteredRecords.length,
+  };
+}
+
+async function fetchCollectionDocuments(collection, idToken, env, chatConfig) {
+  if (!env.FIREBASE_PROJECT_ID) {
+    throw new HttpError(500, "A variavel FIREBASE_PROJECT_ID nao foi configurada no Worker.");
+  }
+
+  const endpointBase = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/${collection}`;
+  const records = [];
+  let nextPageToken = "";
+  let hasMoreDocuments = false;
+
+  while (records.length < chatConfig.maxDocumentsToScan) {
+    const pageSize = Math.min(100, chatConfig.maxDocumentsToScan - records.length);
+    const endpoint = new URL(endpointBase);
+    endpoint.searchParams.set("pageSize", String(pageSize));
+
+    if (nextPageToken) {
+      endpoint.searchParams.set("pageToken", nextPageToken);
+    }
+
+    const response = await fetch(endpoint.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpError(401, "Sem permissao para consultar o Firestore com o token atual.");
+    }
+
+    if (!response.ok) {
+      throw new HttpError(
+        response.status >= 400 && response.status < 500 ? response.status : 500,
+        "Falha ao consultar dados no Firestore."
+      );
+    }
+
+    const payload = await response.json();
+    const documents = Array.isArray(payload?.documents) ? payload.documents : [];
+
+    documents.forEach((document) => {
+      records.push(decodeFirestoreDocument(document));
+    });
+
+    nextPageToken = typeof payload?.nextPageToken === "string" ? payload.nextPageToken : "";
+
+    if (!nextPageToken) {
+      hasMoreDocuments = false;
+      break;
+    }
+
+    hasMoreDocuments = true;
+
+    if (!documents.length) {
+      break;
+    }
+  }
+
+  return {
+    records,
+    documentsRead: records.length,
+    truncated: hasMoreDocuments || records.length >= chatConfig.maxDocumentsToScan,
+  };
+}
+
+function applyRateLimit(userId, chatConfig) {
+  const now = Date.now();
+  const bucketKey = String(userId || "anonymous");
+  const windowStart = now - chatConfig.rateLimitWindowMs;
+  const previousRequests = CHAT_RATE_LIMIT_STORE.get(bucketKey) ?? [];
+  const validRequests = previousRequests.filter((timestamp) => timestamp > windowStart);
+
+  if (validRequests.length >= chatConfig.rateLimitMaxRequests) {
+    const retryAfterMs = validRequests[0] + chatConfig.rateLimitWindowMs - now;
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)),
+    };
+  }
+
+  validRequests.push(now);
+  CHAT_RATE_LIMIT_STORE.set(bucketKey, validRequests);
+
+  return {
+    allowed: true,
+    remaining: Math.max(chatConfig.rateLimitMaxRequests - validRequests.length, 0),
+    retryAfterSeconds: 0,
+  };
+}
+
+async function parseRequestBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    throw new HttpError(400, "Envie o corpo da requisicao em JSON valido.");
+  }
+}
+
+function toHttpError(error, fallbackMessage) {
+  if (error instanceof HttpError) {
+    return error;
+  }
+
+  const message = error instanceof Error && error.message ? error.message : fallbackMessage;
+  return new HttpError(500, message);
+}
+
+function respondWithError(request, env, error, fallbackMessage) {
+  const httpError = toHttpError(error, fallbackMessage);
+  const headers = new Headers();
+
+  if (httpError.status === 429 && httpError.retryAfterSeconds) {
+    headers.set("Retry-After", String(httpError.retryAfterSeconds));
+  }
+
+  return jsonResponse(
+    request,
+    env,
+    { message: httpError.message },
+    {
+      status: httpError.status,
+      headers,
+    }
+  );
+}
+
+async function handleCosmosSync(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use POST para sincronizar o catalogo da Cosmos." },
+      { status: 405 }
+    );
+  }
+
+  if (!env.COSMOS_API_TOKEN) {
+    return jsonResponse(
+      request,
+      env,
+      { message: "O segredo COSMOS_API_TOKEN ainda nao foi configurado no Worker." },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const token = getBearerToken(request);
+    await verifyAdminFirebaseToken(token, env);
+    const payload = await buildCatalogFromCosmos(env);
+    return jsonResponse(request, env, payload, { status: 200 });
+  } catch (error) {
+    return respondWithError(
+      request,
+      env,
+      error,
+      "Nao foi possivel sincronizar o catalogo da Cosmos."
+    );
+  }
+}
+
+async function handleChatQuery(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use POST para consultar o chat." },
+      { status: 405 }
+    );
+  }
+
+  if (!env.GEMINI_API_KEY) {
+    return jsonResponse(
+      request,
+      env,
+      { message: "O segredo GEMINI_API_KEY ainda nao foi configurado no Worker." },
+      { status: 500 }
+    );
+  }
+
+  const chatConfig = getChatConfig(env);
+
+  try {
+    const body = await parseRequestBody(request);
+    const question = String(body?.question ?? "").trim();
+
+    if (!question) {
+      throw new HttpError(400, "Informe uma pergunta no campo question.");
+    }
+
+    if (question.length > chatConfig.maxQuestionLength) {
+      throw new HttpError(
+        400,
+        `Pergunta muito longa. Limite atual: ${chatConfig.maxQuestionLength} caracteres.`
+      );
+    }
+
+    const idToken = getBearerToken(request);
+    const tokenPayload = await verifyAdminFirebaseToken(idToken, env);
+    const userId = String(tokenPayload.user_id ?? tokenPayload.sub ?? "admin");
+    const rateLimit = applyRateLimit(userId, chatConfig);
+
+    if (!rateLimit.allowed) {
+      throw new HttpError(429, "Limite de consultas por minuto atingido. Tente novamente em instantes.", {
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      });
+    }
+
+    let rawIntent = null;
+    let fallbackUsed = false;
+
+    try {
+      rawIntent = await inferIntentWithGemini(question, env, chatConfig);
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 429) {
+        throw error;
+      }
+
+      fallbackUsed = true;
+      rawIntent = createFallbackIntent(question);
+    }
+
+    if (!rawIntent) {
+      fallbackUsed = true;
+      rawIntent = createFallbackIntent(question);
+    }
+
+    const intent = sanitizeIntent(rawIntent, question, chatConfig);
+    const { records, documentsRead, truncated } = await fetchCollectionDocuments(
+      intent.collection,
+      idToken,
+      env,
+      chatConfig
+    );
+    const executedIntent = executeIntent(intent, records, chatConfig);
+
+    return jsonResponse(
+      request,
+      env,
+      {
+        answer: executedIntent.answer,
+        intent: executedIntent.intentLabel,
+        filters: intent.filters,
+        rowsSample: executedIntent.rowsSample,
+        usage: {
+          model: chatConfig.model,
+          fallback: fallbackUsed,
+          documentsRead,
+          scannedDocuments: records.length,
+          matchedDocuments: executedIntent.matchedDocuments,
+          truncatedScan: truncated,
+          rateLimit: {
+            limit: chatConfig.rateLimitMaxRequests,
+            remaining: rateLimit.remaining,
+            windowMs: chatConfig.rateLimitWindowMs,
+          },
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    return respondWithError(request, env, error, "Nao foi possivel processar a consulta de chat.");
+  }
 }
 
 export default {
@@ -281,41 +1186,22 @@ export default {
         : new Response(null, { status: 403 });
     }
 
-    if (request.method !== "POST") {
-      return jsonResponse(
-        request,
-        env,
-        { message: "Use POST para sincronizar o catalogo da Cosmos." },
-        { status: 405 }
-      );
+    const { pathname } = new URL(request.url);
+    const normalizedPathname = normalizePathname(pathname);
+
+    if (normalizedPathname === "/chat/query") {
+      return handleChatQuery(request, env);
     }
 
-    if (!env.COSMOS_API_TOKEN) {
-      return jsonResponse(
-        request,
-        env,
-        { message: "O segredo COSMOS_API_TOKEN ainda nao foi configurado no Worker." },
-        { status: 500 }
-      );
+    if (normalizedPathname === "/" || normalizedPathname === "/cosmos/sync") {
+      return handleCosmosSync(request, env);
     }
 
-    try {
-      await verifyAdminFirebaseToken(request, env);
-      const payload = await buildCatalogFromCosmos(env);
-      return jsonResponse(request, env, payload, { status: 200 });
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Nao foi possivel sincronizar o catalogo da Cosmos.";
-      const status =
-        message.includes("Authorization") || message.includes("Firebase")
-          ? 401
-          : message.includes("administradores")
-            ? 403
-            : 500;
-
-      return jsonResponse(request, env, { message }, { status });
-    }
+    return jsonResponse(
+      request,
+      env,
+      { message: "Rota nao encontrada. Use /chat/query ou /cosmos/sync." },
+      { status: 404 }
+    );
   },
 };
