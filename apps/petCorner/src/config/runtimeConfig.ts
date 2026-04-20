@@ -10,6 +10,7 @@ type FirebaseRuntimeConfig = {
 
 type AppRuntimeConfig = FirebaseRuntimeConfig & {
   cosmosSyncUrl?: string;
+  chatWorkerUrl?: string;
 };
 
 declare global {
@@ -61,6 +62,16 @@ export function getCosmosSyncUrl(): string {
     throw new Error(
       "Configure VITE_COSMOS_SYNC_URL no ambiente para usar a sincronizacao via Cloudflare."
     );
+  }
+
+  return value;
+}
+
+export function getChatWorkerUrl(): string {
+  const value = getRuntimeConfig().chatWorkerUrl?.trim();
+
+  if (!value) {
+    throw new Error("Configure VITE_CHAT_WORKER_URL no ambiente para usar o chat com Gemini.");
   }
 
   return value;

@@ -77,6 +77,7 @@ const runtimeConfig = {
   appId: process.env.VITE_FIREBASE_APP_ID,
   measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || "",
   cosmosSyncUrl: process.env.VITE_COSMOS_SYNC_URL || "",
+  chatWorkerUrl: process.env.VITE_CHAT_WORKER_URL || "",
 };
 
 fs.mkdirSync(publicDir, { recursive: true });
