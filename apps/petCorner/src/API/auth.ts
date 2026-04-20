@@ -1,7 +1,9 @@
 import axios from "axios";
 import {
+  confirmPasswordReset as firebaseConfirmPasswordReset,
   sendPasswordResetEmail as firebaseSendPasswordResetEmail,
   type ActionCodeSettings,
+  verifyPasswordResetCode as firebaseVerifyPasswordResetCode,
 } from "firebase/auth";
 
 import { getFirebaseRuntimeConfig } from "../config/runtimeConfig";
@@ -76,16 +78,46 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
   const auth = await getFirebaseAuth();
   auth.languageCode = "pt-BR";
 
-  const currentUrl = new URL(window.location.href);
-  currentUrl.search = "";
-  currentUrl.hash = "";
+  const basePath = String(import.meta.env.BASE_URL ?? "/")
+    .replace(/\/+$/, "")
+    .trim();
+  const appPrefix = basePath && basePath !== "/" ? basePath : "";
+  const continueUrl = new URL(`${appPrefix}/`, window.location.origin);
+  continueUrl.searchParams.set("source", "password-reset-email");
 
   const actionCodeSettings: ActionCodeSettings = {
-    url: currentUrl.toString(),
+    url: continueUrl.toString(),
     handleCodeInApp: false,
   };
 
   await firebaseSendPasswordResetEmail(auth, email, actionCodeSettings);
+}
+
+export async function verifyPasswordResetActionCode(
+  code: string,
+  languageCode?: string
+): Promise<string> {
+  const auth = await getFirebaseAuth();
+
+  if (languageCode) {
+    auth.languageCode = languageCode;
+  }
+
+  return firebaseVerifyPasswordResetCode(auth, code);
+}
+
+export async function confirmPasswordResetWithCode(
+  code: string,
+  newPassword: string,
+  languageCode?: string
+): Promise<void> {
+  const auth = await getFirebaseAuth();
+
+  if (languageCode) {
+    auth.languageCode = languageCode;
+  }
+
+  await firebaseConfirmPasswordReset(auth, code, newPassword);
 }
 
 export async function refreshIdToken(refreshToken: string): Promise<RefreshTokenResponse> {

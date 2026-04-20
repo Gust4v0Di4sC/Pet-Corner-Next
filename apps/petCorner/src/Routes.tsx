@@ -11,12 +11,14 @@ import AnimaisPage from "./screens/Animais/AnimaisPage";
 import ClientesPage from "./screens/Clientes/ClientesPage";
 import HomePage from "./screens/Home/HomePage";
 import LoginPage from "./screens/Login/LoginPage";
+import ResetPasswordPage from "./screens/Login/ResetPasswordPage";
 import ProdutosPage from "./screens/Produtos/ProdutosPage";
 
 export default function RoutesApp() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route
         path={DASHBOARD_ROUTE}
