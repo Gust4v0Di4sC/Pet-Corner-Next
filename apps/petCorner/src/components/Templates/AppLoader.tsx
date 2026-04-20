@@ -1,7 +1,12 @@
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { lazy, Suspense } from "react";
 
-import Animation from "../../assets/Animation.lottie";
+import animationUrl from "../../assets/Animation.lottie?url&no-inline";
 import "./app-loader.css";
+
+const DotLottieReact = lazy(async () => {
+  const module = await import("@lottiefiles/dotlottie-react");
+  return { default: module.DotLottieReact };
+});
 
 type Props = {
   message?: string;
@@ -28,7 +33,9 @@ export default function AppLoader({
   return (
     <div className={loaderClassName} role="status" aria-live="polite">
       <div className="app-loader__animation" aria-hidden="true">
-        <DotLottieReact src={Animation} autoplay loop />
+        <Suspense fallback={null}>
+          <DotLottieReact src={animationUrl} autoplay loop />
+        </Suspense>
       </div>
 
       <p className="app-loader__message">{message}</p>

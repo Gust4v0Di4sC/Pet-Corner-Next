@@ -1,5 +1,3 @@
-import { read, utils } from "xlsx";
-
 import type { ProductCatalogImportInput } from "../../types/productCatalog";
 import { normalizeCatalogCode } from "./productCatalog.util";
 
@@ -14,7 +12,7 @@ type ParsedCatalogFile = {
 type HeaderKey = "code" | "name" | "price" | "quantity" | "brand" | "category" | "imageUrl";
 
 const HEADER_ALIASES: Record<HeaderKey, string[]> = {
-  code: ["código", "code", "sku", "ean", "gtin"],
+  code: ["codigo", "code", "sku", "ean", "gtin"],
   name: ["nome", "descricao", "produto", "name"],
   price: ["preco", "valor", "price"],
   quantity: ["quantidade", "qty", "estoque"],
@@ -129,6 +127,7 @@ function buildImportItem(
 }
 
 export async function parseProductCatalogFile(file: File): Promise<ParsedCatalogFile> {
+  const { read, utils } = await import("xlsx");
   const normalizedFileName = file.name.toLowerCase();
 
   if (!normalizedFileName.endsWith(".csv") && !normalizedFileName.endsWith(".xlsx")) {
@@ -140,7 +139,7 @@ export async function parseProductCatalogFile(file: File): Promise<ParsedCatalog
   const [firstSheetName] = workbook.SheetNames;
 
   if (!firstSheetName) {
-    throw new Error("A planilha enviada não possui abas válidas.");
+    throw new Error("A planilha enviada nao possui abas validas.");
   }
 
   const sheet = workbook.Sheets[firstSheetName];
@@ -150,7 +149,7 @@ export async function parseProductCatalogFile(file: File): Promise<ParsedCatalog
   });
 
   if (!rows.length) {
-    throw new Error("A planilha enviada não possui linhas para importar.");
+    throw new Error("A planilha enviada nao possui linhas para importar.");
   }
 
   const headers = getNormalizedHeaders(rows[0]);

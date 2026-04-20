@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router";
 
 import {
@@ -7,56 +8,78 @@ import {
   PRODUCTS_ROUTE,
 } from "./components/Dashboard/dashboard.domain";
 import PrivateRoute from "./Private";
-import AnimaisPage from "./screens/Animais/AnimaisPage";
-import ClientesPage from "./screens/Clientes/ClientesPage";
-import HomePage from "./screens/Home/HomePage";
-import LoginPage from "./screens/Login/LoginPage";
-import ResetPasswordPage from "./screens/Login/ResetPasswordPage";
-import ProdutosPage from "./screens/Produtos/ProdutosPage";
+
+const LoginPage = lazy(() => import("./screens/Login/LoginPage"));
+const ResetPasswordPage = lazy(() => import("./screens/Login/ResetPasswordPage"));
+const HomePage = lazy(() => import("./screens/Home/HomePage"));
+const ClientesPage = lazy(() => import("./screens/Clientes/ClientesPage"));
+const AnimaisPage = lazy(() => import("./screens/Animais/AnimaisPage"));
+const ProdutosPage = lazy(() => import("./screens/Produtos/ProdutosPage"));
+
+function RouteFallback() {
+  return (
+    <div
+      style={{
+        minHeight: "100dvh",
+        display: "grid",
+        placeItems: "center",
+        color: "#1a2f3a",
+        background: "#fdf6f2",
+        fontWeight: 700,
+      }}
+      role="status"
+      aria-live="polite"
+    >
+      Carregando...
+    </div>
+  );
+}
 
 export default function RoutesApp() {
   return (
-    <Routes>
-      <Route path="/" element={<LoginPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-      <Route
-        path={DASHBOARD_ROUTE}
-        element={
-          <PrivateRoute>
-            <HomePage />
-          </PrivateRoute>
-        }
-      />
+        <Route
+          path={DASHBOARD_ROUTE}
+          element={
+            <PrivateRoute>
+              <HomePage />
+            </PrivateRoute>
+          }
+        />
 
-      <Route
-        path={CLIENTS_ROUTE}
-        element={
-          <PrivateRoute>
-            <ClientesPage />
-          </PrivateRoute>
-        }
-      />
+        <Route
+          path={CLIENTS_ROUTE}
+          element={
+            <PrivateRoute>
+              <ClientesPage />
+            </PrivateRoute>
+          }
+        />
 
-      <Route
-        path={ANIMALS_ROUTE}
-        element={
-          <PrivateRoute>
-            <AnimaisPage />
-          </PrivateRoute>
-        }
-      />
+        <Route
+          path={ANIMALS_ROUTE}
+          element={
+            <PrivateRoute>
+              <AnimaisPage />
+            </PrivateRoute>
+          }
+        />
 
-      <Route
-        path={PRODUCTS_ROUTE}
-        element={
-          <PrivateRoute>
-            <ProdutosPage />
-          </PrivateRoute>
-        }
-      />
+        <Route
+          path={PRODUCTS_ROUTE}
+          element={
+            <PrivateRoute>
+              <ProdutosPage />
+            </PrivateRoute>
+          }
+        />
 
-      <Route path="*" element={<Navigate to={DASHBOARD_ROUTE} replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to={DASHBOARD_ROUTE} replace />} />
+      </Routes>
+    </Suspense>
   );
 }

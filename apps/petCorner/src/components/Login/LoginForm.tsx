@@ -1,14 +1,17 @@
 // src/pages/Login/components/LoginForm.tsx
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
-
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import Animation from "../../assets/Animation.lottie";
+import animationUrl from "../../assets/Animation.lottie?url&no-inline";
 
 import LoginTextField from "./LoginTextField";
 import LoginButton from "./LoginButton";
+
+const DotLottieReact = lazy(async () => {
+  const module = await import("@lottiefiles/dotlottie-react");
+  return { default: module.DotLottieReact };
+});
 
 const loginSchema = z.object({
   email: z
@@ -113,7 +116,11 @@ export default function LoginForm({
       </form>
 
       <div className="paws">
-        {showAnimation && <DotLottieReact src={Animation} autoplay loop />}
+        {showAnimation ? (
+          <Suspense fallback={null}>
+            <DotLottieReact src={animationUrl} autoplay loop />
+          </Suspense>
+        ) : null}
       </div>
     </>
   );
