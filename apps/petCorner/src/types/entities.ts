@@ -27,6 +27,16 @@ export type Product = {
   imageUrl?: string
 }
 
+export type Service = {
+  id: string
+  name: string
+  category: string
+  description: string
+  durationMinutes: number
+  price: number
+  isActive: boolean
+}
+
 // src/types/entities.ts
 
 export type FieldDef<T> = {
@@ -41,12 +51,13 @@ export type ColumnType<K extends RotaKey = RotaKey> = {
   accessor: keyof EntityMap[K]
 }
 
-export type RotaKey = 'clientes' | 'caes' | 'prods'
+export type RotaKey = 'clientes' | 'caes' | 'prods' | 'servicos'
 
 export type EntityMap = {
   clientes: Client
   caes: Dog
   prods: Product
+  servicos: Service
 }
 
 export type EntityHookReturn<T> = {

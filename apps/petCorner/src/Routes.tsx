@@ -1,11 +1,12 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router";
+import { Route, Routes } from "react-router-dom";
 
 import {
   ANIMALS_ROUTE,
   CLIENTS_ROUTE,
   DASHBOARD_ROUTE,
   PRODUCTS_ROUTE,
+  SERVICES_ROUTE,
 } from "./components/Dashboard/dashboard.domain";
 import PrivateRoute from "./Private";
 
@@ -15,6 +16,8 @@ const HomePage = lazy(() => import("./screens/Home/HomePage"));
 const ClientesPage = lazy(() => import("./screens/Clientes/ClientesPage"));
 const AnimaisPage = lazy(() => import("./screens/Animais/AnimaisPage"));
 const ProdutosPage = lazy(() => import("./screens/Produtos/ProdutosPage"));
+const ServicosPage = lazy(() => import("./screens/Servicos/ServicosPage"));
+const NotFoundPage = lazy(() => import("./screens/NotFound/NotFoundPage"));
 
 function RouteFallback() {
   return (
@@ -78,7 +81,16 @@ export default function RoutesApp() {
           }
         />
 
-        <Route path="*" element={<Navigate to={DASHBOARD_ROUTE} replace />} />
+        <Route
+          path={SERVICES_ROUTE}
+          element={
+            <PrivateRoute>
+              <ServicosPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   );

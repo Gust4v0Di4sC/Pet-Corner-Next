@@ -1,18 +1,14 @@
-// src/utils/routeMapper.ts
-import type { RotaKey, ColumnType } from "../types/entities"
+import type { ColumnType, RotaKey } from "../types/entities";
 
-// Tipo para a configuração de cada rota
 type RouteConfig<K extends RotaKey> = {
-  schemaKey: K
-  columns: ColumnType<K>[]
-}
+  schemaKey: K;
+  columns: ColumnType<K>[];
+};
 
-// Tipo para o mapeador completo
 type RouteMapper = {
-  [K in RotaKey as `/${K}`]: RouteConfig<K>
-}
+  [K in RotaKey as `/${K}`]: RouteConfig<K>;
+};
 
-// Configuração tipada para cada rota
 export const routeMapper: RouteMapper = {
   "/clientes": {
     schemaKey: "clientes",
@@ -21,31 +17,40 @@ export const routeMapper: RouteMapper = {
       { header: "Data de Nascimento", accessor: "age" },
       { header: "Email", accessor: "email" },
       { header: "Telefone", accessor: "phone" },
-      { header: "Endereço", accessor: "address" },
-    ] as ColumnType<"clientes">[]
+      { header: "Endereco", accessor: "address" },
+    ],
   },
   "/caes": {
-    schemaKey: "caes", 
+    schemaKey: "caes",
     columns: [
       { header: "Nome", accessor: "name" },
       { header: "Idade", accessor: "age" },
-      { header: "Raça", accessor: "breed" },
+      { header: "Raca", accessor: "breed" },
       { header: "Peso", accessor: "weight" },
-    ] as ColumnType<"caes">[]
+    ],
   },
   "/prods": {
     schemaKey: "prods",
     columns: [
       { header: "Nome", accessor: "name" },
-      { header: "Preço", accessor: "price" },
-      { header: "Código", accessor: "code" },
+      { header: "Preco", accessor: "price" },
+      { header: "Codigo", accessor: "code" },
       { header: "Quantidade", accessor: "quantity" },
-    ] as ColumnType<"prods">[]
-  }
-}
+    ],
+  },
+  "/servicos": {
+    schemaKey: "servicos",
+    columns: [
+      { header: "Nome", accessor: "name" },
+      { header: "Categoria", accessor: "category" },
+      { header: "Preco", accessor: "price" },
+      { header: "Duracao", accessor: "durationMinutes" },
+      { header: "Ativo", accessor: "isActive" },
+    ],
+  },
+};
 
-// Helper function para obter configuração com fallback tipado
 export function getRouteConfig(path: string) {
-  const config = (routeMapper as Record<string, RouteConfig<RotaKey>>)[path]
-  return config || routeMapper["/clientes"]
+  const config = (routeMapper as Record<string, RouteConfig<RotaKey>>)[path];
+  return config || routeMapper["/clientes"];
 }

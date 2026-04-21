@@ -1,5 +1,5 @@
 import "./nav.css";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 
@@ -9,9 +9,10 @@ import {
   CLIENTS_ROUTE,
   DASHBOARD_ROUTE,
   PRODUCTS_ROUTE,
+  SERVICES_ROUTE,
 } from "../Dashboard/dashboard.domain";
 
-const Nav: React.FC = () => {
+export default function Nav() {
   const { logout } = useAuth();
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -21,6 +22,7 @@ const Nav: React.FC = () => {
     { to: CLIENTS_ROUTE, icon: "users", label: "Clientes" },
     { to: ANIMALS_ROUTE, icon: "paw", label: "Animais" },
     { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
+    { to: SERVICES_ROUTE, icon: "scissors", label: "Servicos" },
   ];
 
   useEffect(() => {
@@ -53,7 +55,7 @@ const Nav: React.FC = () => {
           </button>
 
           <div className="menu__brand">
-            <span>Navegação</span>
+            <span>Navegacao</span>
             <strong>PetCorner</strong>
           </div>
         </div>
@@ -90,6 +92,4 @@ const Nav: React.FC = () => {
       {!isOpen && <Tooltip id="sidebar-tooltip" className="menu__tooltip" opacity={1} />}
     </aside>
   );
-};
-
-export default Nav;
+}
