@@ -61,6 +61,28 @@ const CHAT_COLLECTION_SCHEMAS = {
     sampleFields: ["id", "name", "code", "price", "quantity", "imageUrl"],
     label: "produtos",
   },
+  services: {
+    filterableFields: [
+      "id",
+      "name",
+      "category",
+      "description",
+      "durationMinutes",
+      "price",
+      "isActive",
+    ],
+    numericFields: ["durationMinutes", "price"],
+    sampleFields: [
+      "id",
+      "name",
+      "category",
+      "description",
+      "durationMinutes",
+      "price",
+      "isActive",
+    ],
+    label: "servicos",
+  },
   productCatalog: {
     filterableFields: [
       "id",
@@ -90,6 +112,28 @@ const CHAT_COLLECTION_SCHEMAS = {
     ],
     label: "catalogo de produtos",
   },
+};
+
+const CHAT_COLLECTION_ALIASES = {
+  cliente: "clientes",
+  clientes: "clientes",
+  animal: "dogs",
+  animais: "dogs",
+  cao: "dogs",
+  caes: "dogs",
+  cachorro: "dogs",
+  cachorros: "dogs",
+  dog: "dogs",
+  dogs: "dogs",
+  produto: "prods",
+  produtos: "prods",
+  estoque: "prods",
+  servico: "services",
+  servicos: "services",
+  service: "services",
+  services: "services",
+  catalogo: "productCatalog",
+  cosmos: "productCatalog",
 };
 
 const CHAT_RATE_LIMIT_STORE = new Map();
@@ -745,6 +789,14 @@ function inferCollectionFromQuestion(question) {
     return "dogs";
   }
 
+  if (
+    /\b(servico|servicos|service|services|banho|tosa|hospedagem|adestramento|veterinaria|veterinario|taxi pet)\b/.test(
+      normalizedQuestion
+    )
+  ) {
+    return "services";
+  }
+
   if (/\b(catalogo|cosmos)\b/.test(normalizedQuestion)) {
     return "productCatalog";
   }
@@ -793,7 +845,7 @@ function buildIntentPrompt(question) {
     "Voce e um classificador de consultas do sistema PetCorner.",
     "Retorne SOMENTE um JSON valido, sem markdown e sem texto adicional.",
     "Schema obrigatorio:",
-    '{ "action": "count|list|sum|avg", "collection": "clientes|dogs|prods|productCatalog", "filters": [{ "field": "campo", "op": "eq|contains|gt|gte|lt|lte", "value": "valor" }], "numericField": "campo numerico opcional", "limit": 5 }',
+    '{ "action": "count|list|sum|avg", "collection": "clientes|dogs|prods|services|productCatalog", "filters": [{ "field": "campo", "op": "eq|contains|gt|gte|lt|lte", "value": "valor" }], "numericField": "campo numerico opcional", "limit": 5 }',
     "Use apenas colecoes e campos permitidos.",
     "Colecoes permitidas:",
     buildCollectionSummaryText(),
@@ -957,8 +1009,9 @@ function sanitizeIntent(rawIntent, question, chatConfig) {
   const rawCollection = String(intent.collection ?? "")
     .trim()
     .toLowerCase();
-  const collection = CHAT_COLLECTION_SCHEMAS[rawCollection]
-    ? rawCollection
+  const collectionFromIntent = CHAT_COLLECTION_ALIASES[rawCollection] ?? rawCollection;
+  const collection = CHAT_COLLECTION_SCHEMAS[collectionFromIntent]
+    ? collectionFromIntent
     : inferCollectionFromQuestion(question);
 
   if (!collection || !CHAT_COLLECTION_SCHEMAS[collection]) {

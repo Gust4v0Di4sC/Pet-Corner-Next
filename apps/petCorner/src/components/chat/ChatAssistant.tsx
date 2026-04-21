@@ -28,7 +28,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
   text:
-    "Oi! Pergunte sobre clientes, animais, produtos e catálogo. Exemplo: Quantos clientes temos?",
+    "Oi! Pergunte sobre clientes, animais, produtos, servicos e catalogo. Exemplo: Quantos servicos ativos temos?",
 };
 
 function makeMessageId() {
