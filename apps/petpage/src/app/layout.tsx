@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Montserrat_Alternates } from "next/font/google";
+import { Montserrat_Alternates, Geist } from "next/font/google";
 import "./globals.css";
-import { AosInit } from "./_components/aos-init";
+import { cn } from "@/lib/utils";
+import { AosInit } from "@/presentation/shared/components/aos-init";
 
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 
 // const geistSans = Geist({
@@ -90,7 +92,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" className={cn("font-sans", geist.variable)}>
       <body
         className={`${montserratAlternates.className}  antialiased`}
       >

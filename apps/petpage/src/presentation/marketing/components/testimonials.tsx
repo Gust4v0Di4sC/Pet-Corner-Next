@@ -2,7 +2,6 @@
 
 import useEmblaCarousel from 'embla-carousel-react'
 import {ChevronLeft, ChevronRight} from 'lucide-react'
-import { WhatsappLogo } from '@phosphor-icons/react'
 import tutor1 from '@/assets/tutor1.png'
 import tutor2 from '@/assets/tutor2.png'
 import tutor3 from '@/assets/tutor3.png'

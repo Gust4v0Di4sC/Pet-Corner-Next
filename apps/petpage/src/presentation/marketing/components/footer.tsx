@@ -5,7 +5,7 @@ import whiskas from "@/assets/whiskas.png";
 import natural from "@/assets/natural.png";
 import paws from "@/assets/paws.png";
 import Image from "next/image";
-import { FacebookLogo, InstagramLogo, YoutubeLogo, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { FacebookLogo, InstagramLogo, YoutubeLogo } from "@phosphor-icons/react/dist/ssr";
 
 
 const brands = [
