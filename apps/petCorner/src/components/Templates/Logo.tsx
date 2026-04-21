@@ -1,5 +1,4 @@
 import './logo.css';
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { DASHBOARD_ROUTE } from '../Dashboard/dashboard.domain';
 
@@ -8,7 +7,7 @@ type LogoProps = {
   alt?: string;
 };
 
-const Logo: React.FC<LogoProps> = ({ src, alt = "Logo" }) => {
+function Logo({ src, alt = "Logo" }: LogoProps) {
   return (
     <aside className="logo">
       <Link to={DASHBOARD_ROUTE} className="logo">
@@ -16,6 +15,6 @@ const Logo: React.FC<LogoProps> = ({ src, alt = "Logo" }) => {
       </Link>
     </aside>
   );
-};
+}
 
 export default Logo;

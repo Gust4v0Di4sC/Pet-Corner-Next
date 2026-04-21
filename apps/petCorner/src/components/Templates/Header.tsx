@@ -1,16 +1,14 @@
 import './header.css';
-import React from 'react';
 
-// Tipagem explícita das props
 type HeaderProps = {
   icon: string;
   title: string;
   subtitle: string;
 };
 
-const Header: React.FC<HeaderProps> = ({ icon, title, subtitle }) => {
+function Header({ icon, title, subtitle }: HeaderProps) {
   return (
-    <header className="header d-none d-sm-flex flex-column">
+    <header className="header">
       <h1 className="header__title">
         <i className={`fa fa-${icon} header__icon`} aria-hidden="true"></i>
         <span>{title}</span>
@@ -18,6 +16,6 @@ const Header: React.FC<HeaderProps> = ({ icon, title, subtitle }) => {
       <p className="header__subtitle">{subtitle}</p>
     </header>
   );
-};
+}
 
 export default Header;

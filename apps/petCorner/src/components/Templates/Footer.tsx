@@ -1,7 +1,6 @@
 import './footer.css';
-import React from 'react';
 
-const Footer: React.FC = () => {
+function Footer() {
   return (
     <footer className="footer">
       <span>
@@ -10,6 +9,6 @@ const Footer: React.FC = () => {
       </span>
     </footer>
   );
-};
+}
 
 export default Footer;
