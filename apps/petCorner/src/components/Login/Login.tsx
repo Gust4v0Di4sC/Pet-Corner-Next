@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import { FirebaseError } from "firebase/app";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
@@ -17,7 +17,7 @@ export default function Login() {
   const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const toast = useToast();
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit: NonNullable<ComponentPropsWithoutRef<"form">["onSubmit"]> = async (event) => {
     event.preventDefault();
 
     if (!email || !password) {
@@ -32,7 +32,7 @@ export default function Login() {
       if (error instanceof FirebaseError) {
         const errorMessage =
           error.code === "auth/user-not-found"
-            ? "Usu·rio n„o encontrado"
+            ? "Usu√°rio n√£o encontrado"
             : error.code === "auth/wrong-password"
               ? "Senha incorreta"
               : "Erro ao fazer login";

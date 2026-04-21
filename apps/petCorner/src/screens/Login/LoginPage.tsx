@@ -1,5 +1,12 @@
 import "./login.css";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ComponentPropsWithoutRef,
+} from "react";
 import { FirebaseError } from "firebase/app";
 import type { ConfirmationResult } from "firebase/auth";
 import { Navigate } from "react-router-dom";
@@ -261,7 +268,7 @@ export default function LoginPage() {
     setIsResetModalOpen(false);
   };
 
-  const handleResetPassword = async (event: React.FormEvent) => {
+  const handleResetPassword: NonNullable<ComponentPropsWithoutRef<"form">["onSubmit"]> = async (event) => {
     event.preventDefault();
 
     const sanitizedEmail = resetEmail.trim();
@@ -288,7 +295,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleSendPhoneCode = async (event: React.FormEvent) => {
+  const handleSendPhoneCode: NonNullable<ComponentPropsWithoutRef<"form">["onSubmit"]> = async (event) => {
     event.preventDefault();
 
     let phoneNumber = "";
@@ -319,7 +326,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleConfirmPhoneCode = async (event: React.FormEvent) => {
+  const handleConfirmPhoneCode: NonNullable<ComponentPropsWithoutRef<"form">["onSubmit"]> = async (event) => {
     event.preventDefault();
 
     if (!phoneConfirmationResult) {
@@ -349,7 +356,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleSplashClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSplashClick: NonNullable<ComponentPropsWithoutRef<"button">["onClick"]> = (event) => {
     if (isSplashStamping || isLoginVisible) {
       return;
     }

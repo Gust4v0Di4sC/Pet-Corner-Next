@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 
 import { useToast } from "../../hooks/useToast";
 import { queryChat, type ChatQueryResult } from "../../services/chatService";
@@ -76,7 +82,9 @@ export default function ChatAssistant({ placement = "default" }: Props) {
     setIsOpen(false);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit: NonNullable<ComponentPropsWithoutRef<"form">["onSubmit"]> = async (
+    event
+  ) => {
     event.preventDefault();
 
     const nextQuestion = question.trim();
