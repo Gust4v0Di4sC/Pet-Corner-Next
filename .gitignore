@@ -1,3 +1,5 @@
 node_modules/
 apps/petpage/public/app-react/
 firebase-debug.log
+**/AGENTS.md
+**/agents.md
