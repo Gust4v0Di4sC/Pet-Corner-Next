@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     siteName: "Pet Corner",
     images: [
       {
-        url: "/assets/image.png", // coloque uma imagem dentro de public/
+        url: "/app-react/logo512.png",
         width: 1200,
         height: 630,
         alt: "Pet Corner - Gestão para seu Pet Shop",
@@ -77,13 +77,13 @@ export const metadata: Metadata = {
     description:
       "Solução completa para pet shops e clínicas veterinárias, com Firebase e Next.js.",
     creator: "@seu_twitter",
-    images: ["/assets/image.png"],
+    images: ["/app-react/logo512.png"],
   },
   icons: {
-    icon: "/assets/favicon.svg",
-    apple: "/assets/apple-touch-icon.png",
+    icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
   },
-  manifest: "/assets/site.webmanifest",
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
@@ -92,7 +92,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-br" className={cn("font-sans", geist.variable)}>
+    <html
+      lang="pt-br"
+      className={cn("font-sans", geist.variable)}
+    >
       <body
         className={`${montserratAlternates.className}  antialiased`}
       >
@@ -102,3 +105,4 @@ export default function RootLayout({
     </html>
   );
 }
+
