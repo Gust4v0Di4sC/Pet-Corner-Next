@@ -1,68 +1,164 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import logoImg from "@/assets/Logo-Home.svg";
+import { useCustomerAuth } from "@/hooks/auth/use-customer-auth";
+import styles from "@/presentation/auth/components/login-form.module.css";
 
 type RegisterFormProps = {
   nextPath: string;
 };
 
 export function RegisterForm({ nextPath }: RegisterFormProps) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const {
+    errorMessage,
+    loadingMode,
+    isBusy,
+    setErrorMessage,
+    registerWithEmail,
+  } = useCustomerAuth({ nextPath });
+
+  const loginPath = useMemo(() => `/login?next=${encodeURIComponent(nextPath)}`, [nextPath]);
+
+  const handleEmailRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim();
+    if (!normalizedName || !normalizedEmail || !password || !confirmPassword) {
+      setErrorMessage("Preencha todos os campos para continuar.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("As senhas nao conferem.");
+      return;
+    }
+
+    await registerWithEmail({
+      name: normalizedName,
+      email: normalizedEmail,
+      password,
+    });
+  };
+
   return (
-    <form method="post" action="/api/auth/session" className="space-y-4">
-      <input type="hidden" name="next" value={nextPath} />
-      <input type="hidden" name="customerId" value="customer-structural" />
+    <div className={`${styles.loginPage} ${styles.loginVisible}`}>
+      <Link href="/" className={`${styles.backLink} ${styles.pageBackLink}`}>
+        <ArrowLeft size={16} />
+        <span>Voltar para a landing</span>
+      </Link>
 
-      <div className="space-y-1">
-        <label htmlFor="name" className="text-sm font-medium text-slate-700">
-          Full name
-        </label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          defaultValue="Customer Structural"
-          className="w-full rounded-lg border px-3 py-2 text-sm"
-          required
-        />
-      </div>
+      <section className={styles.shell}>
+        <form className={styles.form} onSubmit={handleEmailRegister}>
+          <header className={styles.header}>
+            <div className={styles.logoWrap}>
+              <Image src={logoImg} alt="PetCorner" width={150} height={40} />
+            </div>
+            <span className={styles.badge}>Cadastro do Cliente</span>
+            <p className={styles.subtitle}>
+              Crie sua conta para acompanhar pedidos, editar perfil e concluir compras com rapidez.
+            </p>
+          </header>
 
-      <div className="space-y-1">
-        <label htmlFor="email" className="text-sm font-medium text-slate-700">
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          defaultValue="customer@example.com"
-          className="w-full rounded-lg border px-3 py-2 text-sm"
-          required
-        />
-      </div>
+          <div className={styles.field}>
+            <label htmlFor="customer-name" className={styles.label}>
+              Nome completo
+            </label>
+            <input
+              id="customer-name"
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className={styles.input}
+              placeholder="Digite seu nome..."
+              disabled={isBusy}
+              required
+            />
+          </div>
 
-      <div className="space-y-1">
-        <label htmlFor="password" className="text-sm font-medium text-slate-700">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          defaultValue="12345678"
-          className="w-full rounded-lg border px-3 py-2 text-sm"
-          required
-        />
-      </div>
+          <div className={styles.field}>
+            <label htmlFor="customer-register-email" className={styles.label}>
+              Email
+            </label>
+            <input
+              id="customer-register-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className={styles.input}
+              placeholder="Digite seu email..."
+              disabled={isBusy}
+              required
+            />
+          </div>
 
-      <Button type="submit" className="w-full">
-        Register and Open Session
-      </Button>
+          <div className={styles.field}>
+            <label htmlFor="customer-register-password" className={styles.label}>
+              Senha
+            </label>
+            <input
+              id="customer-register-password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={styles.input}
+              placeholder="Crie sua senha..."
+              disabled={isBusy}
+              required
+            />
+          </div>
 
-      <p className="text-center text-sm text-slate-600">
-        Already registered?{" "}
-        <Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="underline">
-          Login
-        </Link>
-      </p>
-    </form>
+          <div className={styles.field}>
+            <label htmlFor="customer-register-confirm-password" className={styles.label}>
+              Confirmar senha
+            </label>
+            <input
+              id="customer-register-confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className={styles.input}
+              placeholder="Repita sua senha..."
+              disabled={isBusy}
+              required
+            />
+          </div>
+
+          {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+
+          <div className={styles.actions}>
+            <button type="submit" className={styles.primary} disabled={isBusy}>
+              {loadingMode === "email" ? "Criando conta..." : "Criar conta"}
+            </button>
+          </div>
+
+          <p className={styles.helperRow}>
+            Ja tem conta?{" "}
+            <Link href={loginPath} className={styles.helperLink}>
+              Entrar
+            </Link>
+          </p>
+        </form>
+      </section>
+    </div>
   );
 }
+
