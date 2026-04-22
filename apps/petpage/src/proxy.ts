@@ -3,7 +3,7 @@ import { CUSTOMER_SESSION_COOKIE } from "@/infrastructure/auth/session-constants
 
 const PROTECTED_ROUTES = new Set(["/profile", "/checkout"]);
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!PROTECTED_ROUTES.has(pathname)) {
