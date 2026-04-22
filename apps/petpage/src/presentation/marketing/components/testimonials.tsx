@@ -1,100 +1,184 @@
-"use client"
+"use client";
 
-import useEmblaCarousel from 'embla-carousel-react'
-import {ChevronLeft, ChevronRight} from 'lucide-react'
-import tutor1 from '@/assets/tutor1.png'
-import tutor2 from '@/assets/tutor2.png'
-import tutor3 from '@/assets/tutor3.png'
-import Image from 'next/image'
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { Star, ArrowLeft, ArrowRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-const testimonials = [
-    {
-      content:
-        "Desde que comecei a levar a Luna para banho e tosa aqui, ela nunca esteve tão feliz! O atendimento é impecável, os profissionais são super cuidadosos e sempre deixam minha peluda linda e cheirosa. Recomendo de olhos fechados!",
-      author: "Mariana Souza",
-      role: "Tutora da Luna (Golden Retriever)",
-      image: tutor2,
-    },
-    {
-      content:
-        "O serviço de hotel para pets foi uma experiência incrível! Precisei viajar e fiquei tranquilo sabendo que o Thor estava sendo bem cuidado. Recebi fotos e atualizações diárias, e ele voltou para casa super feliz! Sem dúvida, o melhor petshop da região.",
-      author: "Rafael",
-      role: "Tutor do Thor (Bulldog Francês)",
-      image: tutor1,
-    },
-    {
-      content: "Meus gatos nunca gostaram de sair de casa, mas o atendimento nesse petshop fez toda a diferença. A equipe é muito paciente e cuidadosa, e o serviço de banho especializado para felinos foi maravilhoso! Agora sei onde confiar o cuidado deles.",
-      author: "Camila fernandes",
-      role: "Tutora da Mel e do Max",
-      image: tutor3,
-    },
-  ]
+type TestimonialItem = {
+  content: string;
+  author: string;
+  role: string;
+};
 
-export function Testimonials(){
+interface TestimonialsProps {
+  items?: TestimonialItem[];
+}
 
-    const [emblaRef, emblaApi] = useEmblaCarousel({
-        loop: true, 
-        })
+const AUTOPLAY_MS = 5000;
 
-    function scrollPrev(){
-        emblaApi?.scrollPrev();
+const defaultTestimonials: TestimonialItem[] = [
+  {
+    content:
+      "Desde que comecei a levar a Luna para banho e tosa aqui, ela nunca esteve tao feliz. Atendimento impecavel e profissionais super cuidadosos.",
+    author: "Mariana Souza",
+    role: "Tutora da Luna (Golden Retriever)",
+  },
+  {
+    content:
+      "Compro toda a racao do Tom no Pet Corner. Entrega rapida, preco justo e produtos sempre frescos. Recomendo de olhos fechados.",
+    author: "Rafael Lima",
+    role: "Tutor do Tom (Gato Persa)",
+  },
+  {
+    content:
+      "O taxi pet salvou minha vida. Levam e buscam o Thor com todo carinho. Equipe nota mil, virou referencia aqui em casa.",
+    author: "Ana Beatriz",
+    role: "Tutora do Thor (Bulldog)",
+  },
+];
+
+export function Testimonials({ items }: TestimonialsProps) {
+  const testimonialItems = items?.length ? items : defaultTestimonials;
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: "start",
+    loop: false,
+  });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(testimonialItems.length > 1);
+
+  const syncCarouselState = useCallback(() => {
+    if (!emblaApi) {
+      return;
     }
 
-    function scrollNext(){
-        emblaApi?.scrollNext();
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+    setScrollSnaps(emblaApi.scrollSnapList());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) {
+      return;
     }
 
-    return (
-      <section className="bg-[#FB8B24] py-16">
-        <div className="container mx-auto px-4">
+    const handleSelect = () => syncCarouselState();
 
-          <div className="relative max-w-4xl mx-auto">
-            <div className="overflow-hidden" ref={emblaRef}>
-              <div className="flex">
-                {testimonials.map((item, index) => (
-                  <div key={index} className="flex-[0_0_100%] min-w-0  px-3">
-                    <article className="bg-[#1e293b] text-white rounded-2xl p-16 space-y-8 h-full flex flex-col">
-                      <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                          <div className="relative w-24 h-24">
-                            <Image
-                              src={item.image}
-                              alt={item.author}
-                              fill
-                              sizes="96px"
-                              className="object-cover rounded-full"
-                              unoptimized
-                            />
-                          </div>
-                        </div>
-                            <p className="text-gray-200">{item.content}</p>
+    emblaApi.on("select", handleSelect);
+    emblaApi.on("reInit", handleSelect);
+    emblaApi.emit("select");
 
-                            <div>
-                                <p className="font-bold">{item.author}</p>
-                                <p className='font-sm text-gray-400'>{item.role}</p> 
-                            </div>
-                      </div>
-                    </article>
-                  </div>
-                ))}
-              </div>
-            </div>
+    return () => {
+      emblaApi.off("select", handleSelect);
+      emblaApi.off("reInit", handleSelect);
+    };
+  }, [emblaApi, syncCarouselState]);
 
+  useEffect(() => {
+    if (!emblaApi || testimonialItems.length < 2) {
+      return;
+    }
+
+    const autoplay = window.setInterval(() => {
+      if (emblaApi.canScrollNext()) {
+        emblaApi.scrollNext();
+      } else {
+        emblaApi.scrollTo(0);
+      }
+    }, AUTOPLAY_MS);
+
+    return () => {
+      window.clearInterval(autoplay);
+    };
+  }, [emblaApi, testimonialItems.length]);
+
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+  const scrollTo = useCallback(
+    (index: number) => emblaApi?.scrollTo(index),
+    [emblaApi]
+  );
+
+  return (
+    <section className="bg-[#1f2937] py-20 text-white">
+      <div className="container mx-auto space-y-10 px-4">
+        <header className="space-y-6">
+          <div className="text-center">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#fb8b24]">
+              Depoimentos
+            </p>
+            <h2 className="text-balance text-4xl font-bold md:text-5xl">
+              Quem confia, recomenda
+            </h2>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
             <button
-              className="bg-white flex items-center justify-center rounded-full shadow-lg w-10 h-10 absolute left-3 -translate-y-1/2 -translate-x-1/2 top-1/2 z-10"
+              type="button"
               onClick={scrollPrev}
+              disabled={!canScrollPrev}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Depoimento anterior"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
+              <ArrowLeft className="h-4 w-4" />
             </button>
-
             <button
-              className="bg-white flex items-center justify-center rounded-full shadow-lg w-10 h-10 absolute -right-6 -translate-y-1/2 -translate-x-1/2 top-1/2 z-10"
+              type="button"
               onClick={scrollNext}
+              disabled={!canScrollNext}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Proximo depoimento"
             >
-              <ChevronRight className="w-6 h-6 text-gray-600" />
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
+        </header>
+
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="-ml-5 flex">
+            {testimonialItems.map((item) => (
+              <div
+                key={item.author}
+                className="min-w-0 flex-[0_0_100%] pl-5 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%]"
+              >
+                <Card className="h-full rounded-3xl border border-white/10 bg-[#273446] text-slate-200">
+                  <CardContent className="flex h-full flex-col gap-5 p-6">
+                    <div className="flex items-center gap-1 text-[#fb8b24]">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <Star key={index} className="h-4 w-4 fill-[#fb8b24]" />
+                      ))}
+                    </div>
+
+                    <p className="flex-1 text-sm leading-relaxed">&quot;{item.content}&quot;</p>
+
+                    <div className="border-t border-white/10 pt-4">
+                      <p className="font-semibold text-white">{item.author}</p>
+                      <p className="text-xs text-slate-400">{item.role}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
-    );
+
+        <div className="flex items-center justify-center gap-2">
+          {scrollSnaps.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              aria-label={`Ir para depoimento ${index + 1}`}
+              onClick={() => scrollTo(index)}
+              className={`h-2.5 rounded-full transition-all ${
+                selectedIndex === index ? "w-7 bg-[#fb8b24]" : "w-2.5 bg-slate-500"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }

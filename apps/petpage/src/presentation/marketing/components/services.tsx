@@ -1,128 +1,231 @@
-"use client"
+"use client";
 
-import useEmblaCarousel from 'embla-carousel-react'
-import {ChevronLeft, ChevronRight, Scissors, Syringe, CarTaxiFront, Hotel, Clock} from 'lucide-react'
-import { WhatsappLogo } from '@phosphor-icons/react'
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import {
+  Scissors,
+  Syringe,
+  CarTaxiFront,
+  Hotel,
+  ArrowRight,
+  ArrowLeft,
+  type LucideIcon,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-const services = [
-    {
-        title: "Banho & Tosa",
-        description: "Inclui banho com produtos específicos para o tipo de pelagem e pele do animal, corte de unhas, limpeza das orelhas e tosa personalizada (higiênica ou estilizada).",
-        duration: "1h",
-        price: "$50",
-        icon: <Scissors color='#FB8B24' />,
-        linkText: 'Olá, vi no site sobre Banho e tosa e gostaria de mais informações.'
-      },
-      {
-        title: "Consulta Veterinária",
-        description: "Oferece atendimento clínico básico ou especializado para cuidar da saúde do animal. Inclui diagnóstico de doenças, aplicação de vacinas obrigatórias.",
-        duration: "1h",
-        price: "$45",
-        icon: <Syringe color='#FB8B24' />,
-        linkText: 'Olá, vi no site sobre Consulta veterinária e gostaria de mais informações.'
-      },
-      {
-        title: "Táxi Pet",
-        description: "Serviço de transporte para levar e buscar os pets no petshop, clínicas veterinárias ou outros locais. Ideal para tutores que não têm tempo ou transporte adequado para locomover os animais.",
-        duration: "2h",
-        price: "$80",
-        icon: <CarTaxiFront color='#FB8B24' />,
-        linkText: 'Olá, vi no site sobre Táxi Pet e gostaria de mais informações.'
-      },
-      {
-        title: "Hotel para pets",
-        description: "Serviço de hospedagem para animais de estimação, ideal para quando os tutores precisam viajar ou se ausentar por alguns dias. Os pets ficam acomodados em espaços seguros, confortáveis.",
-        duration: "1h",
-        price: "$60",
-        icon: <Hotel color='#FB8B24' />,
-        linkText: 'Olá, vi no site sobre Hotel para pets e gostaria de mais informações.'
-      },
-]
+type ServiceItem = {
+  title: string;
+  description: string;
+  duration: string;
+  icon: LucideIcon;
+  iconClassName: string;
+};
 
+interface ServicesProps {
+  items?: ServiceItem[];
+}
 
-export function Services(){
+const AUTOPLAY_MS = 4200;
 
-    const [emblaRef, emblaApi] = useEmblaCarousel({
-        loop: false, 
-        align: 'start',
-        slidesToScroll: 1, 
-        breakpoints: {"(min-width: 768px)": {slidesToScroll: 3}}})
+const defaultServices: ServiceItem[] = [
+  {
+    title: "Banho & Tosa",
+    description:
+      "Banho com produtos especificos, corte de unhas e tosa personalizada para cada raca.",
+    duration: "Duracao ~ 1h",
+    icon: Scissors,
+    iconClassName: "bg-orange-100 text-[#fb8b24]",
+  },
+  {
+    title: "Consulta Veterinaria",
+    description:
+      "Atendimento clinico, diagnostico de doencas e aplicacao de vacinas obrigatorias.",
+    duration: "Duracao ~ 1h",
+    icon: Syringe,
+    iconClassName: "bg-emerald-100 text-emerald-600",
+  },
+  {
+    title: "Taxi Pet",
+    description:
+      "Transporte seguro para levar e buscar seu pet em petshop, clinicas e outros locais.",
+    duration: "Duracao ~ 2h",
+    icon: CarTaxiFront,
+    iconClassName: "bg-amber-100 text-amber-700",
+  },
+  {
+    title: "Hotelzinho",
+    description:
+      "Diarias com carinho, alimentacao balanceada e rotina de atividades para seu pet.",
+    duration: "Duracao ~ 24h",
+    icon: Hotel,
+    iconClassName: "bg-orange-100 text-[#fb8b24]",
+  },
+];
 
-    function scrollPrev(){
-        emblaApi?.scrollPrev();
+export function Services({ items }: ServicesProps) {
+  const serviceItems = items?.length ? items : defaultServices;
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: "start",
+    loop: false,
+  });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(serviceItems.length > 1);
+
+  const syncCarouselState = useCallback(() => {
+    if (!emblaApi) {
+      return;
     }
 
-    function scrollNext(){
-        emblaApi?.scrollNext();
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+    setScrollSnaps(emblaApi.scrollSnapList());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) {
+      return;
     }
 
-    return(
-        <section className="bg-white py-16">
-      <div className="container mx-auto px-4">
+    const handleSelect = () => syncCarouselState();
 
-        <h2 className="text-4xl font-bold mb-12">Serviços</h2>
+    emblaApi.on("select", handleSelect);
+    emblaApi.on("reInit", handleSelect);
+    emblaApi.emit("select");
 
-        <div className="relative">
+    return () => {
+      emblaApi.off("select", handleSelect);
+      emblaApi.off("reInit", handleSelect);
+    };
+  }, [emblaApi, syncCarouselState]);
 
-          <div className='overflow-hidden' ref={emblaRef}>
-            <div className='flex'>
-              {services.map((item, index) => (
-                <div key={index} className="flex-[0_0_100%] min-w-0 md:flex-[0_0_calc(100%/3)] px-3">
-                  <article className="bg-[#1e293b] text-white rounded-2xl p-6 space-y-4 h-full flex flex-col">
-                    <div className='flex-1 flex items-start justify-between'>
+  useEffect(() => {
+    if (!emblaApi || serviceItems.length < 2) {
+      return;
+    }
 
-                      <div className='flex gap-3'>
-                        <span className='text-3xl my-1'>{item.icon}</span>
-                        <div>
-                          <h3 className='font-bold text-xl my-1'>{item.title}</h3>
-                          <p className='text-gray-400 text-sm select-none'>
-                            {item.description}
-                          </p>
-                        </div>
-                      </div>
+    const autoplay = window.setInterval(() => {
+      if (emblaApi.canScrollNext()) {
+        emblaApi.scrollNext();
+      } else {
+        emblaApi.scrollTo(0);
+      }
+    }, AUTOPLAY_MS);
 
-                    </div>
+    return () => {
+      window.clearInterval(autoplay);
+    };
+  }, [emblaApi, serviceItems.length]);
 
-                    <div className='border-t border-gray-700 pt-4 flex items-center justify-between'>
-                      <div className='flex items-center gap-2 text-sm'>
-                        <Clock className='w-4 h-4' />
-                        <span>{item.duration}</span>
-                      </div>
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+  const scrollTo = useCallback(
+    (index: number) => emblaApi?.scrollTo(index),
+    [emblaApi]
+  );
 
-                      <a
-                        target='_blank'
-                        href={`https://wa.me/556799998800?text=Olá vim pelo site e gostaria de mais informações sobre ${item.title}`}
-                        className='flex items-center justify-center gap-2 hover:bg-red-500 px-4 py-1 rounded-md duration-300'
-                      >
-                        <WhatsappLogo className='w-5 h-5' />
-                        Entrar em contato
-                      </a>
-
-                    </div>
-
-                  </article>
-                </div>
-              ))}
-            </div>
+  return (
+    <section id="servicos" className="bg-[#f6f2e8] py-20">
+      <div className="container mx-auto space-y-10 px-4">
+        <div className="grid gap-6 md:grid-cols-[1fr_360px] md:items-end">
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#fb8b24]">
+              Nossos servicos
+            </p>
+            <h2 className="text-balance text-4xl font-bold leading-tight text-slate-800 md:text-5xl">
+              Cuidado em cada detalhe
+            </h2>
           </div>
-
-          <button
-            className='bg-white flex items-center justify-center rounded-full shadow-lg w-10 h-10 absolute left-3 -translate-y-1/2 -translate-x-1/2 top-1/2 z-10'
-            onClick={scrollPrev}
-          >
-            <ChevronLeft className='w-6 h-6 text-gray-600' />
-          </button>
-
-          <button
-            className='bg-white flex items-center justify-center rounded-full shadow-lg w-10 h-10 absolute -right-6 -translate-y-1/2 -translate-x-1/2 top-1/2 z-10'
-            onClick={scrollNext}
-          >
-            <ChevronRight className='w-6 h-6 text-gray-600' />
-          </button>
-
+          <p className="max-w-md text-sm leading-relaxed text-slate-600 md:ml-auto md:text-base">
+            Profissionais apaixonados por animais oferecendo o melhor para o conforto
+            e saude do seu pet.
+          </p>
         </div>
 
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={scrollPrev}
+            disabled={!canScrollPrev}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Servico anterior"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={scrollNext}
+            disabled={!canScrollNext}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Proximo servico"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="-ml-4 flex">
+            {serviceItems.map((service) => {
+              const Icon = service.icon;
+
+              return (
+                <div
+                  key={service.title}
+                  className="min-w-0 flex-[0_0_100%] pl-4 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%] 2xl:flex-[0_0_25%]"
+                >
+                  <Card className="h-full rounded-3xl border border-slate-200/80 bg-[#efefef] text-slate-800 shadow-[0_16px_35px_-30px_rgba(30,41,59,0.6)]">
+                    <CardContent className="flex h-full flex-col gap-6 p-5">
+                      <span
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded-full ${service.iconClassName}`}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </span>
+
+                      <div className="flex-1 space-y-2">
+                        <h3 className="text-xl font-bold text-slate-800">{service.title}</h3>
+                        <p className="min-h-20 text-sm leading-relaxed text-slate-600">
+                          {service.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-auto flex items-center justify-between border-t border-slate-300/80 pt-4 text-xs font-medium text-slate-500">
+                        <span>{service.duration}</span>
+                        <a
+                          href={`https://wa.me/5567999898999?text=Ola%2C%20quero%20agendar%20${encodeURIComponent(service.title)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          suppressHydrationWarning
+                          className="inline-flex items-center gap-1 rounded-full bg-[#fb8b24] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#ef7e14]"
+                        >
+                          Agendar
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-2">
+          {scrollSnaps.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              aria-label={`Ir para servico ${index + 1}`}
+              onClick={() => scrollTo(index)}
+              className={`h-2.5 rounded-full transition-all ${
+                selectedIndex === index ? "w-7 bg-[#fb8b24]" : "w-2.5 bg-slate-300"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </section>
-    )
+  );
 }
+
