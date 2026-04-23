@@ -13,12 +13,14 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-type ServiceItem = {
+export type ServiceItem = {
+  id?: string;
   title: string;
   description: string;
   duration: string;
-  icon: LucideIcon;
-  iconClassName: string;
+  icon?: LucideIcon;
+  iconKey?: "scissors" | "syringe" | "taxi" | "hotel";
+  iconClassName?: string;
 };
 
 interface ServicesProps {
@@ -61,6 +63,20 @@ const defaultServices: ServiceItem[] = [
     iconClassName: "bg-orange-100 text-[#fb8b24]",
   },
 ];
+
+const defaultServiceIconMap: Record<NonNullable<ServiceItem["iconKey"]>, LucideIcon> = {
+  scissors: Scissors,
+  syringe: Syringe,
+  taxi: CarTaxiFront,
+  hotel: Hotel,
+};
+
+const defaultServiceIconClassMap: Record<NonNullable<ServiceItem["iconKey"]>, string> = {
+  scissors: "bg-orange-100 text-[#fb8b24]",
+  syringe: "bg-emerald-100 text-emerald-600",
+  taxi: "bg-amber-100 text-amber-700",
+  hotel: "bg-orange-100 text-[#fb8b24]",
+};
 
 export function Services({ items }: ServicesProps) {
   const serviceItems = items?.length ? items : defaultServices;
@@ -167,18 +183,20 @@ export function Services({ items }: ServicesProps) {
 
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="-ml-4 flex">
-            {serviceItems.map((service) => {
-              const Icon = service.icon;
+            {serviceItems.map((service, index) => {
+              const iconKey = service.iconKey || "scissors";
+              const Icon = service.icon || defaultServiceIconMap[iconKey];
+              const iconClassName = service.iconClassName || defaultServiceIconClassMap[iconKey];
 
               return (
                 <div
-                  key={service.title}
+                  key={service.id || `${service.title}-${index}`}
                   className="min-w-0 flex-[0_0_100%] pl-4 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%] 2xl:flex-[0_0_25%]"
                 >
                   <Card className="h-full rounded-3xl border border-slate-200/80 bg-[#efefef] text-slate-800 shadow-[0_16px_35px_-30px_rgba(30,41,59,0.6)]">
                     <CardContent className="flex h-full flex-col gap-6 p-5">
                       <span
-                        className={`inline-flex h-11 w-11 items-center justify-center rounded-full ${service.iconClassName}`}
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded-full ${iconClassName}`}
                       >
                         <Icon className="h-5 w-5" />
                       </span>

@@ -5,10 +5,12 @@ import useEmblaCarousel from "embla-carousel-react";
 import { Star, ArrowLeft, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-type TestimonialItem = {
+export type TestimonialItem = {
+  id?: string;
   content: string;
   author: string;
   role: string;
+  rating?: number;
 };
 
 interface TestimonialsProps {
@@ -139,15 +141,17 @@ export function Testimonials({ items }: TestimonialsProps) {
 
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="-ml-5 flex">
-            {testimonialItems.map((item) => (
+            {testimonialItems.map((item, index) => (
               <div
-                key={item.author}
+                key={item.id || `${item.author}-${index}`}
                 className="min-w-0 flex-[0_0_100%] pl-5 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%]"
               >
                 <Card className="h-full rounded-3xl border border-white/10 bg-[#273446] text-slate-200">
                   <CardContent className="flex h-full flex-col gap-5 p-6">
                     <div className="flex items-center gap-1 text-[#fb8b24]">
-                      {Array.from({ length: 5 }).map((_, index) => (
+                      {Array.from({
+                        length: Math.max(1, Math.min(Math.round(item.rating || 5), 5)),
+                      }).map((_, index) => (
                         <Star key={index} className="h-4 w-4 fill-[#fb8b24]" />
                       ))}
                     </div>

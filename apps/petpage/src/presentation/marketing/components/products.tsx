@@ -12,7 +12,8 @@ import product3 from "@/assets/Product3.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-type ProductItem = {
+export type ProductItem = {
+  id?: string;
   category: string;
   title: string;
   description: string;
@@ -162,55 +163,64 @@ export function Products({ items }: ProductsProps) {
 
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="-ml-5 flex">
-            {productItems.map((product) => (
-              <div
-                key={product.title}
-                className="min-w-0 flex-[0_0_100%] pl-5 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%]"
-              >
-                <Card className="h-full overflow-hidden rounded-3xl border border-slate-200 bg-[#efefef] shadow-[0_18px_35px_-30px_rgba(30,41,59,0.65)]">
-                  <div className="relative h-72 w-full overflow-hidden bg-white">
-                    <span className="absolute left-4 top-4 z-10 rounded-full bg-[#fb8b24] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white">
-                      {product.badge}
-                    </span>
-                    <Image
-                      src={product.image}
-                      alt={product.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      className="object-cover"
-                    />
-                  </div>
+            {productItems.map((product, index) => {
+              const normalizedImage =
+                typeof product.image === "string" ? product.image.trim() : product.image;
+              const safeImage = normalizedImage || product1;
+              const isRemoteImage =
+                typeof safeImage === "string" && /^https?:\/\//i.test(safeImage);
 
-                  <CardContent className="flex h-[calc(100%-18rem)] flex-col gap-4 p-5">
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        {product.category}
-                      </p>
-                      <h3 className="text-xl font-bold text-slate-800">{product.title}</h3>
-                      <p className="text-sm text-slate-600">{product.description}</p>
+              return (
+                <div
+                  key={product.id || `${product.title}-${index}`}
+                  className="min-w-0 flex-[0_0_100%] pl-5 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%]"
+                >
+                  <Card className="h-full overflow-hidden rounded-3xl border border-slate-200 bg-[#efefef] shadow-[0_18px_35px_-30px_rgba(30,41,59,0.65)]">
+                    <div className="relative h-72 w-full overflow-hidden bg-white">
+                      <span className="absolute left-4 top-4 z-10 rounded-full bg-[#fb8b24] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white">
+                        {product.badge}
+                      </span>
+                      <Image
+                        src={safeImage}
+                        alt={product.title}
+                        fill
+                        unoptimized={isRemoteImage}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                        className="object-cover"
+                      />
                     </div>
 
-                    <div className="mt-auto flex items-center justify-between gap-3">
-                      <span className="text-3xl font-bold text-slate-800">{product.price}</span>
+                    <CardContent className="flex h-[calc(100%-18rem)] flex-col gap-4 p-5">
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          {product.category}
+                        </p>
+                        <h3 className="text-xl font-bold text-slate-800">{product.title}</h3>
+                        <p className="text-sm text-slate-600">{product.description}</p>
+                      </div>
 
-                      <Button
-                        asChild
-                        className="h-10 rounded-full bg-[#fb8b24] px-4 text-sm font-semibold text-white hover:bg-[#ef7e14]"
-                      >
-                        <Link
-                          href="/cart"
-                          suppressHydrationWarning
-                          className="inline-flex items-center gap-2"
+                      <div className="mt-auto flex items-center justify-between gap-3">
+                        <span className="text-3xl font-bold text-slate-800">{product.price}</span>
+
+                        <Button
+                          asChild
+                          className="h-10 rounded-full bg-[#fb8b24] px-4 text-sm font-semibold text-white hover:bg-[#ef7e14]"
                         >
-                          <ShoppingCartSimple className="h-4 w-4" />
-                          Comprar
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
+                          <Link
+                            href="/cart"
+                            suppressHydrationWarning
+                            className="inline-flex items-center gap-2"
+                          >
+                            <ShoppingCartSimple className="h-4 w-4" />
+                            Comprar
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         </div>
 
