@@ -10,6 +10,7 @@ import {
   DASHBOARD_ROUTE,
   PRODUCTS_ROUTE,
   SERVICES_ROUTE,
+  TESTIMONIALS_ROUTE,
 } from "../Dashboard/dashboard.domain";
 
 export default function Nav() {
@@ -23,6 +24,7 @@ export default function Nav() {
     { to: ANIMALS_ROUTE, icon: "paw", label: "Animais" },
     { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
     { to: SERVICES_ROUTE, icon: "scissors", label: "Servicos" },
+    { to: TESTIMONIALS_ROUTE, icon: "comments", label: "Depoimentos" },
   ];
 
   useEffect(() => {

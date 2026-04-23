@@ -7,6 +7,7 @@ import {
   DASHBOARD_ROUTE,
   PRODUCTS_ROUTE,
   SERVICES_ROUTE,
+  TESTIMONIALS_ROUTE,
 } from "./components/Dashboard/dashboard.domain";
 import PrivateRoute from "./Private";
 
@@ -17,6 +18,7 @@ const ClientesPage = lazy(() => import("./screens/Clientes/ClientesPage"));
 const AnimaisPage = lazy(() => import("./screens/Animais/AnimaisPage"));
 const ProdutosPage = lazy(() => import("./screens/Produtos/ProdutosPage"));
 const ServicosPage = lazy(() => import("./screens/Servicos/ServicosPage"));
+const DepoimentosPage = lazy(() => import("./screens/Depoimentos/DepoimentosPage"));
 const NotFoundPage = lazy(() => import("./screens/NotFound/NotFoundPage"));
 
 function RouteFallback() {
@@ -86,6 +88,15 @@ export default function RoutesApp() {
           element={
             <PrivateRoute>
               <ServicosPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path={TESTIMONIALS_ROUTE}
+          element={
+            <PrivateRoute>
+              <DepoimentosPage />
             </PrivateRoute>
           }
         />
