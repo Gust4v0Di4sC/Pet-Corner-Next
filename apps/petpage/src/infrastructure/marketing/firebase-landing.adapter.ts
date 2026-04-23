@@ -1,6 +1,6 @@
 "use client";
 
-import { collection, getDocs, getFirestore, limit, query } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, getFirestore, limit, query } from "firebase/firestore";
 import { getFirebaseApp } from "@/infrastructure/auth/firebase-auth.adapter";
 
 type FirestoreRecord = Record<string, unknown>;
@@ -124,8 +124,31 @@ function isFirestoreRecord(payload: unknown): payload is FirestoreRecord {
   return typeof payload === "object" && payload !== null;
 }
 
-export async function readLandingProducts(): Promise<LandingProductRecord[]> {
-  const snapshot = await getDocs(query(collection(getDb(), "prods"), limit(24)));
+type ReadCollectionOptions = {
+  limitCount?: number;
+};
+
+function normalizeLimit(value: number | undefined): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  const roundedValue = Math.round(value);
+  if (roundedValue <= 0) {
+    return null;
+  }
+
+  return roundedValue;
+}
+
+export async function readLandingProducts(
+  options: ReadCollectionOptions = {}
+): Promise<LandingProductRecord[]> {
+  const productsCollection = collection(getDb(), "prods");
+  const normalizedLimit = normalizeLimit(options.limitCount);
+  const snapshot = normalizedLimit
+    ? await getDocs(query(productsCollection, limit(normalizedLimit)))
+    : await getDocs(productsCollection);
 
   return snapshot.docs
     .map((document) => {
@@ -140,8 +163,40 @@ export async function readLandingProducts(): Promise<LandingProductRecord[]> {
     .filter((item) => item.isActive !== false && item.name.trim().length > 0);
 }
 
-export async function readLandingServices(): Promise<LandingServiceRecord[]> {
-  const snapshot = await getDocs(query(collection(getDb(), "services"), limit(20)));
+export async function readLandingProductById(
+  productId: string
+): Promise<LandingProductRecord | null> {
+  const normalizedId = productId.trim();
+  if (!normalizedId) {
+    return null;
+  }
+
+  const snapshot = await getDoc(doc(getDb(), "prods", normalizedId));
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const payload = snapshot.data();
+  if (!isFirestoreRecord(payload)) {
+    return null;
+  }
+
+  const mappedProduct = mapLandingProduct(snapshot.id, payload);
+  if (mappedProduct.isActive === false || mappedProduct.name.trim().length === 0) {
+    return null;
+  }
+
+  return mappedProduct;
+}
+
+export async function readLandingServices(
+  options: ReadCollectionOptions = {}
+): Promise<LandingServiceRecord[]> {
+  const servicesCollection = collection(getDb(), "services");
+  const normalizedLimit = normalizeLimit(options.limitCount);
+  const snapshot = normalizedLimit
+    ? await getDocs(query(servicesCollection, limit(normalizedLimit)))
+    : await getDocs(servicesCollection);
 
   return snapshot.docs
     .map((document) => {
@@ -154,6 +209,32 @@ export async function readLandingServices(): Promise<LandingServiceRecord[]> {
     })
     .filter((item): item is LandingServiceRecord => item !== null)
     .filter((item) => item.isActive !== false && item.name.trim().length > 0);
+}
+
+export async function readLandingServiceById(
+  serviceId: string
+): Promise<LandingServiceRecord | null> {
+  const normalizedId = serviceId.trim();
+  if (!normalizedId) {
+    return null;
+  }
+
+  const snapshot = await getDoc(doc(getDb(), "services", normalizedId));
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const payload = snapshot.data();
+  if (!isFirestoreRecord(payload)) {
+    return null;
+  }
+
+  const mappedService = mapLandingService(snapshot.id, payload);
+  if (mappedService.isActive === false || mappedService.name.trim().length === 0) {
+    return null;
+  }
+
+  return mappedService;
 }
 
 export async function readLandingTestimonials(): Promise<LandingTestimonialRecord[]> {

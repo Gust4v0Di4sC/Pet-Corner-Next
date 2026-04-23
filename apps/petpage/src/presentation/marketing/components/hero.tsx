@@ -12,8 +12,9 @@ export function Hero() {
     >
       <div className="pointer-events-none absolute inset-0 animate-hero-pulse bg-[radial-gradient(circle_at_85%_95%,rgba(65,165,115,0.22),transparent_32%),radial-gradient(circle_at_20%_0%,rgba(251,139,36,0.14),transparent_35%)]" />
 
-      <div className="container relative mx-auto grid gap-14 px-4 py-14 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-20">
-        <article className="space-y-7">
+      <div className="gridpet">
+        <div className="gridpet-content relative grid gap-14 py-14 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-20">
+          <article className="space-y-7">
           <span
             data-aos="fade-down"
             suppressHydrationWarning
@@ -101,43 +102,44 @@ export function Hero() {
               <p className="text-xs text-slate-500">de historia</p>
             </div>
           </div>
-        </article>
+          </article>
 
-        <div
-          data-aos="zoom-in"
-          data-aos-delay="200"
-          suppressHydrationWarning
-          className="animate-hero-fade-up animate-hero-delay-2 relative mx-auto w-full max-w-[540px]"
-        >
-          <div className="relative overflow-hidden rounded-[2.2rem] border-[5px] border-[#f29d2d] bg-[#f7f1e6] shadow-[0_30px_55px_-35px_rgba(30,41,59,0.55)]">
-            <div className="animate-hero-float relative mx-auto aspect-[1/1] w-[88%] max-w-[460px]">
-              <Image
-                src={herodog}
-                alt="Cachorro sorrindo"
-                fill
-                sizes="(max-width: 768px) 88vw, 40vw"
-                className="object-contain"
-                priority
-              />
+          <div
+            data-aos="zoom-in"
+            data-aos-delay="200"
+            suppressHydrationWarning
+            className="animate-hero-fade-up animate-hero-delay-2 relative mx-auto w-full max-w-[540px]"
+          >
+            <div className="relative overflow-hidden rounded-[2.2rem] border-[5px] border-[#f29d2d] bg-[#f7f1e6] shadow-[0_30px_55px_-35px_rgba(30,41,59,0.55)]">
+              <div className="animate-hero-float relative mx-auto aspect-[1/1] w-[88%] max-w-[460px]">
+                <Image
+                  src={herodog}
+                  alt="Cachorro sorrindo"
+                  fill
+                  sizes="(max-width: 768px) 88vw, 40vw"
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </div>
-          </div>
 
-          <div
-            className="animate-hero-float absolute left-0 top-10 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-slate-600 shadow-lg md:-left-9"
-            style={{ animationDelay: "180ms" }}
-          >
-            frete gratis
-            <br />
-            <span className="text-sm text-slate-800">acima de R$ 99</span>
-          </div>
+            <div
+              className="animate-hero-float absolute left-0 top-10 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-slate-600 shadow-lg md:-left-9"
+              style={{ animationDelay: "180ms" }}
+            >
+              frete gratis
+              <br />
+              <span className="text-sm text-slate-800">acima de R$ 99</span>
+            </div>
 
-          <div
-            className="animate-hero-float absolute bottom-10 right-0 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-slate-600 shadow-lg md:-right-10"
-            style={{ animationDelay: "520ms" }}
-          >
-            entrega em
-            <br />
-            <span className="text-sm text-emerald-600">24h</span>
+            <div
+              className="animate-hero-float absolute bottom-10 right-0 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-slate-600 shadow-lg md:-right-10"
+              style={{ animationDelay: "520ms" }}
+            >
+              entrega em
+              <br />
+              <span className="text-sm text-emerald-600">24h</span>
+            </div>
           </div>
         </div>
       </div>

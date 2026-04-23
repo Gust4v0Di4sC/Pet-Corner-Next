@@ -72,6 +72,41 @@
 }
 
 @layer utilities {
+  .gridpet {
+    --gridpet-columns: 16;
+    --gridpet-gutter: 20px;
+    --gridpet-offset: 16px;
+    margin-inline: auto;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(var(--gridpet-columns), minmax(0, 1fr));
+    column-gap: var(--gridpet-gutter);
+    padding-inline: var(--gridpet-offset);
+  }
+
+  .gridpet-content {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .gridpet {
+      --gridpet-offset: 24px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .gridpet {
+      --gridpet-offset: 40px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .gridpet {
+      --gridpet-offset: 60px;
+    }
+  }
+
   @keyframes hero-fade-up {
     from {
       opacity: 0;

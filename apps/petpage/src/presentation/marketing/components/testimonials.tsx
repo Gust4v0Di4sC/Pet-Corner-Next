@@ -106,81 +106,83 @@ export function Testimonials({ items }: TestimonialsProps) {
 
   return (
     <section className="bg-[#1f2937] py-20 text-white">
-      <div className="container mx-auto space-y-10 px-4">
-        <header className="space-y-6">
-          <div className="text-center">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#fb8b24]">
-              Depoimentos
-            </p>
-            <h2 className="text-balance text-4xl font-bold md:text-5xl">
-              Quem confia, recomenda
-            </h2>
-          </div>
+      <div className="gridpet">
+        <div className="gridpet-content space-y-10">
+          <header className="space-y-6">
+            <div className="text-center">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#fb8b24]">
+                Depoimentos
+              </p>
+              <h2 className="text-balance text-4xl font-bold md:text-5xl">
+                Quem confia, recomenda
+              </h2>
+            </div>
 
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={scrollPrev}
-              disabled={!canScrollPrev}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Depoimento anterior"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={scrollNext}
-              disabled={!canScrollNext}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Proximo depoimento"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </header>
-
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="-ml-5 flex">
-            {testimonialItems.map((item, index) => (
-              <div
-                key={item.id || `${item.author}-${index}`}
-                className="min-w-0 flex-[0_0_100%] pl-5 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%]"
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={scrollPrev}
+                disabled={!canScrollPrev}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Depoimento anterior"
               >
-                <Card className="h-full rounded-3xl border border-white/10 bg-[#273446] text-slate-200">
-                  <CardContent className="flex h-full flex-col gap-5 p-6">
-                    <div className="flex items-center gap-1 text-[#fb8b24]">
-                      {Array.from({
-                        length: Math.max(1, Math.min(Math.round(item.rating || 5), 5)),
-                      }).map((_, index) => (
-                        <Star key={index} className="h-4 w-4 fill-[#fb8b24]" />
-                      ))}
-                    </div>
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={scrollNext}
+                disabled={!canScrollNext}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Proximo depoimento"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </header>
 
-                    <p className="flex-1 text-sm leading-relaxed">&quot;{item.content}&quot;</p>
+          <div className="overflow-hidden" ref={emblaRef}>
+            <div className="-ml-5 flex">
+              {testimonialItems.map((item, index) => (
+                <div
+                  key={item.id || `${item.author}-${index}`}
+                  className="min-w-0 flex-[0_0_100%] pl-5 md:flex-[0_0_50%] xl:flex-[0_0_33.3333%]"
+                >
+                  <Card className="h-full rounded-3xl border border-white/10 bg-[#273446] text-slate-200">
+                    <CardContent className="flex h-full flex-col gap-5 p-6">
+                      <div className="flex items-center gap-1 text-[#fb8b24]">
+                        {Array.from({
+                          length: Math.max(1, Math.min(Math.round(item.rating || 5), 5)),
+                        }).map((_, index) => (
+                          <Star key={index} className="h-4 w-4 fill-[#fb8b24]" />
+                        ))}
+                      </div>
 
-                    <div className="border-t border-white/10 pt-4">
-                      <p className="font-semibold text-white">{item.author}</p>
-                      <p className="text-xs text-slate-400">{item.role}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                      <p className="flex-1 text-sm leading-relaxed">&quot;{item.content}&quot;</p>
+
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="font-semibold text-white">{item.author}</p>
+                        <p className="text-xs text-slate-400">{item.role}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-2">
+            {scrollSnaps.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                aria-label={`Ir para depoimento ${index + 1}`}
+                onClick={() => scrollTo(index)}
+                className={`h-2.5 rounded-full transition-all ${
+                  selectedIndex === index ? "w-7 bg-[#fb8b24]" : "w-2.5 bg-slate-500"
+                }`}
+              />
             ))}
           </div>
-        </div>
-
-        <div className="flex items-center justify-center gap-2">
-          {scrollSnaps.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              aria-label={`Ir para depoimento ${index + 1}`}
-              onClick={() => scrollTo(index)}
-              className={`h-2.5 rounded-full transition-all ${
-                selectedIndex === index ? "w-7 bg-[#fb8b24]" : "w-2.5 bg-slate-500"
-              }`}
-            />
-          ))}
         </div>
       </div>
     </section>
