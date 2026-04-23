@@ -5,20 +5,33 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.admin == true;
     }
 
-    match /clientes/{document=**} {
-      allow read, write: if isAdmin();
+    function isOwner(customerId) {
+      return request.auth != null && request.auth.uid == customerId;
     }
 
-    match /dogs/{document=**} {
-      allow read, write: if isAdmin();
+    match /clientes/{clientId} {
+      allow read, create, update, delete: if isAdmin() || isOwner(clientId);
+    }
+
+    match /dogs/{dogId} {
+      allow read: if isAdmin() || (request.auth != null && resource.data.ownerCustomerId == request.auth.uid);
+      allow create: if isAdmin() || (request.auth != null && request.resource.data.ownerCustomerId == request.auth.uid);
+      allow update, delete: if isAdmin() || (request.auth != null && resource.data.ownerCustomerId == request.auth.uid);
     }
 
     match /prods/{document=**} {
-      allow read, write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /services/{document=**} {
-      allow read, write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /testimonials/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /productCatalog/{document=**} {
@@ -26,7 +39,11 @@ service cloud.firestore {
     }
 
     match /customers/{customerId} {
-      allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == customerId);
+      allow read, write: if isAdmin() || isOwner(customerId);
+    }
+
+    match /customers/{customerId}/{document=**} {
+      allow read, write: if isAdmin() || isOwner(customerId);
     }
 
     match /{document=**} {
