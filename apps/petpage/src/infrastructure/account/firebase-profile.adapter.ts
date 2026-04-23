@@ -32,9 +32,10 @@ export type FirebaseCustomerPet = {
   id: string;
   customerId: string;
   name: string;
-  species: string;
+  animalType: string;
   breed: string;
   age: number;
+  weight: number;
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -71,9 +72,10 @@ export type FirebaseCustomerAddress = {
 export type CreateCustomerPetInput = {
   customerId: string;
   name: string;
-  species: string;
+  animalType: string;
   breed: string;
   age: number;
+  weight: number;
 };
 
 export type UpsertCustomerAddressInput = {
@@ -147,6 +149,25 @@ function toNumberValue(value: unknown, fallback = 0): number {
   return fallback;
 }
 
+function normalizePetWeight(value: number): number {
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+
+  return Math.round(value * 10) / 10;
+}
+
+function normalizeAnimalType(value: string): string {
+  const normalizedValue = value.trim();
+  const lowerCaseValue = normalizedValue.toLowerCase();
+
+  if (lowerCaseValue === "cao") {
+    return "Cachorro";
+  }
+
+  return normalizedValue;
+}
+
 function customerCollectionRef(
   customerId: string,
   collectionName:
@@ -185,27 +206,14 @@ function formatAddressLabel(input: {
     .join(" | ");
 }
 
-function mapSpeciesToAdminAnimalType(species: string): string {
-  const normalizedSpecies = species.trim().toLowerCase();
-
-  if (normalizedSpecies === "cao" || normalizedSpecies === "cachorro") {
-    return "Cachorro";
-  }
-
-  if (normalizedSpecies === "gato") {
-    return "Gato";
-  }
-
-  return species.trim() || "Cachorro";
-}
-
 async function mirrorPetToAdminDogsCollection(input: {
   customerId: string;
   petMirrorId: string;
   name: string;
-  species: string;
+  animalType: string;
   breed: string;
   age: number;
+  weight: number;
 }): Promise<void> {
   const mirrorRef = doc(
     getDb(),
@@ -218,10 +226,10 @@ async function mirrorPetToAdminDogsCollection(input: {
     {
       ownerCustomerId: input.customerId,
       name: input.name,
-      animalType: mapSpeciesToAdminAnimalType(input.species),
+      animalType: input.animalType,
       breed: input.breed,
       age: input.age,
-      weight: 0,
+      weight: normalizePetWeight(input.weight),
       source: "petpage",
       updatedAt: serverTimestamp(),
       updatedAtIso: new Date().toISOString(),
@@ -232,6 +240,13 @@ async function mirrorPetToAdminDogsCollection(input: {
 
 async function mirrorAddressToAdminClientCollection(input: {
   customerId: string;
+  zipCode: string;
+  street: string;
+  number: string;
+  district: string;
+  city: string;
+  state: string;
+  complement: string;
   address: string;
 }): Promise<void> {
   const mirrorRef = doc(
@@ -244,6 +259,13 @@ async function mirrorAddressToAdminClientCollection(input: {
     mirrorRef,
     {
       ownerCustomerId: input.customerId,
+      zipCode: input.zipCode,
+      street: input.street,
+      number: input.number,
+      district: input.district,
+      city: input.city,
+      state: input.state,
+      complement: input.complement,
       address: input.address,
       source: "petpage",
       updatedAt: serverTimestamp(),
@@ -259,9 +281,12 @@ function mapPetDocument(
   payload: Record<string, unknown>
 ): FirebaseCustomerPet | null {
   const name = toStringValue(payload.name).trim();
-  const species = toStringValue(payload.species).trim();
+  const animalType = normalizeAnimalType(
+    toStringValue(payload.animalType).trim() || toStringValue(payload.species).trim()
+  );
   const breed = toStringValue(payload.breed).trim();
   const age = toNumberValue(payload.age, 0);
+  const weight = normalizePetWeight(toNumberValue(payload.weight, 0));
   const createdAtIso =
     toIsoString(payload.createdAtIso) ||
     toIsoString(payload.createdAt) ||
@@ -271,7 +296,7 @@ function mapPetDocument(
     toIsoString(payload.updatedAt) ||
     createdAtIso;
 
-  if (!name || !species || !breed || age <= 0) {
+  if (!name || !animalType || !breed || age <= 0) {
     return null;
   }
 
@@ -279,9 +304,10 @@ function mapPetDocument(
     id,
     customerId,
     name,
-    species,
+    animalType,
     breed,
     age: Math.round(age),
+    weight,
     createdAtIso,
     updatedAtIso,
   };
@@ -365,6 +391,28 @@ function mapAddressDocument(
   };
 }
 
+function mapAdminClientAddressDocument(
+  customerId: string,
+  payload: Record<string, unknown>
+): FirebaseCustomerAddress | null {
+  const address = mapAddressDocument(customerId, payload);
+  const hasStructuredAddress = [
+    address.zipCode,
+    address.street,
+    address.number,
+    address.district,
+    address.city,
+    address.state,
+    address.complement,
+  ].some((value) => Boolean(value.trim()));
+
+  if (!hasStructuredAddress) {
+    return null;
+  }
+
+  return address;
+}
+
 function isPermissionDeniedError(error: unknown): boolean {
   if (!isRecord(error)) {
     return false;
@@ -383,6 +431,35 @@ async function readRootPetsByCustomerId(customerId: string): Promise<FirebaseCus
     const rootPetsSnapshot = await getDocs(rootPetsQuery);
 
     return rootPetsSnapshot.docs
+      .map((snapshot) => {
+        const payload = snapshot.data();
+        if (!isRecord(payload)) {
+          return null;
+        }
+
+        return mapPetDocument(snapshot.id, customerId, payload);
+      })
+      .filter((pet): pet is FirebaseCustomerPet => pet !== null)
+      .sort((left, right) => right.createdAtIso.localeCompare(left.createdAtIso));
+  } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+async function readAdminDogsByCustomerId(customerId: string): Promise<FirebaseCustomerPet[]> {
+  try {
+    const adminDogsQuery = query(
+      collection(getDb(), firebaseCustomerProfileAdapter.adminDogsCollection),
+      where("ownerCustomerId", "==", customerId),
+      limit(40)
+    );
+    const adminDogsSnapshot = await getDocs(adminDogsQuery);
+
+    return adminDogsSnapshot.docs
       .map((snapshot) => {
         const payload = snapshot.data();
         if (!isRecord(payload)) {
@@ -423,9 +500,11 @@ async function migratePetsIntoCustomerSubcollection(
         {
           customerId,
           name: pet.name,
-          species: pet.species,
+          animalType: pet.animalType,
+          species: pet.animalType,
           breed: pet.breed,
           age: pet.age,
+          weight: normalizePetWeight(pet.weight),
           createdAtIso: pet.createdAtIso,
           updatedAtIso: new Date().toISOString(),
           migratedAt: serverTimestamp(),
@@ -460,14 +539,24 @@ export async function readCustomerPets(customerId: string): Promise<FirebaseCust
   const rootPets = await readRootPetsByCustomerId(customerId);
   if (rootPets.length) {
     await migratePetsIntoCustomerSubcollection(customerId, rootPets);
+    return rootPets;
   }
-  return rootPets;
+
+  const adminDogs = await readAdminDogsByCustomerId(customerId);
+  if (adminDogs.length) {
+    await migratePetsIntoCustomerSubcollection(customerId, adminDogs);
+    return adminDogs;
+  }
+
+  return [];
 }
 
 export async function createCustomerPet(
   input: CreateCustomerPetInput
 ): Promise<FirebaseCustomerPet> {
   const nowIso = new Date().toISOString();
+  const normalizedAnimalType = normalizeAnimalType(input.animalType);
+  const normalizedWeight = normalizePetWeight(input.weight);
   const petCollectionRef = customerCollectionRef(
     input.customerId,
     firebaseCustomerProfileAdapter.petsCollection
@@ -476,9 +565,11 @@ export async function createCustomerPet(
   const createdPetRef = await addDoc(petCollectionRef, {
     customerId: input.customerId,
     name: input.name.trim(),
-    species: input.species.trim(),
+    animalType: normalizedAnimalType,
+    species: normalizedAnimalType,
     breed: input.breed.trim(),
     age: Math.round(input.age),
+    weight: normalizedWeight,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     createdAtIso: nowIso,
@@ -489,18 +580,20 @@ export async function createCustomerPet(
     customerId: input.customerId,
     petMirrorId: `${input.customerId}_${createdPetRef.id}`,
     name: input.name.trim(),
-    species: input.species.trim(),
+    animalType: normalizedAnimalType,
     breed: input.breed.trim(),
     age: Math.round(input.age),
+    weight: normalizedWeight,
   });
 
   return {
     id: createdPetRef.id,
     customerId: input.customerId,
     name: input.name.trim(),
-    species: input.species.trim(),
+    animalType: normalizedAnimalType,
     breed: input.breed.trim(),
     age: Math.round(input.age),
+    weight: normalizedWeight,
     createdAtIso: nowIso,
     updatedAtIso: nowIso,
   };
@@ -552,8 +645,9 @@ export async function readCustomerFavorites(
 export async function readCustomerAddress(
   customerId: string
 ): Promise<FirebaseCustomerAddress | null> {
+  const db = getDb();
   const addressRef = doc(
-    getDb(),
+    db,
     firebaseCustomerProfileAdapter.customersCollection,
     customerId,
     firebaseCustomerProfileAdapter.addressesCollection,
@@ -561,16 +655,62 @@ export async function readCustomerAddress(
   );
 
   const addressSnapshot = await getDoc(addressRef);
-  if (!addressSnapshot.exists()) {
-    return null;
+  if (addressSnapshot.exists()) {
+    const payload = addressSnapshot.data();
+    if (!isRecord(payload)) {
+      return null;
+    }
+
+    return mapAddressDocument(customerId, payload);
   }
 
-  const payload = addressSnapshot.data();
-  if (!isRecord(payload)) {
-    return null;
-  }
+  try {
+    const adminClientRef = doc(
+      db,
+      firebaseCustomerProfileAdapter.adminClientsCollection,
+      customerId
+    );
+    const adminClientSnapshot = await getDoc(adminClientRef);
+    if (!adminClientSnapshot.exists()) {
+      return null;
+    }
 
-  return mapAddressDocument(customerId, payload);
+    const adminPayload = adminClientSnapshot.data();
+    if (!isRecord(adminPayload)) {
+      return null;
+    }
+
+    const mirroredAddress = mapAdminClientAddressDocument(customerId, adminPayload);
+    if (!mirroredAddress) {
+      return null;
+    }
+
+    await setDoc(
+      addressRef,
+      {
+        customerId,
+        zipCode: mirroredAddress.zipCode,
+        street: mirroredAddress.street,
+        number: mirroredAddress.number,
+        district: mirroredAddress.district,
+        city: mirroredAddress.city,
+        state: mirroredAddress.state,
+        complement: mirroredAddress.complement,
+        updatedAt: serverTimestamp(),
+        updatedAtIso: mirroredAddress.updatedAtIso,
+        source: "admin-clients-mirror",
+      },
+      { merge: true }
+    );
+
+    return mirroredAddress;
+  } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function upsertCustomerAddress(
@@ -604,6 +744,13 @@ export async function upsertCustomerAddress(
 
   await mirrorAddressToAdminClientCollection({
     customerId: input.customerId,
+    zipCode: input.zipCode.trim(),
+    street: input.street.trim(),
+    number: input.number.trim(),
+    district: input.district.trim(),
+    city: input.city.trim(),
+    state: input.state.trim(),
+    complement: input.complement.trim(),
     address: formatAddressLabel({
       zipCode: input.zipCode,
       street: input.street,

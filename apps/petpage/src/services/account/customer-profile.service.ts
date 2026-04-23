@@ -29,9 +29,10 @@ export type CustomerDeliveryAddress = FirebaseCustomerAddress;
 export type CreatePetInput = {
   customerId: string;
   name: string;
-  species: string;
+  animalType: string;
   breed: string;
   age: number;
+  weight: number;
 };
 
 export type SaveDeliveryAddressInput = {
@@ -142,9 +143,10 @@ export async function registerCustomerPet(input: CreatePetInput): Promise<Custom
   return createCustomerPet({
     customerId: resolvedCustomerId,
     name: input.name,
-    species: input.species,
+    animalType: input.animalType,
     breed: input.breed,
     age: input.age,
+    weight: input.weight,
   });
 }
 

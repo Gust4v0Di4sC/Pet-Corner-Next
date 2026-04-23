@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getCustomerProfileDataBundle,
   registerCustomerPet,
@@ -19,9 +19,10 @@ type UseCustomerProfileDataOptions = {
 
 type CreatePetInput = {
   name: string;
-  species: string;
+  animalType: string;
   breed: string;
   age: number;
+  weight: number;
 };
 
 type SaveAddressInput = {
@@ -53,6 +54,7 @@ function mapErrorMessage(error: unknown): string {
 }
 
 export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
+  const isFetchingRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -64,9 +66,17 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
   const [isCreatingPet, setIsCreatingPet] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage(null);
+  const loadData = useCallback(async (config?: { background?: boolean }) => {
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    const isBackground = Boolean(config?.background);
+    isFetchingRef.current = true;
+
+    if (!isBackground) {
+      setLoading(true);
+    }
 
     try {
       const dataBundle = await getCustomerProfileDataBundle({
@@ -79,10 +89,14 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
       setOrders(dataBundle.orders);
       setFavorites(dataBundle.favorites);
       setAddress(dataBundle.address);
+      setErrorMessage(null);
     } catch (error) {
       setErrorMessage(mapErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (!isBackground) {
+        setLoading(false);
+      }
+      isFetchingRef.current = false;
     }
   }, [options.customerId, options.email, options.name]);
 
@@ -96,6 +110,29 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
     };
   }, [loadData]);
 
+  useEffect(() => {
+    const refreshData = () => {
+      void loadData({ background: true });
+    };
+
+    const intervalId = window.setInterval(refreshData, 45000);
+    const handleFocus = () => refreshData();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshData();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [loadData]);
+
   const createPet = useCallback(
     async (input: CreatePetInput) => {
       setErrorMessage(null);
@@ -105,9 +142,10 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
         const createdPet = await registerCustomerPet({
           customerId: options.customerId,
           name: input.name,
-          species: input.species,
+          animalType: input.animalType,
           breed: input.breed,
           age: input.age,
+          weight: input.weight,
         });
 
         setPets((currentPets) => [createdPet, ...currentPets]);

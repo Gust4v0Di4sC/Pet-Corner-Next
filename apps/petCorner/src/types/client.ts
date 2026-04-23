@@ -10,6 +10,13 @@ export type Client = {
   age: Timestamp;
   email: string;
   phone: number;
+  zipCode: string;
+  street: string;
+  number: string;
+  district: string;
+  city: string;
+  state: string;
+  complement: string;
   address: string;
 };
 
@@ -43,6 +50,13 @@ export type ClientDisplay = {
   age: string; // dd/MM/yyyy
   email: string;
   phone: number;
+  zipCode: string;
+  street: string;
+  number: string;
+  district: string;
+  city: string;
+  state: string;
+  complement: string;
   address: string;
 };
 

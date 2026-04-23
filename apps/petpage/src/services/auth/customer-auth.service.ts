@@ -14,6 +14,7 @@ export type LoginMode = "email" | "google" | "microsoft";
 export type SessionResponse = {
   ok: boolean;
   nextPath: string;
+  customerId: string;
 };
 
 type IdentityInput = {
@@ -75,7 +76,15 @@ async function openSession(input: OpenSessionInput): Promise<SessionResponse> {
     throw new Error("Falha ao abrir sessao do cliente.");
   }
 
-  return (await response.json()) as SessionResponse;
+  const payload = (await response.json()) as
+    | (SessionResponse & { session?: { customerId?: string } })
+    | { ok?: boolean; nextPath?: string; session?: { customerId?: string } };
+
+  return {
+    ok: Boolean(payload.ok),
+    nextPath: payload.nextPath || input.nextPath,
+    customerId: payload.session?.customerId || input.customerId,
+  };
 }
 
 async function syncCustomerProfile(identity: IdentityInput, fallbackName: string): Promise<void> {

@@ -10,6 +10,7 @@ import {
   mapCustomerAuthError,
   registerCustomerWithEmail,
 } from "@/services/auth/customer-auth.service";
+import { syncGuestCartToCustomerCart } from "@/services/cart-checkout/customer-cart.service";
 
 type UseCustomerAuthOptions = {
   nextPath: string;
@@ -33,6 +34,20 @@ export function useCustomerAuth({ nextPath }: UseCustomerAuthOptions) {
 
   const isBusy = loadingMode !== null;
 
+  const migrateGuestCartAfterAuth = useCallback(async (customerId: string) => {
+    const normalizedCustomerId = customerId.trim();
+    if (!normalizedCustomerId) {
+      return;
+    }
+
+    try {
+      await syncGuestCartToCustomerCart(normalizedCustomerId);
+    } catch (error) {
+      // The auth flow should not be blocked by cart sync failures.
+      console.warn("Guest cart migration failed:", error);
+    }
+  }, []);
+
   const finishAuthFlow = useCallback(
     (resultNextPath: string) => {
       router.replace(resultNextPath || nextPath);
@@ -52,6 +67,7 @@ export function useCustomerAuth({ nextPath }: UseCustomerAuthOptions) {
           password: input.password,
           nextPath,
         });
+        await migrateGuestCartAfterAuth(response.customerId);
         finishAuthFlow(response.nextPath);
       } catch (error) {
         setErrorMessage(mapCustomerAuthError(error, "login"));
@@ -59,7 +75,7 @@ export function useCustomerAuth({ nextPath }: UseCustomerAuthOptions) {
         setLoadingMode(null);
       }
     },
-    [finishAuthFlow, nextPath]
+    [finishAuthFlow, migrateGuestCartAfterAuth, nextPath]
   );
 
   const registerWithEmail = useCallback(
@@ -74,6 +90,7 @@ export function useCustomerAuth({ nextPath }: UseCustomerAuthOptions) {
           password: input.password,
           nextPath,
         });
+        await migrateGuestCartAfterAuth(response.customerId);
         finishAuthFlow(response.nextPath);
       } catch (error) {
         setErrorMessage(mapCustomerAuthError(error, "register"));
@@ -81,7 +98,7 @@ export function useCustomerAuth({ nextPath }: UseCustomerAuthOptions) {
         setLoadingMode(null);
       }
     },
-    [finishAuthFlow, nextPath]
+    [finishAuthFlow, migrateGuestCartAfterAuth, nextPath]
   );
 
   const loginWithGoogle = useCallback(async () => {
@@ -90,13 +107,14 @@ export function useCustomerAuth({ nextPath }: UseCustomerAuthOptions) {
 
     try {
       const response = await loginCustomerWithGoogle(nextPath);
+      await migrateGuestCartAfterAuth(response.customerId);
       finishAuthFlow(response.nextPath);
     } catch (error) {
       setErrorMessage(mapCustomerAuthError(error, "login"));
     } finally {
       setLoadingMode(null);
     }
-  }, [finishAuthFlow, nextPath]);
+  }, [finishAuthFlow, migrateGuestCartAfterAuth, nextPath]);
 
   const loginWithMicrosoft = useCallback(async () => {
     setErrorMessage(null);
@@ -104,13 +122,14 @@ export function useCustomerAuth({ nextPath }: UseCustomerAuthOptions) {
 
     try {
       const response = await loginCustomerWithMicrosoft(nextPath);
+      await migrateGuestCartAfterAuth(response.customerId);
       finishAuthFlow(response.nextPath);
     } catch (error) {
       setErrorMessage(mapCustomerAuthError(error, "login"));
     } finally {
       setLoadingMode(null);
     }
-  }, [finishAuthFlow, nextPath]);
+  }, [finishAuthFlow, migrateGuestCartAfterAuth, nextPath]);
 
   return {
     errorMessage,

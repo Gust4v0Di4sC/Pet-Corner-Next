@@ -2,10 +2,22 @@
 
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Heart, LogOut, MapPin, Menu, PawPrint, Plus, RefreshCw, UserRound, X } from "lucide-react";
+import { Box, Heart, LogOut, MapPin, Menu, PawPrint, Plus, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCustomerProfileData } from "@/hooks/account/use-customer-profile-data";
+import {
+  ANIMAL_TYPE_OPTIONS,
+  DEFAULT_ANIMAL_TYPE,
+  getBreedOptionsForAnimalType,
+  MANUAL_BREED_OPTION,
+} from "@/utils/account/pet-options";
+import {
+  applyZipCodeMask,
+  getFirstZodErrorMessage,
+  normalizeStateCode,
+} from "@/utils/validation/input-sanitizers";
+import { createPetProfileSchema, customerAddressSchema } from "@/validation/profile-schemas";
 
 type ProfileDashboardProps = {
   session: {
@@ -27,9 +39,11 @@ type SectionNavItem = {
 
 type PetFormState = {
   name: string;
-  species: string;
+  animalType: string;
+  breedSelection: string;
   breed: string;
   age: string;
+  weight: string;
 };
 
 type AddressFormState = {
@@ -43,17 +57,19 @@ type AddressFormState = {
 };
 
 const SECTION_NAV_ITEMS: SectionNavItem[] = [
+  { id: "pets", label: "Meus pets", icon: PawPrint },
   { id: "orders", label: "Pedidos", icon: Box },
   { id: "favorites", label: "Favoritos", icon: Heart },
-  { id: "pets", label: "Meus pets", icon: PawPrint },
   { id: "address", label: "Enderecos", icon: MapPin },
 ];
 
 const INITIAL_PET_FORM: PetFormState = {
   name: "",
-  species: "Cao",
+  animalType: DEFAULT_ANIMAL_TYPE,
+  breedSelection: "",
   breed: "",
   age: "",
+  weight: "",
 };
 
 const INITIAL_ADDRESS_FORM: AddressFormState = {
@@ -65,6 +81,7 @@ const INITIAL_ADDRESS_FORM: AddressFormState = {
   state: "",
   complement: "",
 };
+const petProfileSchema = createPetProfileSchema(MANUAL_BREED_OPTION);
 
 function darkInputClassName() {
   return "h-10 w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-[#fb8b24] focus:ring-2 focus:ring-[#fb8b24]/25";
@@ -95,6 +112,7 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
 
   const [addressFormDraft, setAddressFormDraft] = useState<AddressFormState | null>(null);
   const [addressMessage, setAddressMessage] = useState<string | null>(null);
+  const [isAddressMessageError, setIsAddressMessageError] = useState(false);
 
   const customerName = useMemo(
     () => session.name?.trim() || "Cliente Pet Corner",
@@ -112,7 +130,6 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
     isSavingAddress,
     createPet,
     saveAddress,
-    reload,
   } = useCustomerProfileData({
     customerId: session.customerId,
     name: session.name,
@@ -181,38 +198,48 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
 
   const handlePetInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
-    setPetForm((currentState) => ({
-      ...currentState,
-      [name]: value,
-    }));
+    setPetForm((currentState) => {
+      if (name === "animalType" && currentState.animalType !== value) {
+        return {
+          ...currentState,
+          animalType: value,
+          breed: "",
+          breedSelection: "",
+        };
+      }
+
+      if (name === "breedSelection") {
+        return {
+          ...currentState,
+          breedSelection: value,
+          breed: value === MANUAL_BREED_OPTION ? "" : value,
+        };
+      }
+
+      return {
+        ...currentState,
+        [name]: value,
+      };
+    });
   };
 
   const handleCreatePet = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPetErrorMessage(null);
 
-    const normalizedName = petForm.name.trim();
-    const normalizedSpecies = petForm.species.trim();
-    const normalizedBreed = petForm.breed.trim();
-    const parsedAge = Number.parseInt(petForm.age, 10);
-
-    if (!normalizedName || !normalizedSpecies || !normalizedBreed || !Number.isFinite(parsedAge)) {
-      setPetErrorMessage("Preencha nome, especie, raca e idade para registrar o pet.");
-      return;
-    }
-
-    if (parsedAge <= 0) {
-      setPetErrorMessage("A idade precisa ser um numero maior que zero.");
+    const parsedInput = petProfileSchema.safeParse(petForm);
+    if (!parsedInput.success) {
+      setPetErrorMessage(
+        getFirstZodErrorMessage(
+          parsedInput.error,
+          "Preencha nome, tipo do animal, raca, idade e peso para registrar o pet."
+        )
+      );
       return;
     }
 
     try {
-      await createPet({
-        name: normalizedName,
-        species: normalizedSpecies,
-        breed: normalizedBreed,
-        age: parsedAge,
-      });
+      await createPet(parsedInput.data);
       setPetForm(INITIAL_PET_FORM);
       setShowPetForm(false);
     } catch {
@@ -222,29 +249,40 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
 
   const handleAddressInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
+    const nextValue =
+      name === "zipCode"
+        ? applyZipCodeMask(value)
+        : name === "state"
+          ? normalizeStateCode(value)
+          : value;
+
     setAddressFormDraft((currentState) => ({
       ...(currentState || addressForm),
-      [name]: value,
+      [name]: nextValue,
     }));
   };
 
   const handleAddressSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAddressMessage(null);
+    setIsAddressMessageError(false);
+
+    const parsedInput = customerAddressSchema.safeParse(addressForm);
+    if (!parsedInput.success) {
+      setIsAddressMessageError(true);
+      setAddressMessage(
+        getFirstZodErrorMessage(parsedInput.error, "Nao foi possivel validar os dados do endereco.")
+      );
+      return;
+    }
 
     try {
-      await saveAddress({
-        zipCode: addressForm.zipCode,
-        street: addressForm.street,
-        number: addressForm.number,
-        district: addressForm.district,
-        city: addressForm.city,
-        state: addressForm.state,
-        complement: addressForm.complement,
-      });
+      await saveAddress(parsedInput.data);
       setAddressFormDraft(null);
+      setIsAddressMessageError(false);
       setAddressMessage("Endereco salvo com sucesso.");
     } catch {
+      setIsAddressMessageError(true);
       setAddressMessage("Nao foi possivel salvar o endereco agora.");
     }
   };
@@ -396,14 +434,6 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
             Acompanhe seus pedidos e gerencie seus pets de estimacao.
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => void reload()}
-              className="inline-flex items-center gap-2 rounded-full border border-amber-100/35 px-3 py-1.5 text-sm font-semibold text-amber-100 transition hover:border-amber-200 hover:bg-amber-100/10"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Atualizar dados
-            </button>
             <span className="text-xs text-amber-100/70">Sessao expira em {toDisplayDate(session.expiresAt)}</span>
           </div>
           {errorMessage ? (
@@ -448,10 +478,11 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
                   <div>
                     <p className="text-3xl font-semibold text-white">{pet.name}</p>
                     <p className="text-lg text-amber-100/90">
-                      {pet.breed} - {pet.age} anos
+                      {pet.animalType} | {pet.breed}
                     </p>
                     <p className="text-sm text-amber-200/80">
-                      {pet.species} | Registrado em {toDisplayDate(pet.createdAtIso)}
+                      {pet.age} anos | {pet.weight.toFixed(1).replace(".", ",")} kg | Registrado em{" "}
+                      {toDisplayDate(pet.createdAtIso)}
                     </p>
                   </div>
                 </li>
@@ -479,34 +510,77 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="pet-species" className={darkLabelClassName()}>
-                  Especie
+                <label htmlFor="pet-animalType" className={darkLabelClassName()}>
+                  Tipo do animal
                 </label>
                 <select
-                  id="pet-species"
-                  name="species"
-                  value={petForm.species}
+                  id="pet-animalType"
+                  name="animalType"
+                  value={petForm.animalType}
                   onChange={handlePetInputChange}
                   className={darkInputClassName()}
                 >
-                  <option value="Cao">Cao</option>
-                  <option value="Gato">Gato</option>
-                  <option value="Outro">Outro</option>
+                  {ANIMAL_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="pet-breed" className={darkLabelClassName()}>
+                <label
+                  htmlFor={
+                    petForm.breedSelection === MANUAL_BREED_OPTION
+                      ? "pet-breed"
+                      : "pet-breedSelection"
+                  }
+                  className={darkLabelClassName()}
+                >
                   Raca
                 </label>
-                <input
-                  id="pet-breed"
-                  name="breed"
-                  value={petForm.breed}
-                  onChange={handlePetInputChange}
-                  className={darkInputClassName()}
-                  placeholder="Ex: Golden Retriever"
-                />
+
+                {petForm.breedSelection === MANUAL_BREED_OPTION ? (
+                  <div className="space-y-2">
+                    <input
+                      id="pet-breed"
+                      name="breed"
+                      value={petForm.breed}
+                      onChange={handlePetInputChange}
+                      className={darkInputClassName()}
+                      placeholder="Digite a raca manualmente"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPetForm((currentState) => ({
+                          ...currentState,
+                          breed: "",
+                          breedSelection: "",
+                        }))
+                      }
+                      className="text-xs font-semibold text-[#fb8b24] transition hover:text-[#ef7e14]"
+                    >
+                      Voltar para lista de racas
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id="pet-breedSelection"
+                    name="breedSelection"
+                    value={petForm.breedSelection}
+                    onChange={handlePetInputChange}
+                    className={darkInputClassName()}
+                    disabled={!petForm.animalType}
+                  >
+                    <option value="">Selecione a raca mais comum</option>
+                    {getBreedOptionsForAnimalType(petForm.animalType).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -522,6 +596,23 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
                   onChange={handlePetInputChange}
                   className={darkInputClassName()}
                   placeholder="Ex: 3"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="pet-weight" className={darkLabelClassName()}>
+                  Peso
+                </label>
+                <input
+                  id="pet-weight"
+                  name="weight"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={petForm.weight}
+                  onChange={handlePetInputChange}
+                  className={darkInputClassName()}
+                  placeholder="Ex: 12,5"
                 />
               </div>
 
@@ -760,7 +851,13 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
               </p>
 
               {addressMessage ? (
-                <p className="mt-3 rounded-xl bg-emerald-500/20 px-3 py-2 text-sm font-medium text-emerald-300">
+                <p
+                  className={`mt-3 rounded-xl px-3 py-2 text-sm font-medium ${
+                    isAddressMessageError
+                      ? "bg-red-950/45 text-red-200"
+                      : "bg-emerald-500/20 text-emerald-300"
+                  }`}
+                >
                   {addressMessage}
                 </p>
               ) : null}
