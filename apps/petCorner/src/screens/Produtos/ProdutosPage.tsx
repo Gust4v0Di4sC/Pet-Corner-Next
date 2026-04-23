@@ -11,7 +11,6 @@ import type {
 } from "../../components/Records/record.types";
 import {
   createInitialFormData,
-  parseNumberField,
 } from "../../components/Records/record.utils";
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
 import AppShell from "../../components/layout/AppShell";
@@ -26,6 +25,7 @@ import {
   uploadProductImage,
 } from "../../services/productImageService";
 import type { Product } from "../../types/product";
+import { productRecordSchema } from "../../validation/recordSchemas";
 import { normalizeCatalogCode } from "../../utils/product/productCatalog.util";
 import "./produtos.css";
 
@@ -64,6 +64,17 @@ const baseProductFields: RecordFormField[] = [
     type: "number",
     inputMode: "numeric",
     placeholder: "Ex.: 12",
+    mask: {
+      mask: Number,
+      scale: 0,
+      signed: false,
+      min: 0,
+      max: 999999,
+      thousandsSeparator: "",
+      normalizeZeros: true,
+      radix: ",",
+      mapToRadix: ["."],
+    },
   },
 ];
 
@@ -120,15 +131,7 @@ function getProductFormData(product: Product): RecordFormData {
 }
 
 function buildProductPayload(formData: RecordFormData): Omit<Product, "id"> {
-  const trimmedImageUrl = formData.imageUrl.trim();
-
-  return {
-    name: formData.name.trim(),
-    price: parseNumberField(formData.price, "preco"),
-    code: formData.code.trim(),
-    imageUrl: trimmedImageUrl,
-    quantity: parseNumberField(formData.quantity, "quantidade"),
-  };
+  return productRecordSchema.parse(formData);
 }
 
 function isWorkerManagedProductImageUrl(imageUrl: string): boolean {

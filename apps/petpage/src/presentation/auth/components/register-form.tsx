@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import logoImg from "@/assets/Logo-Home.svg";
 import { useCustomerAuth } from "@/hooks/auth/use-customer-auth";
+import { customerRegisterSchema } from "@/validation/auth-schemas";
+import { getFirstZodErrorMessage } from "@/utils/validation/input-sanitizers";
 import styles from "@/presentation/auth/components/login-form.module.css";
 
 type RegisterFormProps = {
@@ -31,28 +33,20 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
   const handleEmailRegister = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const normalizedName = name.trim();
-    const normalizedEmail = email.trim();
-    if (!normalizedName || !normalizedEmail || !password || !confirmPassword) {
-      setErrorMessage("Preencha todos os campos para continuar.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorMessage("A senha precisa ter pelo menos 6 caracteres.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage("As senhas nao conferem.");
-      return;
-    }
-
-    await registerWithEmail({
-      name: normalizedName,
-      email: normalizedEmail,
+    const parsedInput = customerRegisterSchema.safeParse({
+      name,
+      email,
       password,
+      confirmPassword,
     });
+    if (!parsedInput.success) {
+      setErrorMessage(
+        getFirstZodErrorMessage(parsedInput.error, "Preencha todos os campos para continuar.")
+      );
+      return;
+    }
+
+    await registerWithEmail(parsedInput.data);
   };
 
   return (

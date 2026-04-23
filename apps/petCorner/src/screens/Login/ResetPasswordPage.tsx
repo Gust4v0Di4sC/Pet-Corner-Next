@@ -7,6 +7,10 @@ import {
   verifyPasswordResetActionCode,
 } from "../../API/auth";
 import logoimg from "../../assets/Logo.svg";
+import {
+  adminResetPasswordSchema,
+  getFirstZodErrorMessage,
+} from "../../validation/authSchemas";
 import "./login.css";
 
 type ResetStatus = "loading" | "ready" | "success" | "invalid";
@@ -48,17 +52,17 @@ function getResetErrorMessage(error: unknown): string {
     switch (error.code) {
       case "auth/invalid-action-code":
       case "auth/expired-action-code":
-        return "O link de redefinição e inválido ou expirou. Solicite um novo e-mail.";
+        return "O link de redefiniÃ§Ã£o e invÃ¡lido ou expirou. Solicite um novo e-mail.";
       case "auth/user-disabled":
         return "Esta conta foi desativada. Entre em contato com o suporte.";
       case "auth/weak-password":
-        return "Escolha uma senha mais forte (mínimo de 6 caracteres).";
+        return "Escolha uma senha mais forte (mÃ­nimo de 6 caracteres).";
       default:
-        return "Não foi possível concluir a redefinição agora. Tente novamente.";
+        return "NÃ£o foi possÃ­vel concluir a redefiniÃ§Ã£o agora. Tente novamente.";
     }
   }
 
-  return "Não foi possível concluir a redefinição agora. Tente novamente.";
+  return "NÃ£o foi possÃ­vel concluir a redefiniÃ§Ã£o agora. Tente novamente.";
 }
 
 export default function ResetPasswordPage() {
@@ -82,7 +86,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     if (mode !== "resetPassword" || !oobCode) {
       setStatus("invalid");
-      setErrorMessage("Link de redefinição inválido. Solicite um novo e-mail de reset.");
+      setErrorMessage("Link de redefiniÃ§Ã£o invÃ¡lido. Solicite um novo e-mail de reset.");
       return;
     }
 
@@ -118,17 +122,18 @@ export default function ResetPasswordPage() {
 
     if (!oobCode) {
       setStatus("invalid");
-      setErrorMessage("Código de redefinição ausente. Solicite um novo e-mail.");
+      setErrorMessage("CÃ³digo de redefiniÃ§Ã£o ausente. Solicite um novo e-mail.");
       return;
     }
 
-    if (newPassword.length < 6) {
-      setErrorMessage("A nova senha deve ter no mínimo 6 caracteres.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setErrorMessage("As senhas não conferem.");
+    const parsedInput = adminResetPasswordSchema.safeParse({
+      newPassword,
+      confirmPassword,
+    });
+    if (!parsedInput.success) {
+      setErrorMessage(
+        getFirstZodErrorMessage(parsedInput.error, "NÃ£o foi possÃ­vel validar a nova senha.")
+      );
       return;
     }
 
@@ -136,7 +141,7 @@ export default function ResetPasswordPage() {
     setErrorMessage("");
 
     try {
-      await confirmPasswordResetWithCode(oobCode, newPassword, languageCode);
+      await confirmPasswordResetWithCode(oobCode, parsedInput.data.newPassword, languageCode);
       setStatus("success");
     } catch (error) {
       setErrorMessage(getResetErrorMessage(error));
@@ -150,12 +155,12 @@ export default function ResetPasswordPage() {
       <section className="login-container login-container--reset is-visible">
         <div className="login-reset-panel">
           <img className="login-reset-panel__logo" src={logoimg} alt="PetCorner" />
-          <span className="login-form-admin-badge">Redefinição de senha</span>
+          <span className="login-form-admin-badge">RedefiniÃ§Ã£o de senha</span>
 
           {status === "loading" ? (
             <div className="login-reset-panel__state">
               <i className="fa fa-spinner fa-spin" aria-hidden="true" />
-              <p>Validando link de redefinição...</p>
+              <p>Validando link de redefiniÃ§Ã£o...</p>
             </div>
           ) : null}
 
@@ -206,7 +211,7 @@ export default function ResetPasswordPage() {
           {status === "success" ? (
             <div className="login-reset-panel__state">
               <i className="fa fa-circle-check" aria-hidden="true" />
-              <p>Senha atualizada com sucesso. Você já pode entrar novamente.</p>
+              <p>Senha atualizada com sucesso. VocÃª jÃ¡ pode entrar novamente.</p>
               <Link className="btn-primary login-reset-panel__action" to={returnPath}>
                 Ir para login
               </Link>
@@ -217,3 +222,4 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
+

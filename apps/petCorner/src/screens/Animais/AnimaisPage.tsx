@@ -9,12 +9,12 @@ import type {
 } from "../../components/Records/record.types";
 import {
   createInitialFormData,
-  parseNumberField,
 } from "../../components/Records/record.utils";
 import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
 import { useDog } from "../../hooks/useDog";
 import type { Dog } from "../../types/dog";
+import { dogRecordSchema } from "../../validation/recordSchemas";
 import {
   ANIMAL_TYPE_OPTIONS,
   DEFAULT_ANIMAL_TYPE,
@@ -194,18 +194,7 @@ function getDogFormData(dog: Dog): RecordFormData {
 }
 
 function buildDogPayload(formData: RecordFormData): Omit<Dog, "id"> {
-  const breed =
-    formData.breedSelection === MANUAL_BREED_OPTION
-      ? formData.breed.trim()
-      : formData.breedSelection.trim();
-
-  return {
-    name: formData.name.trim(),
-    animalType: formData.animalType.trim(),
-    age: parseNumberField(formData.age, "idade"),
-    breed,
-    weight: parseNumberField(formData.weight, "peso"),
-  };
+  return dogRecordSchema.parse(formData);
 }
 
 export default function AnimaisPage() {

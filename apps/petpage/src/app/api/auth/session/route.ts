@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { StructuralAuthRepository } from "@/infrastructure/auth/structural-auth.repository";
 import {
   CUSTOMER_SESSION_COOKIE,
@@ -10,20 +11,46 @@ import {
 import { sanitizeRedirectPath } from "@/utils/shared/route";
 
 type SessionPayload = {
-  customerId?: string;
-  name?: string;
-  email?: string;
-  next?: string;
+  customerId: string;
+  name: string;
+  email: string;
+  next: string;
 };
 
-function buildSessionPayload(input: SessionPayload): SessionPayload {
-  return {
-    customerId: input.customerId || "customer-structural",
-    name: input.name || "Customer",
-    email: input.email || "customer@example.com",
-    next: sanitizeRedirectPath(input.next, "/profile"),
-  };
-}
+const emailValidationSchema = z.string().email();
+const sessionPayloadSchema = z
+  .object({
+    customerId: z.string().optional().default(""),
+    name: z.string().optional().default(""),
+    email: z.string().optional().default(""),
+    next: z.string().optional().default(""),
+  })
+  .superRefine((input, context) => {
+    const normalizedEmail = input.email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return;
+    }
+
+    if (!emailValidationSchema.safeParse(normalizedEmail).success) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["email"],
+        message: "Email de sessao invalido.",
+      });
+    }
+  })
+  .transform((input): SessionPayload => {
+    const normalizedCustomerId = input.customerId.trim();
+    const normalizedName = input.name.trim();
+    const normalizedEmail = input.email.trim().toLowerCase();
+
+    return {
+      customerId: normalizedCustomerId || "customer-structural",
+      name: normalizedName || "Customer",
+      email: normalizedEmail || "customer@example.com",
+      next: sanitizeRedirectPath(input.next, "/profile"),
+    };
+  });
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") || "";
@@ -31,7 +58,7 @@ export async function POST(request: Request) {
     contentType.includes("application/x-www-form-urlencoded") ||
     contentType.includes("multipart/form-data");
 
-  let payload: SessionPayload;
+  let payload: unknown;
   if (isFormRequest) {
     const form = await request.formData();
     payload = {
@@ -41,14 +68,26 @@ export async function POST(request: Request) {
       next: String(form.get("next") || ""),
     };
   } else {
-    payload = (await request.json().catch(() => ({}))) as SessionPayload;
+    payload = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  }
+
+  const parsedPayload = sessionPayloadSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    const [firstIssue] = parsedPayload.error.issues;
+    return NextResponse.json(
+      {
+        ok: false,
+        error: firstIssue?.message || "Payload de sessao invalido.",
+      },
+      { status: 400 }
+    );
   }
 
   const authRepository = new StructuralAuthRepository();
-  const normalized = buildSessionPayload(payload);
+  const normalized = parsedPayload.data;
   const session = await authRepository.openSession({
-    customerId: normalized.customerId!,
-    email: normalized.email!,
+    customerId: normalized.customerId,
+    email: normalized.email,
     name: normalized.name,
   });
 

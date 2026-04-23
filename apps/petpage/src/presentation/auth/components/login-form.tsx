@@ -7,6 +7,8 @@ import { ArrowLeft, PawPrint } from "lucide-react";
 import logoImg from "@/assets/Logo-Home.svg";
 import { useCustomerAuth } from "@/hooks/auth/use-customer-auth";
 import { SocialLogin } from "@/presentation/auth/components/social-login";
+import { customerLoginSchema } from "@/validation/auth-schemas";
+import { getFirstZodErrorMessage } from "@/utils/validation/input-sanitizers";
 import styles from "@/presentation/auth/components/login-form.module.css";
 
 type LoginFormProps = {
@@ -102,13 +104,15 @@ export function LoginForm({ nextPath, shouldShowSplash }: LoginFormProps) {
   const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const normalizedEmail = email.trim();
-    if (!normalizedEmail || !password) {
-      setErrorMessage("Preencha email e senha para continuar.");
+    const parsedInput = customerLoginSchema.safeParse({ email, password });
+    if (!parsedInput.success) {
+      setErrorMessage(
+        getFirstZodErrorMessage(parsedInput.error, "Preencha email e senha para continuar.")
+      );
       return;
     }
 
-    await loginWithEmail({ email: normalizedEmail, password });
+    await loginWithEmail(parsedInput.data);
   };
 
   const handleGoogleLogin = async () => {

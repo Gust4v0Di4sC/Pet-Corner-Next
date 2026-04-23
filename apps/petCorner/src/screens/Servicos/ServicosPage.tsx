@@ -10,12 +10,12 @@ import type {
 } from "../../components/Records/record.types";
 import {
   createInitialFormData,
-  parseNumberField,
 } from "../../components/Records/record.utils";
 import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
 import { useServices } from "../../hooks/useServices";
 import type { PetService } from "../../types/petService";
+import { serviceRecordSchema } from "../../validation/recordSchemas";
 
 const serviceCategoryOptions: RecordFormOption[] = [
   { value: "banho_tosa", label: "Banho e tosa" },
@@ -188,14 +188,7 @@ function getServiceFormData(service: PetService): RecordFormData {
 }
 
 function buildServicePayload(formData: RecordFormData): Omit<PetService, "id"> {
-  return {
-    name: formData.name.trim(),
-    category: formData.category.trim(),
-    description: formData.description.trim(),
-    durationMinutes: parseNumberField(formData.durationMinutes, "duracao"),
-    price: parseNumberField(formData.price, "preco"),
-    isActive: formData.isActive === "active",
-  };
+  return serviceRecordSchema.parse(formData);
 }
 
 export default function ServicosPage() {

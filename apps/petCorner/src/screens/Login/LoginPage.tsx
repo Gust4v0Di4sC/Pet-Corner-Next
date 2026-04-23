@@ -22,6 +22,13 @@ import splashLogo from "../../assets/Logo-Home.svg";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { AdminAccessError } from "../../services/adminService";
+import {
+  adminPhoneRecoverySchema,
+  adminRecoveryEmailSchema,
+  adminSmsCodeSchema,
+  getFirstZodErrorMessage,
+} from "../../validation/authSchemas";
+import { normalizeSmsCode } from "../../validation/inputSanitizers";
 
 type LoginFormValues = {
   email: string;
@@ -113,59 +120,41 @@ export default function LoginPage() {
     if (error instanceof FirebaseError) {
       switch (error.code) {
         case "auth/user-not-found":
-          return "Não encontramos uma conta com esse e-mail.";
+          return "NÃ£o encontramos uma conta com esse e-mail.";
         case "auth/wrong-password":
           return "Senha incorreta.";
         case "auth/invalid-credential":
-          return "E-mail ou senha inválidos.";
+          return "E-mail ou senha invÃ¡lidos.";
         case "auth/invalid-email":
           return "Informe um e-mail valido.";
         case "auth/operation-not-allowed":
-          return "O login por telefone não esta habilitado no Firebase.";
+          return "O login por telefone nÃ£o esta habilitado no Firebase.";
         case "auth/unauthorized-continue-uri":
-          return "O domínio atual não esta autorizado no Firebase para redefinição de senha.";
+          return "O domÃ­nio atual nÃ£o esta autorizado no Firebase para redefiniÃ§Ã£o de senha.";
         case "auth/invalid-continue-uri":
-          return "O link de retorno da redefinição de senha esta inválido.";
+          return "O link de retorno da redefiniÃ§Ã£o de senha esta invÃ¡lido.";
         case "auth/invalid-phone-number":
           return "Informe o telefone no formato +55 11 99999-9999.";
         case "auth/missing-phone-number":
-          return "Informe um telefone para receber o código.";
+          return "Informe um telefone para receber o cÃ³digo.";
         case "auth/too-many-requests":
           return "Muitas tentativas seguidas. Aguarde um pouco e tente novamente.";
         case "auth/quota-exceeded":
           return "A cota de SMS do Firebase foi atingida.";
         case "auth/captcha-check-failed":
-          return "A verificação reCAPTCHA falhou. Tente novamente.";
+          return "A verificaÃ§Ã£o reCAPTCHA falhou. Tente novamente.";
         case "auth/invalid-verification-code":
-          return "O código informado e inválido.";
+          return "O cÃ³digo informado e invÃ¡lido.";
         case "auth/code-expired":
-          return "O código SMS expirou. Solicite um novo envio.";
+          return "O cÃ³digo SMS expirou. Solicite um novo envio.";
         case "auth/session-expired":
-          return "A sessão de verificação expirou. Solicite um novo código.";
+          return "A sessÃ£o de verificaÃ§Ã£o expirou. Solicite um novo cÃ³digo.";
         default:
           return fallbackMessage;
       }
     }
 
     return fallbackMessage;
-  };
-
-  const normalizePhoneNumber = (value: string) => {
-    const trimmedValue = value.trim();
-
-    if (!trimmedValue) {
-      throw new Error("Informe um telefone para continuar.");
-    }
-
-    const normalizedValue = trimmedValue.startsWith("+")
-      ? `+${trimmedValue.slice(1).replace(/\D/g, "")}`
-      : trimmedValue.replace(/\D/g, "");
-
-    if (!normalizedValue.startsWith("+") || normalizedValue.length < 12) {
-      throw new Error("Use o telefone no formato +55 11 99999-9999.");
-    }
-
-    return normalizedValue;
   };
 
   const handleSubmit = async ({ email, password }: LoginFormValues) => {
@@ -271,24 +260,25 @@ export default function LoginPage() {
   const handleResetPassword: NonNullable<ComponentPropsWithoutRef<"form">["onSubmit"]> = async (event) => {
     event.preventDefault();
 
-    const sanitizedEmail = resetEmail.trim();
-
-    if (!sanitizedEmail) {
-      toast.error("Informe seu e-mail para resetar a senha.");
+    const parsedInput = adminRecoveryEmailSchema.safeParse({ email: resetEmail });
+    if (!parsedInput.success) {
+      toast.error(
+        getFirstZodErrorMessage(parsedInput.error, "Informe seu e-mail para resetar a senha.")
+      );
       return;
     }
 
     setIsSendingResetEmail(true);
 
     try {
-      await sendPasswordResetEmail(sanitizedEmail);
+      await sendPasswordResetEmail(parsedInput.data.email);
       toast.success("Enviamos um link para resetar sua senha.");
       setRecoveryMethod("email");
       setResetEmail("");
       setIsResetModalOpen(false);
     } catch (error) {
       toast.error(
-        getFirebaseErrorMessage(error, "Não foi possível enviar o e-mail de redefinição.")
+        getFirebaseErrorMessage(error, "NÃ£o foi possÃ­vel enviar o e-mail de redefiniÃ§Ã£o.")
       );
     } finally {
       setIsSendingResetEmail(false);
@@ -298,13 +288,10 @@ export default function LoginPage() {
   const handleSendPhoneCode: NonNullable<ComponentPropsWithoutRef<"form">["onSubmit"]> = async (event) => {
     event.preventDefault();
 
-    let phoneNumber = "";
-
-    try {
-      phoneNumber = normalizePhoneNumber(resetPhone);
-    } catch (error) {
+    const parsedInput = adminPhoneRecoverySchema.safeParse({ phone: resetPhone });
+    if (!parsedInput.success) {
       toast.error(
-        error instanceof Error ? error.message : "Informe um telefone valido para continuar."
+        getFirstZodErrorMessage(parsedInput.error, "Informe um telefone valido para continuar.")
       );
       return;
     }
@@ -313,14 +300,14 @@ export default function LoginPage() {
 
     try {
       const confirmationResult = await sendPhoneLoginCode(
-        phoneNumber,
+        parsedInput.data.phone,
         PHONE_RECAPTCHA_CONTAINER_ID
       );
 
       setPhoneConfirmationResult(confirmationResult);
-      toast.success("Código SMS enviado. Digite o código recebido para entrar.");
+      toast.success("CÃ³digo SMS enviado. Digite o cÃ³digo recebido para entrar.");
     } catch (error) {
-      toast.error(getFirebaseErrorMessage(error, "Não foi possível enviar o código SMS agora."));
+      toast.error(getFirebaseErrorMessage(error, "NÃ£o foi possÃ­vel enviar o cÃ³digo SMS agora."));
     } finally {
       setIsSendingPhoneCode(false);
     }
@@ -330,27 +317,28 @@ export default function LoginPage() {
     event.preventDefault();
 
     if (!phoneConfirmationResult) {
-      toast.error("Solicite o código SMS antes de confirmar o acesso.");
+      toast.error("Solicite o cÃ³digo SMS antes de confirmar o acesso.");
       return;
     }
 
-    const sanitizedVerificationCode = smsVerificationCode.trim();
-
-    if (!sanitizedVerificationCode) {
-      toast.error("Digite o código recebido por SMS.");
+    const parsedInput = adminSmsCodeSchema.safeParse({ code: smsVerificationCode });
+    if (!parsedInput.success) {
+      toast.error(
+        getFirstZodErrorMessage(parsedInput.error, "Digite o cÃ³digo recebido por SMS.")
+      );
       return;
     }
 
     setIsConfirmingPhoneCode(true);
 
     try {
-      await confirmPhoneLoginCode(phoneConfirmationResult, sanitizedVerificationCode);
+      await confirmPhoneLoginCode(phoneConfirmationResult, parsedInput.data.code);
       toast.success("Acesso validado por SMS.");
       setRecoveryMethod("email");
       resetPhoneRecoveryState();
       setIsResetModalOpen(false);
     } catch (error) {
-      toast.error(getFirebaseErrorMessage(error, "Não foi possível validar o código SMS."));
+      toast.error(getFirebaseErrorMessage(error, "NÃ£o foi possÃ­vel validar o cÃ³digo SMS."));
     } finally {
       setIsConfirmingPhoneCode(false);
     }
@@ -484,7 +472,7 @@ export default function LoginPage() {
               </h2>
               <p>
                 {recoveryMethod === "email"
-                  ? "Informe o e-mail para receber o link de redefinição de senha."
+                  ? "Informe o e-mail para receber o link de redefiniÃ§Ã£o de senha."
                   : "Valide o acesso do admin por SMS usando um telefone habilitado no Firebase."}
               </p>
             </div>
@@ -525,7 +513,7 @@ export default function LoginPage() {
                     />
 
                     <button type="submit" className="btn-primary" disabled={isSendingPhoneCode}>
-                      {isSendingPhoneCode ? "Enviando código..." : "Enviar código SMS"}
+                      {isSendingPhoneCode ? "Enviando cÃ³digo..." : "Enviar cÃ³digo SMS"}
                     </button>
                   </form>
                 ) : (
@@ -533,9 +521,9 @@ export default function LoginPage() {
                     <input
                       type="text"
                       name="sms-verification-code"
-                      placeholder="Digite o código de 6 dígitos"
+                      placeholder="Digite o cÃ³digo de 6 dÃ­gitos"
                       value={smsVerificationCode}
-                      onChange={(event) => setSmsVerificationCode(event.target.value)}
+                      onChange={(event) => setSmsVerificationCode(normalizeSmsCode(event.target.value))}
                       disabled={isConfirmingPhoneCode}
                       inputMode="numeric"
                       autoFocus
@@ -567,3 +555,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
