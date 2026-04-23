@@ -208,11 +208,11 @@ export function mapCustomerAuthError(error: unknown, context: "login" | "registe
           ? "Cadastro cancelado antes da conclusao."
           : "Login cancelado antes da conclusao.";
       case "auth/unauthorized-domain":
-        return "Dominio nao autorizado no Firebase Auth.";
+        return "Dominio nao autorizado para login.";
       case "auth/operation-not-allowed":
         return context === "register"
-          ? "Metodo de cadastro nao habilitado no Firebase."
-          : "Metodo de login nao habilitado no Firebase.";
+          ? "Metodo de cadastro nao habilitado no momento."
+          : "Metodo de login nao habilitado no momento.";
       case "auth/too-many-requests":
         return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
       default:

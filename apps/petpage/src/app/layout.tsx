@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s | Pet Corner",
   },
   description:
-    "Pet Corner é a plataforma completa para gerenciar clientes, pets e produtos com integração ao Firebase. Simples, rápida e feita para pet shops e clínicas veterinárias.",
+    "Pet Corner é a plataforma completa para gerenciar clientes, pets e produtos. Simples, rápida e feita para pet shops e clínicas veterinárias.",
   keywords: [
     "Pet Shop",
     "Pets",
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Pet Corner 🐾 | Gestão de Pets e Produtos",
     description:
-      "Solução completa para pet shops e clínicas veterinárias, com Firebase e Next.js.",
+      "Solução completa para pet shops e clínicas veterinárias.",
     creator: "@seu_twitter",
     images: ["/app-react/logo512.png"],
   },

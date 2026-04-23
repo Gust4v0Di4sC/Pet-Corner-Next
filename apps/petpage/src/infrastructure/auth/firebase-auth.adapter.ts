@@ -5,11 +5,13 @@ import {
   createUserWithEmailAndPassword,
   getAuth,
   GoogleAuthProvider,
+  onAuthStateChanged,
   OAuthProvider,
   signInWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
   type Auth,
+  type User,
   type UserCredential,
 } from "firebase/auth";
 
@@ -66,4 +68,55 @@ export function signInCustomerWithGoogle(): Promise<UserCredential> {
 
 export function signInCustomerWithMicrosoft(): Promise<UserCredential> {
   return signInWithPopup(getFirebaseAuth(), microsoftProvider);
+}
+
+type WaitForFirebaseUserOptions = {
+  timeoutMs?: number;
+};
+
+export async function waitForFirebaseUser(
+  options: WaitForFirebaseUserOptions = {}
+): Promise<User | null> {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) {
+    return auth.currentUser;
+  }
+
+  if (typeof window === "undefined") {
+    return auth.currentUser;
+  }
+
+  const timeoutMs = Math.max(1000, options.timeoutMs ?? 7000);
+
+  return new Promise<User | null>((resolve) => {
+    let settled = false;
+    let unsubscribe = () => {
+      return;
+    };
+
+    const finish = (user: User | null) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      window.clearTimeout(timeoutId);
+      unsubscribe();
+      resolve(user);
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      finish(auth.currentUser ?? null);
+    }, timeoutMs);
+
+    unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        finish(user);
+      },
+      () => {
+        finish(auth.currentUser ?? null);
+      }
+    );
+  });
 }

@@ -4,21 +4,20 @@ export function ProfileOverview() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Customer Profile (Structural)</CardTitle>
+        <CardTitle>Resumo da conta</CardTitle>
         <CardDescription>
-          This screen is protected and ready for Firebase-backed profile data.
+          Esta area e protegida e exibe os dados da conta do cliente.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2 text-sm text-slate-700">
         <p>
-          <span className="font-semibold">Name:</span> Customer Structural
+          <span className="font-semibold">Nome:</span> Cliente
         </p>
         <p>
-          <span className="font-semibold">Email:</span> customer@example.com
+          <span className="font-semibold">Email:</span> cliente@example.com
         </p>
         <p>
-          <span className="font-semibold">Status:</span> Guarded route enabled with
-          cookie-based session scaffold.
+          <span className="font-semibold">Status:</span> Sessao autenticada.
         </p>
       </CardContent>
     </Card>
