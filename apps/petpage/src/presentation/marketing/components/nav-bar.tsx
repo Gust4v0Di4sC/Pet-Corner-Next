@@ -2,8 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import logoImg from "@/assets/Logo-Home.svg";
 import { User, Wrench } from "@phosphor-icons/react/dist/ssr";
-import { ShoppingCartSimple } from "@phosphor-icons/react/dist/ssr";
 import { CartPanelDrawer } from "@/presentation/marketing/components/cart-panel-drawer";
+import { CustomerNotificationDrawer } from "@/presentation/marketing/components/customer-notification-drawer";
+import { GuestCartButton } from "@/presentation/marketing/components/guest-cart-button";
 import { UserPanelDrawer } from "@/presentation/marketing/components/user-panel-drawer";
 import { readServerCustomerSession } from "@/utils/auth/customer-session.server";
 
@@ -32,13 +33,13 @@ export async function NavBar() {
             />
           </Link>
 
-          <ul className="hidden items-center gap-7 text-sm font-medium text-slate-200 md:flex">
+          <ul className="hidden items-center gap-2 text-sm font-medium text-slate-200 md:flex">
             {menuLinks.map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
                   suppressHydrationWarning
-                  className="transition hover:text-[#fb8b24]"
+                  className="relative inline-flex items-center rounded-full px-4 py-2 text-slate-200 transition-colors duration-200 hover:text-white before:absolute before:inset-0 before:-z-10 before:scale-95 before:rounded-full before:border before:border-transparent before:bg-[#fb8b24]/15 before:opacity-0 before:shadow-[0_10px_25px_-18px_rgba(251,139,36,0.95)] before:transition before:duration-300 before:content-[''] hover:before:scale-100 hover:before:border-[#fb8b24]/55 hover:before:opacity-100"
                 >
                   {link.label}
                 </a>
@@ -47,6 +48,8 @@ export async function NavBar() {
           </ul>
 
           <div className="flex items-center gap-2">
+            {session ? <CustomerNotificationDrawer customerId={session.customerId} /> : null}
+
             {session ? (
               <UserPanelDrawer name={session.name} email={session.email} />
             ) : (
@@ -72,14 +75,7 @@ export async function NavBar() {
             {session ? (
               <CartPanelDrawer customerId={session.customerId} />
             ) : (
-              <Link
-                href="/cart"
-                suppressHydrationWarning
-                className="inline-flex items-center gap-2 rounded-full bg-[#fb8b24] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_-12px_rgba(251,139,36,0.9)] transition hover:bg-[#ef7e14]"
-              >
-                <ShoppingCartSimple className="h-4 w-4" />
-                Carrinho
-              </Link>
+              <GuestCartButton />
             )}
           </div>
         </div>

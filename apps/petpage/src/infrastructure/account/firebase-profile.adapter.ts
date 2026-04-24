@@ -57,6 +57,14 @@ export type FirebaseCustomerFavorite = {
   priceLabel: string;
 };
 
+export type FirebaseCustomerAccountProfile = {
+  customerId: string;
+  name: string;
+  email: string;
+  profileImageUrl: string | null;
+  updatedAtIso: string;
+};
+
 export type FirebaseCustomerAddress = {
   customerId: string;
   zipCode: string;
@@ -147,6 +155,28 @@ function toNumberValue(value: unknown, fallback = 0): number {
   }
 
   return fallback;
+}
+
+function toHttpImageUrl(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalizedValue = value.trim();
+  if (!normalizedValue) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedValue);
+    if (parsedUrl.protocol === "https:" || parsedUrl.protocol === "http:") {
+      return parsedUrl.toString();
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 function normalizePetWeight(value: number): number {
@@ -368,6 +398,22 @@ function mapFavoriteDocument(
     name,
     category,
     priceLabel,
+  };
+}
+
+function mapCustomerAccountProfileDocument(
+  customerId: string,
+  payload: Record<string, unknown>
+): FirebaseCustomerAccountProfile {
+  return {
+    customerId,
+    name: toStringValue(payload.name).trim(),
+    email: toStringValue(payload.email).trim(),
+    profileImageUrl: toHttpImageUrl(payload.profileImageUrl),
+    updatedAtIso:
+      toIsoString(payload.updatedAtIso) ||
+      toIsoString(payload.updatedAt) ||
+      new Date().toISOString(),
   };
 }
 
@@ -640,6 +686,37 @@ export async function readCustomerFavorites(
       return mapFavoriteDocument(snapshot.id, customerId, payload);
     })
     .filter((favorite): favorite is FirebaseCustomerFavorite => favorite !== null);
+}
+
+export async function readCustomerAccountProfile(
+  customerId: string
+): Promise<FirebaseCustomerAccountProfile | null> {
+  const profileRef = doc(
+    getDb(),
+    firebaseCustomerProfileAdapter.customersCollection,
+    customerId
+  );
+
+  try {
+    const profileSnapshot = await getDoc(profileRef);
+
+    if (!profileSnapshot.exists()) {
+      return null;
+    }
+
+    const payload = profileSnapshot.data();
+    if (!isRecord(payload)) {
+      return null;
+    }
+
+    return mapCustomerAccountProfileDocument(customerId, payload);
+  } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function readCustomerAddress(

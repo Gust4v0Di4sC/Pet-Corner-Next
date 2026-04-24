@@ -1,112 +1,665 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, CreditCard, Lock, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { checkoutFormSchema } from "@/validation/checkout-schemas";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import fallbackProduct from "@/assets/fallbackproduct.png";
+import { useCustomerCart } from "@/hooks/cart-checkout/use-customer-cart";
+import { saveCustomerDeliveryAddress } from "@/services/account/customer-profile.service";
 import {
-  formatCpfCnpjMask,
+  finalizeCustomerCheckout,
+  getCartItemsCount,
+} from "@/services/cart-checkout/customer-cart.service";
+import { formatPriceBRL } from "@/utils/catalog/price";
+import {
+  applyZipCodeMask,
+  digitsOnly,
   getFirstZodErrorMessage,
+  normalizeStateCode,
 } from "@/utils/validation/input-sanitizers";
+import {
+  checkoutDeliveryStepSchema,
+  checkoutPaymentStepSchema,
+} from "@/validation/checkout-schemas";
 
-type CheckoutFormState = {
-  address: string;
-  document: string;
+type CheckoutFormProps = {
+  customerId: string;
+  customerName?: string;
+  customerEmail: string;
 };
 
-const INITIAL_FORM_STATE: CheckoutFormState = {
-  address: "",
-  document: "",
+type CheckoutStep = "delivery" | "payment";
+
+type DeliveryFormState = {
+  fullName: string;
+  phone: string;
+  zipCode: string;
+  city: string;
+  street: string;
+  number: string;
+  district: string;
+  state: string;
+  complement: string;
 };
 
-export function CheckoutForm() {
-  const [formState, setFormState] = useState<CheckoutFormState>(INITIAL_FORM_STATE);
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [isErrorFeedback, setIsErrorFeedback] = useState(false);
+type PaymentFormState = {
+  cardNumber: string;
+  cardHolderName: string;
+  cardExpiry: string;
+  cvv: string;
+};
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+const DELIVERY_FEE_IN_CENTS = 1490;
+
+function fieldLabelClassName() {
+  return "text-xs font-semibold uppercase tracking-[0.06em] text-amber-50/70";
+}
+
+function fieldInputClassName() {
+  return "h-12 w-full rounded-full border border-[#6a4109] bg-[#4a2d03] px-4 text-sm text-amber-50 outline-none transition placeholder:text-amber-100/40 focus:border-[#fb8b24] focus:ring-2 focus:ring-[#fb8b24]/30";
+}
+
+function stepLabelClassName(isActive: boolean) {
+  return isActive ? "text-amber-50" : "text-amber-100/65";
+}
+
+function formatPhoneMask(value: string): string {
+  const digits = digitsOnly(value).slice(0, 11);
+  if (!digits) {
+    return "";
+  }
+  if (digits.length <= 2) {
+    return digits;
+  }
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function formatCardNumberMask(value: string): string {
+  const digits = digitsOnly(value).slice(0, 16);
+  if (!digits) {
+    return "";
+  }
+  return digits.match(/.{1,4}/g)?.join(" ") || digits;
+}
+
+function formatCardExpiryMask(value: string): string {
+  const digits = digitsOnly(value).slice(0, 4);
+  if (digits.length <= 2) {
+    return digits;
+  }
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+export function CheckoutForm({ customerId, customerName, customerEmail }: CheckoutFormProps) {
+  const [activeStep, setActiveStep] = useState<CheckoutStep>("delivery");
+  const [isSavingDelivery, setIsSavingDelivery] = useState(false);
+  const [isFinalizingOrder, setIsFinalizingOrder] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [deliveryForm, setDeliveryForm] = useState<DeliveryFormState>({
+    fullName: customerName?.trim() || "",
+    phone: "",
+    zipCode: "",
+    city: "",
+    street: "",
+    number: "",
+    district: "",
+    state: "",
+    complement: "",
+  });
+
+  const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
+    cardNumber: "",
+    cardHolderName: customerName?.trim() || "",
+    cardExpiry: "",
+    cvv: "",
+  });
+
+  const { isLoading, errorMessage: cartErrorMessage, cart } = useCustomerCart({
+    customerId,
+  });
+
+  const itemsCount = getCartItemsCount(cart);
+  const hasItems = cart.items.length > 0;
+  const shippingInCents = hasItems ? DELIVERY_FEE_IN_CENTS : 0;
+  const totalInCents = cart.subtotalInCents + shippingInCents;
+  const previewItems = useMemo(() => cart.items.slice(0, 5), [cart.items]);
+  const hiddenItemsCount = Math.max(cart.items.length - previewItems.length, 0);
+
+  const handleDeliveryInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+
+    const nextValue =
+      name === "phone"
+        ? formatPhoneMask(value)
+        : name === "zipCode"
+          ? applyZipCodeMask(value)
+          : name === "state"
+            ? normalizeStateCode(value)
+            : value;
+
+    setDeliveryForm((currentValue) => ({
+      ...currentValue,
+      [name]: nextValue,
+    }));
+  };
+
+  const handlePaymentInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+
+    const nextValue =
+      name === "cardNumber"
+        ? formatCardNumberMask(value)
+        : name === "cardExpiry"
+          ? formatCardExpiryMask(value)
+          : name === "cvv"
+            ? digitsOnly(value).slice(0, 4)
+            : value;
+
+    setPaymentForm((currentValue) => ({
+      ...currentValue,
+      [name]: nextValue,
+    }));
+  };
+
+  const handleContinueToPayment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFeedbackMessage(null);
-    setIsErrorFeedback(false);
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
-    const parsedInput = checkoutFormSchema.safeParse(formState);
-    if (!parsedInput.success) {
-      setIsErrorFeedback(true);
-      setFeedbackMessage(
-        getFirstZodErrorMessage(parsedInput.error, "Nao foi possivel validar os dados do checkout.")
+    const parsedDelivery = checkoutDeliveryStepSchema.safeParse(deliveryForm);
+    if (!parsedDelivery.success) {
+      setErrorMessage(
+        getFirstZodErrorMessage(parsedDelivery.error, "Confira os dados da entrega.")
       );
       return;
     }
 
-    setFeedbackMessage(
-      `Dados validados para checkout: ${parsedInput.data.address} | ${parsedInput.data.documentMasked}`
-    );
+    setIsSavingDelivery(true);
+
+    try {
+      await saveCustomerDeliveryAddress({
+        customerId,
+        zipCode: parsedDelivery.data.zipCode,
+        street: parsedDelivery.data.street,
+        number: parsedDelivery.data.number,
+        district: parsedDelivery.data.district,
+        city: parsedDelivery.data.city,
+        state: parsedDelivery.data.state,
+        complement: parsedDelivery.data.complement,
+      });
+
+      setActiveStep("payment");
+      setSuccessMessage("Endereco validado e salvo. Agora informe o pagamento.");
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Nao foi possivel salvar o endereco agora.";
+      setErrorMessage(message);
+    } finally {
+      setIsSavingDelivery(false);
+    }
+  };
+
+  const handleFinalizeOrder = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!hasItems) {
+      setErrorMessage("Seu carrinho esta vazio. Adicione produtos para finalizar.");
+      return;
+    }
+
+    const parsedDelivery = checkoutDeliveryStepSchema.safeParse(deliveryForm);
+    if (!parsedDelivery.success) {
+      setActiveStep("delivery");
+      setErrorMessage(
+        getFirstZodErrorMessage(parsedDelivery.error, "Confira os dados de entrega.")
+      );
+      return;
+    }
+
+    const parsedPayment = checkoutPaymentStepSchema.safeParse(paymentForm);
+    if (!parsedPayment.success) {
+      setErrorMessage(
+        getFirstZodErrorMessage(parsedPayment.error, "Confira os dados de pagamento.")
+      );
+      return;
+    }
+
+    setIsFinalizingOrder(true);
+
+    try {
+      const checkoutResult = await finalizeCustomerCheckout({
+        customerId,
+        delivery: parsedDelivery.data,
+        payment: {
+          cardHolderName: parsedPayment.data.cardHolderName,
+          cardLast4: parsedPayment.data.cardLast4,
+          expiryMonth: parsedPayment.data.expiryMonth,
+          expiryYear: parsedPayment.data.expiryYear,
+        },
+        shippingInCents,
+      });
+
+      setSuccessMessage(
+        `Pedido ${checkoutResult.orderLabel} finalizado com sucesso. Acompanhe em Rastreamento.`
+      );
+      setPaymentForm((currentValue) => ({
+        ...currentValue,
+        cvv: "",
+      }));
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Nao foi possivel finalizar o pedido agora.";
+      setErrorMessage(message);
+    } finally {
+      setIsFinalizingOrder(false);
+    }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Checkout Flow (Base)</CardTitle>
-        <CardDescription>
-          Structural checkout form prepared for future application/infrastructure wiring.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-1">
-            <label htmlFor="address" className="text-sm font-medium text-slate-700">
-              Delivery Address
-            </label>
-            <input
-              id="address"
-              name="address"
-              type="text"
-              className="w-full rounded-lg border px-3 py-2 text-sm"
-              placeholder="Street, number, district"
-              value={formState.address}
-              onChange={(event) =>
-                setFormState((currentState) => ({
-                  ...currentState,
-                  address: event.target.value,
-                }))
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="document" className="text-sm font-medium text-slate-700">
-              Customer Document
-            </label>
-            <input
-              id="document"
-              name="document"
-              type="text"
-              className="w-full rounded-lg border px-3 py-2 text-sm"
-              placeholder="CPF/CNPJ"
-              value={formState.document}
-              onChange={(event) =>
-                setFormState((currentState) => ({
-                  ...currentState,
-                  document: formatCpfCnpjMask(event.target.value),
-                }))
-              }
-            />
-          </div>
+    <section className="space-y-7">
+      <header className="space-y-3">
+        <h1 className="text-5xl font-bold leading-[1.02] text-slate-100 md:text-7xl">Checkout</h1>
+        <div className="inline-flex items-center gap-3 text-base font-semibold">
+          <span
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${
+              activeStep === "delivery" ? "bg-[#fb8b24] text-white" : "bg-[#5b3a0f] text-amber-100/80"
+            }`}
+          >
+            1
+          </span>
+          <span className={stepLabelClassName(activeStep === "delivery")}>Entrega</span>
+          <span className="h-px w-12 bg-amber-100/25" aria-hidden="true" />
+          <span
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${
+              activeStep === "payment" ? "bg-[#fb8b24] text-white" : "bg-[#5b3a0f] text-amber-100/80"
+            }`}
+          >
+            2
+          </span>
+          <span className={stepLabelClassName(activeStep === "payment")}>Pagamento</span>
+        </div>
+      </header>
 
-          {feedbackMessage ? (
-            <p
-              className={`rounded-lg px-3 py-2 text-sm ${
-                isErrorFeedback
-                  ? "border border-red-200 bg-red-50 text-red-700"
-                  : "border border-emerald-200 bg-emerald-50 text-emerald-700"
-              }`}
-            >
-              {feedbackMessage}
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="rounded-[2rem] border border-slate-700/90 bg-[#0f1722] py-0 text-slate-100 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.95)]">
+          <CardHeader className="border-b border-slate-700/80 pb-5 pt-6">
+            <CardTitle className="flex items-center gap-2 text-4xl font-semibold text-slate-100">
+              {activeStep === "delivery" ? (
+                <>
+                  <Truck className="h-6 w-6 text-[#fb8b24]" />
+                  Endereco de entrega
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-6 w-6 text-[#fb8b24]" />
+                  Pagamento
+                </>
+              )}
+            </CardTitle>
+            <p className="text-sm text-slate-300">
+              {activeStep === "delivery"
+                ? "Preencha os dados para envio do pedido."
+                : "Pagamento com cartao para demonstracao do fluxo."}
             </p>
-          ) : null}
+          </CardHeader>
 
-          <Button type="submit">Finalize (Structural)</Button>
-        </form>
-      </CardContent>
-    </Card>
+          <CardContent className="space-y-5 p-6">
+            {errorMessage ? (
+              <p className="rounded-2xl border border-red-300/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-100">
+                {errorMessage}
+              </p>
+            ) : null}
+
+            {successMessage ? (
+              <p className="rounded-2xl border border-emerald-300/40 bg-emerald-950/40 px-4 py-3 text-sm font-medium text-emerald-100">
+                {successMessage}
+              </p>
+            ) : null}
+
+            {activeStep === "delivery" ? (
+              <form className="space-y-5" onSubmit={(event) => void handleContinueToPayment(event)}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                    <label htmlFor="delivery-fullName" className={fieldLabelClassName()}>
+                      Nome completo
+                    </label>
+                    <input
+                      id="delivery-fullName"
+                      name="fullName"
+                      value={deliveryForm.fullName}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="Seu nome completo"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                    <label htmlFor="delivery-phone" className={fieldLabelClassName()}>
+                      Telefone
+                    </label>
+                    <input
+                      id="delivery-phone"
+                      name="phone"
+                      value={deliveryForm.phone}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="delivery-zipCode" className={fieldLabelClassName()}>
+                      CEP
+                    </label>
+                    <input
+                      id="delivery-zipCode"
+                      name="zipCode"
+                      value={deliveryForm.zipCode}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="00000-000"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="delivery-city" className={fieldLabelClassName()}>
+                      Cidade
+                    </label>
+                    <input
+                      id="delivery-city"
+                      name="city"
+                      value={deliveryForm.city}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="Sua cidade"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label htmlFor="delivery-street" className={fieldLabelClassName()}>
+                      Endereco
+                    </label>
+                    <input
+                      id="delivery-street"
+                      name="street"
+                      value={deliveryForm.street}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="Rua e referencia"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="delivery-number" className={fieldLabelClassName()}>
+                      Numero
+                    </label>
+                    <input
+                      id="delivery-number"
+                      name="number"
+                      value={deliveryForm.number}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="123"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="delivery-complement" className={fieldLabelClassName()}>
+                      Complemento
+                    </label>
+                    <input
+                      id="delivery-complement"
+                      name="complement"
+                      value={deliveryForm.complement}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="Opcional"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="delivery-district" className={fieldLabelClassName()}>
+                      Bairro
+                    </label>
+                    <input
+                      id="delivery-district"
+                      name="district"
+                      value={deliveryForm.district}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="Seu bairro"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="delivery-state" className={fieldLabelClassName()}>
+                      Estado
+                    </label>
+                    <input
+                      id="delivery-state"
+                      name="state"
+                      value={deliveryForm.state}
+                      onChange={handleDeliveryInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="UF"
+                      maxLength={2}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+                  <Link
+                    href="/cart"
+                    suppressHydrationWarning
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-amber-100/90 transition hover:text-amber-50"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Voltar ao carrinho
+                  </Link>
+
+                  <Button
+                    type="submit"
+                    disabled={isSavingDelivery || isLoading || !hasItems}
+                    className="h-11 rounded-full bg-[#d97706] px-6 text-base font-semibold text-white hover:bg-[#c86f0a] disabled:opacity-60"
+                  >
+                    {isSavingDelivery ? "Salvando..." : "Continuar"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form className="space-y-5" onSubmit={(event) => void handleFinalizeOrder(event)}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label htmlFor="payment-cardNumber" className={fieldLabelClassName()}>
+                      Numero do cartao
+                    </label>
+                    <input
+                      id="payment-cardNumber"
+                      name="cardNumber"
+                      value={paymentForm.cardNumber}
+                      onChange={handlePaymentInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="0000 0000 0000 0000"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label htmlFor="payment-cardHolderName" className={fieldLabelClassName()}>
+                      Nome impresso
+                    </label>
+                    <input
+                      id="payment-cardHolderName"
+                      name="cardHolderName"
+                      value={paymentForm.cardHolderName}
+                      onChange={handlePaymentInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="Nome no cartao"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="payment-cardExpiry" className={fieldLabelClassName()}>
+                      Validade
+                    </label>
+                    <input
+                      id="payment-cardExpiry"
+                      name="cardExpiry"
+                      value={paymentForm.cardExpiry}
+                      onChange={handlePaymentInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="MM/AA"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="payment-cvv" className={fieldLabelClassName()}>
+                      CVV
+                    </label>
+                    <input
+                      id="payment-cvv"
+                      name="cvv"
+                      value={paymentForm.cvv}
+                      onChange={handlePaymentInputChange}
+                      className={fieldInputClassName()}
+                      placeholder="123"
+                    />
+                  </div>
+                </div>
+
+                <p className="inline-flex items-center gap-2 text-sm text-amber-100/70">
+                  <Lock className="h-4 w-4" />
+                  Pagamento simulado para demonstracao.
+                </p>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setActiveStep("delivery")}
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-amber-100/90 transition hover:text-amber-50"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Voltar
+                  </button>
+
+                  <Button
+                    type="submit"
+                    disabled={isFinalizingOrder || isLoading || !hasItems}
+                    className="h-11 rounded-full bg-[#d97706] px-6 text-base font-semibold text-white hover:bg-[#c86f0a] disabled:opacity-60"
+                  >
+                    {isFinalizingOrder ? "Finalizando..." : "Finalizar pedido"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[2rem] border border-slate-700/90 bg-[#0f1722] py-0 text-slate-100 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.95)] xl:sticky xl:top-24">
+          <CardHeader className="border-b border-slate-700/80 pb-5 pt-6">
+            <CardTitle className="text-4xl font-semibold text-slate-100">Seu pedido</CardTitle>
+            <p className="text-xs text-slate-400">Conta: {customerEmail}</p>
+          </CardHeader>
+
+          <CardContent className="space-y-5 p-6">
+            {cartErrorMessage ? (
+              <p className="rounded-2xl border border-red-300/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-100">
+                {cartErrorMessage}
+              </p>
+            ) : null}
+
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-14 animate-pulse rounded-2xl border border-slate-700 bg-slate-900/70"
+                  />
+                ))}
+              </div>
+            ) : !hasItems ? (
+              <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-300">
+                Seu carrinho esta vazio. Volte para produtos para continuar.
+              </div>
+            ) : (
+              <>
+                <ul className="space-y-3">
+                  {previewItems.map((item) => {
+                    const imageUrl = item.imageUrl?.trim() || fallbackProduct.src;
+
+                    return (
+                      <li
+                        key={item.productId}
+                        className="grid grid-cols-[auto_1fr_auto] items-center gap-3"
+                      >
+                        <div className="relative h-12 w-12 overflow-hidden rounded-full border border-slate-700 bg-slate-900">
+                          <Image
+                            src={imageUrl}
+                            alt={item.title}
+                            fill
+                            sizes="48px"
+                            unoptimized={/^https?:\/\//i.test(imageUrl)}
+                            className="object-cover"
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-100">{item.title}</p>
+                          <p className="text-xs text-slate-400">x{item.quantity}</p>
+                        </div>
+
+                        <p className="text-sm font-semibold text-slate-100">
+                          {formatPriceBRL(item.quantity * item.unitPriceInCents)}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {hiddenItemsCount > 0 ? (
+                  <p className="text-xs text-slate-400">+{hiddenItemsCount} item(ns) no pedido</p>
+                ) : null}
+              </>
+            )}
+
+            <div className="space-y-2 border-t border-slate-700/80 pt-4">
+              <div className="flex items-center justify-between text-slate-300">
+                <span>Subtotal</span>
+                <span className="font-semibold text-slate-100">
+                  {formatPriceBRL(cart.subtotalInCents)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span>Frete</span>
+                <span className="font-semibold text-slate-100">{formatPriceBRL(shippingInCents)}</span>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-2xl font-semibold text-slate-100">Total</span>
+                <span className="text-4xl font-bold text-[#fb8b24]">{formatPriceBRL(totalInCents)}</span>
+              </div>
+              <p className="text-xs text-slate-400">{itemsCount} item(ns) no carrinho.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
   );
 }

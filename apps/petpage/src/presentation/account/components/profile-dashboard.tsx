@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Heart, LogOut, MapPin, Menu, PawPrint, Plus, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCustomerProfileData } from "@/hooks/account/use-customer-profile-data";
+import { useCustomerProfileImageUpload } from "@/hooks/account/use-customer-profile-image-upload";
 import {
   ANIMAL_TYPE_OPTIONS,
   DEFAULT_ANIMAL_TYPE,
@@ -82,6 +84,7 @@ const INITIAL_ADDRESS_FORM: AddressFormState = {
   complement: "",
 };
 const petProfileSchema = createPetProfileSchema(MANUAL_BREED_OPTION);
+const PROFILE_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/avif";
 
 function darkInputClassName() {
   return "h-10 w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-[#fb8b24] focus:ring-2 focus:ring-[#fb8b24]/25";
@@ -113,6 +116,8 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
   const [addressFormDraft, setAddressFormDraft] = useState<AddressFormState | null>(null);
   const [addressMessage, setAddressMessage] = useState<string | null>(null);
   const [isAddressMessageError, setIsAddressMessageError] = useState(false);
+  const [profileImageMessage, setProfileImageMessage] = useState<string | null>(null);
+  const [isProfileImageMessageError, setIsProfileImageMessageError] = useState(false);
 
   const customerName = useMemo(
     () => session.name?.trim() || "Cliente Pet Corner",
@@ -122,12 +127,14 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
   const {
     loading,
     errorMessage,
+    profile,
     pets,
     orders,
     favorites,
     address,
     isCreatingPet,
     isSavingAddress,
+    setProfileImageUrl,
     createPet,
     saveAddress,
   } = useCustomerProfileData({
@@ -135,6 +142,17 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
     name: session.name,
     email: session.email,
   });
+
+  const profileImageUrl = useMemo(() => {
+    return profile?.profileImageUrl?.trim() || "";
+  }, [profile?.profileImageUrl]);
+
+  const {
+    isUploading: isUploadingProfileImage,
+    errorMessage: profileImageUploadErrorMessage,
+    clearError: clearProfileImageUploadError,
+    uploadProfileImage,
+  } = useCustomerProfileImageUpload();
 
   const addressForm = useMemo<AddressFormState>(() => {
     if (addressFormDraft) {
@@ -287,6 +305,33 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
     }
   };
 
+  const handleProfileImageSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!selectedFile) {
+      return;
+    }
+
+    setProfileImageMessage(null);
+    setIsProfileImageMessageError(false);
+    clearProfileImageUploadError();
+
+    try {
+      const uploadResult = await uploadProfileImage({
+        customerId: session.customerId,
+        file: selectedFile,
+      });
+
+      setProfileImageUrl(uploadResult.imageUrl);
+      setProfileImageMessage("Foto de perfil atualizada com sucesso.");
+      setIsProfileImageMessageError(false);
+    } catch {
+      setIsProfileImageMessageError(true);
+      setProfileImageMessage("Nao foi possivel atualizar a foto de perfil.");
+    }
+  };
+
   const handleLogout = async () => {
     if (isLoggingOut) {
       return;
@@ -347,9 +392,40 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
                 isSidebarOpen ? "items-start gap-3 px-1" : "flex-col items-center gap-3 px-0"
               }`}
             >
-              <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#fb8b24] text-white">
-                <UserRound className="h-7 w-7" />
-              </span>
+              <div className="shrink-0">
+                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-slate-600 bg-[#fb8b24]">
+                  {profileImageUrl ? (
+                    <Image
+                      src={profileImageUrl}
+                      alt={`Foto de perfil de ${customerName}`}
+                      fill
+                      sizes="56px"
+                      unoptimized={/^https?:\/\//i.test(profileImageUrl)}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="inline-flex h-full w-full items-center justify-center text-white">
+                      <UserRound className="h-7 w-7" />
+                    </span>
+                  )}
+                </div>
+
+                {isSidebarOpen ? (
+                  <label className="mt-2 block">
+                    <span className="sr-only">Enviar foto de perfil</span>
+                    <input
+                      type="file"
+                      accept={PROFILE_IMAGE_ACCEPT}
+                      onChange={(event) => void handleProfileImageSelected(event)}
+                      disabled={isUploadingProfileImage}
+                      className="hidden"
+                    />
+                    <span className="inline-flex cursor-pointer rounded-full border border-slate-600 px-2.5 py-1 text-[11px] font-semibold text-slate-200 transition hover:border-[#fb8b24] hover:text-[#fb8b24]">
+                      {isUploadingProfileImage ? "Enviando..." : "Alterar foto"}
+                    </span>
+                  </label>
+                ) : null}
+              </div>
 
               {isSidebarOpen ? (
                 <div className="min-w-0 space-y-1">
@@ -360,6 +436,22 @@ export function ProfileDashboard({ session }: ProfileDashboardProps) {
                   <p className="inline-flex rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs font-medium text-emerald-300">
                     Sessao ativa
                   </p>
+                  {profileImageUploadErrorMessage ? (
+                    <p className="rounded-lg bg-red-950/40 px-2.5 py-1 text-xs font-medium text-red-200">
+                      {profileImageUploadErrorMessage}
+                    </p>
+                  ) : null}
+                  {profileImageMessage ? (
+                    <p
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium ${
+                        isProfileImageMessageError
+                          ? "bg-red-950/40 text-red-200"
+                          : "bg-emerald-500/20 text-emerald-300"
+                      }`}
+                    >
+                      {profileImageMessage}
+                    </p>
+                  ) : null}
                 </div>
               ) : (
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">

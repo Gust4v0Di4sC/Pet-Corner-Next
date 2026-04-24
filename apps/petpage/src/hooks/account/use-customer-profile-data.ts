@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getCustomerProfileDataBundle,
+  type CustomerAccountProfile,
   registerCustomerPet,
   saveCustomerDeliveryAddress,
   type CustomerDeliveryAddress,
@@ -58,6 +59,7 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [profile, setProfile] = useState<CustomerAccountProfile | null>(null);
   const [pets, setPets] = useState<CustomerPet[]>([]);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [favorites, setFavorites] = useState<CustomerFavorite[]>([]);
@@ -85,6 +87,7 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
         email: options.email,
       });
 
+      setProfile(dataBundle.profile);
       setPets(dataBundle.pets);
       setOrders(dataBundle.orders);
       setFavorites(dataBundle.favorites);
@@ -189,15 +192,35 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
     [options.customerId]
   );
 
+  const setProfileImageUrl = useCallback(
+    (profileImageUrl: string) => {
+      const normalizedImageUrl = profileImageUrl.trim();
+      if (!normalizedImageUrl) {
+        return;
+      }
+
+      setProfile((currentProfile) => ({
+        customerId: currentProfile?.customerId || options.customerId,
+        name: currentProfile?.name || options.name?.trim() || "Cliente Pet Corner",
+        email: currentProfile?.email || options.email,
+        updatedAtIso: new Date().toISOString(),
+        profileImageUrl: normalizedImageUrl,
+      }));
+    },
+    [options.customerId, options.email, options.name]
+  );
+
   return {
     loading,
     errorMessage,
+    profile,
     pets,
     orders,
     favorites,
     address,
     isCreatingPet,
     isSavingAddress,
+    setProfileImageUrl,
     createPet,
     saveAddress,
     reload: loadData,

@@ -4,16 +4,22 @@ import { upsertCustomerProfile } from "@/infrastructure/account/firebase-custome
 import { waitForFirebaseUser } from "@/infrastructure/auth/firebase-auth.adapter";
 import {
   createCustomerPet,
+  readCustomerAccountProfile,
   readCustomerAddress,
   readCustomerFavorites,
   readCustomerOrders,
   readCustomerPets,
+  type FirebaseCustomerAccountProfile,
   type FirebaseCustomerAddress,
   type FirebaseCustomerFavorite,
   type FirebaseCustomerOrder,
   type FirebaseCustomerPet,
   upsertCustomerAddress,
 } from "@/infrastructure/account/firebase-profile.adapter";
+import {
+  createAdminBroadcastNotification,
+  createCustomerNotification,
+} from "@/services/notifications/customer-notification.service";
 
 export type CustomerProfileIdentity = {
   customerId: string;
@@ -25,6 +31,7 @@ export type CustomerPet = FirebaseCustomerPet;
 export type CustomerOrder = FirebaseCustomerOrder;
 export type CustomerFavorite = FirebaseCustomerFavorite;
 export type CustomerDeliveryAddress = FirebaseCustomerAddress;
+export type CustomerAccountProfile = FirebaseCustomerAccountProfile;
 
 export type CreatePetInput = {
   customerId: string;
@@ -47,6 +54,7 @@ export type SaveDeliveryAddressInput = {
 };
 
 export type CustomerProfileDataBundle = {
+  profile: CustomerAccountProfile | null;
   pets: CustomerPet[];
   orders: CustomerOrder[];
   favorites: CustomerFavorite[];
@@ -123,7 +131,8 @@ export async function getCustomerProfileDataBundle(
   const resolvedIdentity = await resolveIdentity(identity);
   await syncCustomerProfile(resolvedIdentity);
 
-  const [petsResult, ordersResult, favoritesResult, addressResult] = await Promise.allSettled([
+  const [profileResult, petsResult, ordersResult, favoritesResult, addressResult] = await Promise.allSettled([
+    readCustomerAccountProfile(resolvedIdentity.customerId),
     readCustomerPets(resolvedIdentity.customerId),
     readCustomerOrders(resolvedIdentity.customerId),
     readCustomerFavorites(resolvedIdentity.customerId),
@@ -131,6 +140,7 @@ export async function getCustomerProfileDataBundle(
   ]);
 
   return {
+    profile: profileResult.status === "fulfilled" ? profileResult.value : null,
     pets: petsResult.status === "fulfilled" ? petsResult.value : [],
     orders: ordersResult.status === "fulfilled" ? ordersResult.value : [],
     favorites: favoritesResult.status === "fulfilled" ? favoritesResult.value : [],
@@ -140,7 +150,7 @@ export async function getCustomerProfileDataBundle(
 
 export async function registerCustomerPet(input: CreatePetInput): Promise<CustomerPet> {
   const resolvedCustomerId = await resolveCustomerId(input.customerId);
-  return createCustomerPet({
+  const createdPet = await createCustomerPet({
     customerId: resolvedCustomerId,
     name: input.name,
     animalType: input.animalType,
@@ -148,13 +158,34 @@ export async function registerCustomerPet(input: CreatePetInput): Promise<Custom
     age: input.age,
     weight: input.weight,
   });
+
+  void createCustomerNotification({
+    customerId: resolvedCustomerId,
+    title: "Pet cadastrado com sucesso",
+    message: `${createdPet.name} foi adicionado ao seu perfil.`,
+    category: "profile",
+    linkHref: "/profile",
+  }).catch(() => {
+    return;
+  });
+
+  void createAdminBroadcastNotification({
+    title: "Novo pet cadastrado",
+    message: `Cliente ${resolvedCustomerId} cadastrou o pet ${createdPet.name}.`,
+    category: "profile",
+    actorCustomerId: resolvedCustomerId,
+  }).catch(() => {
+    return;
+  });
+
+  return createdPet;
 }
 
 export async function saveCustomerDeliveryAddress(
   input: SaveDeliveryAddressInput
 ): Promise<CustomerDeliveryAddress> {
   const resolvedCustomerId = await resolveCustomerId(input.customerId);
-  return upsertCustomerAddress({
+  const savedAddress = await upsertCustomerAddress({
     customerId: resolvedCustomerId,
     zipCode: input.zipCode,
     street: input.street,
@@ -164,4 +195,16 @@ export async function saveCustomerDeliveryAddress(
     state: input.state,
     complement: input.complement,
   });
+
+  void createCustomerNotification({
+    customerId: resolvedCustomerId,
+    title: "Endereco atualizado",
+    message: "Seu endereco de entrega foi atualizado com sucesso.",
+    category: "profile",
+    linkHref: "/profile",
+  }).catch(() => {
+    return;
+  });
+
+  return savedAddress;
 }

@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LogOut, User, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { waitForFirebaseUser } from "@/infrastructure/auth/firebase-auth.adapter";
 
 type UserPanelDrawerProps = {
   name?: string;
@@ -15,6 +17,7 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState("");
 
   const displayName = useMemo(() => {
     const normalizedName = name?.trim();
@@ -27,6 +30,25 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
   }, [email]);
 
   const closeDrawer = useCallback(() => setIsOpen(false), []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfileImage = async () => {
+      const firebaseUser = await waitForFirebaseUser();
+      if (!isMounted) {
+        return;
+      }
+
+      setProfileImageUrl(firebaseUser?.photoURL?.trim() || "");
+    };
+
+    void loadProfileImage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -108,6 +130,24 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
 
           <div className="flex-1 space-y-6 px-6 py-6">
             <div className="rounded-3xl border border-slate-300/90 bg-[#f7f6f2] p-5">
+              <div className="mb-3">
+                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-slate-300 bg-[#e4e4e7]">
+                  {profileImageUrl ? (
+                    <Image
+                      src={profileImageUrl}
+                      alt={`Foto de perfil de ${displayName}`}
+                      fill
+                      sizes="56px"
+                      unoptimized={/^https?:\/\//i.test(profileImageUrl)}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="inline-flex h-full w-full items-center justify-center text-slate-600">
+                      <User className="h-6 w-6" />
+                    </span>
+                  )}
+                </div>
+              </div>
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#fb8b24]">
                 Perfil
               </p>
@@ -120,13 +160,22 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
               </p>
             </div>
 
-            <Link
-              href="/profile"
-              onClick={closeDrawer}
-              className="inline-flex w-full items-center justify-center rounded-full bg-[#fb8b24] px-6 py-3.5 text-xl font-semibold text-white shadow-[0_8px_24px_-12px_rgba(251,139,36,0.9)] transition hover:bg-[#ef7e14]"
-            >
-              Ir para pagina de perfil
-            </Link>
+            <div className="space-y-2">
+              <Link
+                href="/profile"
+                onClick={closeDrawer}
+                className="inline-flex w-full items-center justify-center rounded-full bg-[#fb8b24] px-6 py-3.5 text-xl font-semibold text-white shadow-[0_8px_24px_-12px_rgba(251,139,36,0.9)] transition hover:bg-[#ef7e14]"
+              >
+                Ir para pagina de perfil
+              </Link>
+              <Link
+                href="/rastreamento"
+                onClick={closeDrawer}
+                className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-[#f7f6f2] px-6 py-3 text-lg font-semibold text-slate-700 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
+              >
+                Ver rastreamento
+              </Link>
+            </div>
           </div>
 
           <footer className="border-t border-slate-300/80 px-6 py-5">
@@ -155,7 +204,20 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
         aria-label="Abrir painel do perfil"
         className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
       >
-        <User className="h-5 w-5" />
+        <span className="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full">
+          {profileImageUrl ? (
+            <Image
+              src={profileImageUrl}
+              alt={`Foto de perfil de ${displayName}`}
+              fill
+              sizes="40px"
+              unoptimized={/^https?:\/\//i.test(profileImageUrl)}
+              className="object-cover"
+            />
+          ) : (
+            <User className="h-5 w-5" />
+          )}
+        </span>
       </button>
       {isOpen && typeof document !== "undefined" ? createPortal(drawerPanel, document.body) : null}
     </>

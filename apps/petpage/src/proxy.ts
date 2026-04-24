@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { CUSTOMER_SESSION_COOKIE } from "@/infrastructure/auth/session-constants";
 
-const PROTECTED_ROUTES = new Set(["/profile", "/checkout"]);
+const PROTECTED_ROUTES = new Set(["/profile", "/checkout", "/rastreamento"]);
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -21,5 +21,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile", "/checkout"],
+  matcher: ["/profile", "/checkout", "/rastreamento"],
 };

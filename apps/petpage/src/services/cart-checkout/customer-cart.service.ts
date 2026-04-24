@@ -1,18 +1,35 @@
 "use client";
 
+import {
+  collection,
+  doc,
+  getFirestore,
+  serverTimestamp,
+  writeBatch,
+} from "firebase/firestore";
 import type { Cart, CartItem } from "@/domain/cart-checkout/entities/cart";
+import {
+  getOrderStatusDescription,
+  getOrderStatusLabel,
+  type OrderStatus,
+} from "@/domain/cart-checkout/entities/order-tracking";
 import {
   calculateSubtotalInCents,
   createEmptyCart,
   FirebaseCartRepository,
   normalizeCart,
 } from "@/infrastructure/cart-checkout/firebase-cart.adapter";
-import { waitForFirebaseUser } from "@/infrastructure/auth/firebase-auth.adapter";
+import { getFirebaseApp, waitForFirebaseUser } from "@/infrastructure/auth/firebase-auth.adapter";
 import {
   clearGuestCartStorage,
   readGuestCartFromStorage,
   saveGuestCartToStorage,
 } from "@/utils/cart-checkout/guest-cart-storage";
+import {
+  createAdminBroadcastNotification,
+  createCustomerNotification,
+} from "@/services/notifications/customer-notification.service";
+import { formatPriceBRL } from "@/utils/catalog/price";
 
 export type CartPersistenceMode = "remote" | "local";
 
@@ -21,6 +38,8 @@ export type CartOperationResult = {
   mode: CartPersistenceMode;
   customerId?: string;
 };
+
+export const CUSTOMER_CART_CHANGED_EVENT = "petcorner:cart-changed";
 
 export type AddProductToCartInput = {
   productId?: string;
@@ -43,7 +62,42 @@ type UpdateCartItemQuantityInput = {
   customerId?: string;
 };
 
+export type CheckoutDeliveryInput = {
+  fullName: string;
+  phone: string;
+  zipCode: string;
+  city: string;
+  street: string;
+  number: string;
+  district: string;
+  state: string;
+  complement?: string;
+};
+
+export type CheckoutPaymentInput = {
+  cardHolderName: string;
+  cardLast4: string;
+  expiryMonth: number;
+  expiryYear: number;
+};
+
+type FinalizeCustomerCheckoutInput = {
+  customerId?: string;
+  delivery: CheckoutDeliveryInput;
+  payment: CheckoutPaymentInput;
+  shippingInCents?: number;
+};
+
+export type FinalizeCustomerCheckoutResult = {
+  orderId: string;
+  orderLabel: string;
+  subtotalInCents: number;
+  shippingInCents: number;
+  totalInCents: number;
+};
+
 const cartRepository = new FirebaseCartRepository();
+const DEFAULT_CHECKOUT_SHIPPING_IN_CENTS = 1490;
 
 function isPermissionDeniedError(error: unknown): boolean {
   if (error && typeof error === "object") {
@@ -167,6 +221,86 @@ function buildCart(customerId: string | undefined, items: CartItem[]): Cart {
   });
 }
 
+function createOrderLabel(orderId: string): string {
+  return `PED-${orderId.slice(0, 8).toUpperCase()}`;
+}
+
+function createInitialOrderStatusTimeline(createdAtIso: string): Array<{
+  status: OrderStatus;
+  label: string;
+  description: string;
+  createdAtIso: string;
+}> {
+  const status: OrderStatus = "pedido_recebido";
+  return [
+    {
+      status,
+      label: getOrderStatusLabel(status),
+      description: getOrderStatusDescription(status),
+      createdAtIso,
+    },
+  ];
+}
+
+function emitCartChanged(result: CartOperationResult): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const itemCount = result.cart.items.reduce(
+    (totalItems, item) => totalItems + Math.max(Math.round(item.quantity), 0),
+    0
+  );
+
+  window.dispatchEvent(
+    new CustomEvent(CUSTOMER_CART_CHANGED_EVENT, {
+      detail: {
+        customerId: result.customerId,
+        mode: result.mode,
+        itemCount,
+        subtotalInCents: result.cart.subtotalInCents,
+        updatedAtIso: result.cart.updatedAtIso,
+      },
+    })
+  );
+}
+
+function publishAddToCartNotification(params: {
+  customerId: string;
+  title: string;
+  quantity: number;
+}): void {
+  const normalizedCustomerId = params.customerId.trim();
+  if (!normalizedCustomerId) {
+    return;
+  }
+
+  const normalizedTitle = params.title.trim() || "Produto";
+  const quantity = Math.max(1, Math.round(params.quantity));
+  const message = `${normalizedTitle} foi adicionado ao carrinho (${quantity} unidade${
+    quantity > 1 ? "s" : ""
+  }).`;
+
+  void createCustomerNotification({
+    customerId: normalizedCustomerId,
+    title: "Produto adicionado ao carrinho",
+    message,
+    category: "cart",
+    linkHref: "/cart",
+  }).catch(() => {
+    return;
+  });
+
+  void createAdminBroadcastNotification({
+    title: "Interacao no carrinho",
+    message: `Cliente ${normalizedCustomerId} adicionou ${normalizedTitle} ao carrinho.`,
+    category: "cart",
+    actorCustomerId: normalizedCustomerId,
+  }).catch(() => {
+    return;
+  });
+}
+
 function loadGuestCart(): Cart {
   return normalizeCart(readGuestCartFromStorage());
 }
@@ -211,6 +345,11 @@ export async function syncGuestCartToCustomerCart(customerId: string): Promise<C
     const mergedCart = buildCart(normalizedCustomerId, mergedItems);
     await cartRepository.save(mergedCart);
     clearGuestCartStorage();
+    emitCartChanged({
+      cart: mergedCart,
+      mode: "remote",
+      customerId: normalizedCustomerId,
+    });
     return mergedCart;
   } catch (error) {
     if (isPermissionDeniedError(error)) {
@@ -266,12 +405,19 @@ export async function addProductToCart(
       const currentCart = await cartRepository.getActiveCart(customerId);
       const updatedCart = buildCart(customerId, mergeCartItems(currentCart.items, [newItem]));
       await cartRepository.save(updatedCart);
+      publishAddToCartNotification({
+        customerId,
+        title: newItem.title,
+        quantity: newItem.quantity,
+      });
 
-      return {
+      const result: CartOperationResult = {
         cart: updatedCart,
         mode: "remote",
         customerId,
       };
+      emitCartChanged(result);
+      return result;
     } catch (error) {
       console.warn("Remote cart save failed, falling back to local storage:", error);
     }
@@ -282,10 +428,12 @@ export async function addProductToCart(
     buildCart(undefined, mergeCartItems(guestCart.items, [newItem]))
   );
 
-  return {
+  const result: CartOperationResult = {
     cart: updatedGuestCart,
     mode: "local",
   };
+  emitCartChanged(result);
+  return result;
 }
 
 export async function setCartItemQuantity(
@@ -319,11 +467,13 @@ export async function setCartItemQuantity(
       const updatedCart = buildCart(normalizedCustomerId, updatedItems);
       await cartRepository.save(updatedCart);
 
-      return {
+      const result: CartOperationResult = {
         cart: updatedCart,
         mode: "remote",
         customerId: normalizedCustomerId,
       };
+      emitCartChanged(result);
+      return result;
     } catch (error) {
       if (!isPermissionDeniedError(error)) {
         throw error;
@@ -345,10 +495,12 @@ export async function setCartItemQuantity(
     .filter((item) => item.quantity > 0);
 
   const updatedGuestCart = saveGuestCart(buildCart(undefined, updatedItems));
-  return {
+  const result: CartOperationResult = {
     cart: updatedGuestCart,
     mode: "local",
   };
+  emitCartChanged(result);
+  return result;
 }
 
 export async function clearCart(
@@ -358,11 +510,13 @@ export async function clearCart(
   if (normalizedCustomerId) {
     try {
       await cartRepository.clear(normalizedCustomerId);
-      return {
+      const result: CartOperationResult = {
         cart: createEmptyCart(normalizedCustomerId),
         mode: "remote",
         customerId: normalizedCustomerId,
       };
+      emitCartChanged(result);
+      return result;
     } catch (error) {
       if (!isPermissionDeniedError(error)) {
         throw error;
@@ -371,9 +525,153 @@ export async function clearCart(
   }
 
   clearGuestCartStorage();
-  return {
+  const result: CartOperationResult = {
     cart: createEmptyCart(),
     mode: "local",
+  };
+  emitCartChanged(result);
+  return result;
+}
+
+export async function finalizeCustomerCheckout(
+  input: FinalizeCustomerCheckoutInput
+): Promise<FinalizeCustomerCheckoutResult> {
+  const normalizedCustomerId = await resolveAuthCustomerId(input.customerId);
+  if (!normalizedCustomerId) {
+    throw new Error("Faca login para finalizar o pedido.");
+  }
+
+  const cartResult = await loadCustomerOrGuestCart({
+    customerId: normalizedCustomerId,
+    mergeGuestCart: true,
+  });
+  const activeCart = cartResult.cart;
+
+  if (!activeCart.items.length) {
+    throw new Error("Seu carrinho esta vazio.");
+  }
+
+  const shippingInCents = Math.max(
+    Math.round(input.shippingInCents ?? DEFAULT_CHECKOUT_SHIPPING_IN_CENTS),
+    0
+  );
+  const subtotalInCents = Math.max(Math.round(activeCart.subtotalInCents), 0);
+  const totalInCents = subtotalInCents + shippingInCents;
+  const createdAtIso = new Date().toISOString();
+
+  const firestore = getFirestore(getFirebaseApp());
+  const globalOrderRef = doc(collection(firestore, "orders"));
+  const orderId = globalOrderRef.id;
+  const orderCode = createOrderLabel(orderId);
+  const customerOrderRef = doc(
+    firestore,
+    "customers",
+    normalizedCustomerId,
+    "orders",
+    orderId
+  );
+  const status: OrderStatus = "pedido_recebido";
+  const statusLabel = getOrderStatusLabel(status);
+  const statusDescription = getOrderStatusDescription(status);
+  const statusTimeline = createInitialOrderStatusTimeline(createdAtIso);
+  const normalizedItems = activeCart.items.map((item) => ({
+    productId: item.productId,
+    title: item.title,
+    category: item.category || "",
+    imageUrl: item.imageUrl || "",
+    quantity: item.quantity,
+    unitPriceInCents: item.unitPriceInCents,
+  }));
+  const deliveryPayload = {
+    fullName: input.delivery.fullName,
+    phone: input.delivery.phone,
+    zipCode: input.delivery.zipCode,
+    city: input.delivery.city,
+    street: input.delivery.street,
+    number: input.delivery.number,
+    district: input.delivery.district,
+    state: input.delivery.state,
+    complement: input.delivery.complement || "",
+  };
+  const paymentSummaryPayload = {
+    method: "credit_card" as const,
+    cardHolderName: input.payment.cardHolderName,
+    cardLast4: input.payment.cardLast4,
+    expiryMonth: input.payment.expiryMonth,
+    expiryYear: input.payment.expiryYear,
+  };
+
+  const baseOrderPayload = {
+    orderId,
+    orderCode,
+    customerId: normalizedCustomerId,
+    label: orderCode,
+    status,
+    statusLabel,
+    statusDescription,
+    statusTimeline,
+    dateIso: createdAtIso,
+    createdAtIso,
+    updatedAtIso: createdAtIso,
+    subtotalInCents,
+    shippingInCents,
+    totalInCents,
+    total: totalInCents / 100,
+    totalLabel: formatPriceBRL(totalInCents),
+    items: normalizedItems,
+    delivery: deliveryPayload,
+    paymentSummary: paymentSummaryPayload,
+    source: "petpage-checkout",
+  };
+
+  const batch = writeBatch(firestore);
+  batch.set(
+    globalOrderRef,
+    {
+      ...baseOrderPayload,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+  batch.set(
+    customerOrderRef,
+    {
+      ...baseOrderPayload,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+  await batch.commit();
+
+  await clearCart({ customerId: normalizedCustomerId });
+
+  void createCustomerNotification({
+    customerId: normalizedCustomerId,
+    title: "Pedido finalizado",
+    message: `Seu pedido ${orderCode} foi recebido e esta em processamento.`,
+    category: "order",
+    linkHref: "/rastreamento",
+  }).catch(() => {
+    return;
+  });
+
+  void createAdminBroadcastNotification({
+    title: "Novo pedido no checkout",
+    message: `Cliente ${normalizedCustomerId} finalizou o pedido ${orderCode}.`,
+    category: "order",
+    actorCustomerId: normalizedCustomerId,
+  }).catch(() => {
+    return;
+  });
+
+  return {
+    orderId,
+    orderLabel: orderCode,
+    subtotalInCents,
+    shippingInCents,
+    totalInCents,
   };
 }
 

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { Minus, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,8 @@ type CartSummaryProps = {
   customerId?: string;
   isAuthenticated: boolean;
 };
+
+const ITEMS_PER_PAGE = 6;
 
 function CartSkeleton() {
   return (
@@ -33,9 +36,17 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
     useCustomerCart({
       customerId,
     });
+  const [currentPage, setCurrentPage] = useState(1);
 
   const hasItems = cart.items.length > 0;
   const itemsCount = getCartItemsCount(cart);
+  const totalPages = Math.max(Math.ceil(cart.items.length / ITEMS_PER_PAGE), 1);
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const visibleItems = useMemo(
+    () => cart.items.slice(pageStartIndex, pageStartIndex + ITEMS_PER_PAGE),
+    [cart.items, pageStartIndex]
+  );
 
   return (
     <Card className="rounded-[2rem] border border-slate-700/90 bg-[#0f1722] text-slate-100 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.95)]">
@@ -49,6 +60,12 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span>{itemsCount} item(ns)</span>
+          {hasItems ? <span aria-hidden="true">|</span> : null}
+          {hasItems ? (
+            <span>
+              Pagina {safeCurrentPage} de {totalPages}
+            </span>
+          ) : null}
           <span aria-hidden="true">|</span>
           <button
             type="button"
@@ -86,7 +103,7 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
         ) : (
           <>
             <ul className="space-y-3">
-              {cart.items.map((item) => {
+              {visibleItems.map((item) => {
                 const imageUrl = item.imageUrl?.trim() || fallbackProduct.src;
                 const lineTotal = item.unitPriceInCents * item.quantity;
 
@@ -155,6 +172,36 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
                 );
               })}
             </ul>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-700 bg-[#111b2b] px-4 py-3">
+              <p className="text-sm text-slate-300">
+                Exibindo {visibleItems.length} item(ns) nesta pagina
+              </p>
+
+              <div className="inline-flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+                  disabled={safeCurrentPage <= 1}
+                  className="h-9 rounded-full border-slate-600 bg-transparent px-4 text-xs font-semibold text-slate-200 hover:border-slate-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Anterior
+                </Button>
+                <span className="min-w-20 text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  {safeCurrentPage} / {totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+                  disabled={safeCurrentPage >= totalPages}
+                  className="h-9 rounded-full border-slate-600 bg-transparent px-4 text-xs font-semibold text-slate-200 hover:border-slate-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Proxima
+                </Button>
+              </div>
+            </div>
 
             <div className="space-y-4 rounded-2xl border border-slate-700 bg-[#111b2b] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">

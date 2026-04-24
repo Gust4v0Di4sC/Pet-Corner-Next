@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Cart } from "@/domain/cart-checkout/entities/cart";
 import {
+  CUSTOMER_CART_CHANGED_EVENT,
   clearCart,
   loadCustomerOrGuestCart,
   setCartItemQuantity,
@@ -43,10 +44,12 @@ export function useCustomerCart(options: UseCustomerCartOptions = {}) {
     subtotalInCents: 0,
   });
 
-  const reload = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-
+  const loadCart = useCallback(async (config?: { background?: boolean }) => {
+    const isBackground = Boolean(config?.background);
+    if (!isBackground) {
+      setIsLoading(true);
+      setErrorMessage(null);
+    }
     try {
       const result = await loadCustomerOrGuestCart({
         customerId: normalizedCustomerId,
@@ -55,21 +58,41 @@ export function useCustomerCart(options: UseCustomerCartOptions = {}) {
       setCart(result.cart);
       setMode(result.mode);
     } catch (error) {
-      setErrorMessage(mapErrorMessage(error));
+      if (!isBackground) {
+        setErrorMessage(mapErrorMessage(error));
+      }
     } finally {
-      setIsLoading(false);
+      if (!isBackground) {
+        setIsLoading(false);
+      }
     }
   }, [normalizedCustomerId]);
 
+  const reload = useCallback(async () => {
+    await loadCart();
+  }, [loadCart]);
+
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
-      void reload();
+      void loadCart();
     });
 
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [reload]);
+  }, [loadCart]);
+
+  useEffect(() => {
+    const handleCartChanged = () => {
+      void loadCart({ background: true });
+    };
+
+    window.addEventListener(CUSTOMER_CART_CHANGED_EVENT, handleCartChanged);
+
+    return () => {
+      window.removeEventListener(CUSTOMER_CART_CHANGED_EVENT, handleCartChanged);
+    };
+  }, [loadCart]);
 
   const updateQuantity = useCallback(
     async (productId: string, quantity: number) => {
