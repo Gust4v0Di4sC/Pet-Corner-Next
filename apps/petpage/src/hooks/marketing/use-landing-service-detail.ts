@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   getLandingServiceById,
   type LandingServiceView,
@@ -20,44 +21,31 @@ type UseLandingServiceDetailOptions = {
 
 export function useLandingServiceDetail(options: UseLandingServiceDetailOptions) {
   const normalizedServiceId = useMemo(() => options.serviceId.trim(), [options.serviceId]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [service, setService] = useState<LandingServiceView | null>(null);
+  const hasValidServiceId = Boolean(normalizedServiceId);
+
+  const {
+    isLoading,
+    error,
+    data,
+    refetch,
+  } = useQuery({
+    queryKey: ["landing", "service-detail", normalizedServiceId],
+    queryFn: async () => getLandingServiceById(normalizedServiceId),
+    enabled: hasValidServiceId,
+    staleTime: 45_000,
+  });
 
   const reload = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    setNotFound(false);
-
-    if (!normalizedServiceId) {
-      setService(null);
-      setNotFound(true);
-      setIsLoading(false);
+    if (!hasValidServiceId) {
       return;
     }
 
-    try {
-      const serviceData = await getLandingServiceById(normalizedServiceId);
-      setService(serviceData);
-      setNotFound(!serviceData);
-    } catch (error) {
-      setService(null);
-      setErrorMessage(mapErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [normalizedServiceId]);
+    await refetch();
+  }, [hasValidServiceId, refetch]);
 
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      void reload();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [reload]);
+  const service: LandingServiceView | null = data || null;
+  const errorMessage = error ? mapErrorMessage(error) : null;
+  const notFound = !hasValidServiceId || (!isLoading && !errorMessage && !service);
 
   return {
     isLoading,

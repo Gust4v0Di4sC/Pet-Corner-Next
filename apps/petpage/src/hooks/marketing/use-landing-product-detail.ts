@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   getLandingProductById,
   type LandingProductView,
@@ -20,44 +21,31 @@ type UseLandingProductDetailOptions = {
 
 export function useLandingProductDetail(options: UseLandingProductDetailOptions) {
   const normalizedProductId = useMemo(() => options.productId.trim(), [options.productId]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [product, setProduct] = useState<LandingProductView | null>(null);
+  const hasValidProductId = Boolean(normalizedProductId);
+
+  const {
+    isLoading,
+    error,
+    data,
+    refetch,
+  } = useQuery({
+    queryKey: ["landing", "product-detail", normalizedProductId],
+    queryFn: async () => getLandingProductById(normalizedProductId),
+    enabled: hasValidProductId,
+    staleTime: 45_000,
+  });
 
   const reload = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    setNotFound(false);
-
-    if (!normalizedProductId) {
-      setProduct(null);
-      setNotFound(true);
-      setIsLoading(false);
+    if (!hasValidProductId) {
       return;
     }
 
-    try {
-      const productData = await getLandingProductById(normalizedProductId);
-      setProduct(productData);
-      setNotFound(!productData);
-    } catch (error) {
-      setProduct(null);
-      setErrorMessage(mapErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [normalizedProductId]);
+    await refetch();
+  }, [hasValidProductId, refetch]);
 
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      void reload();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [reload]);
+  const product: LandingProductView | null = data || null;
+  const errorMessage = error ? mapErrorMessage(error) : null;
+  const notFound = !hasValidProductId || (!isLoading && !errorMessage && !product);
 
   return {
     isLoading,

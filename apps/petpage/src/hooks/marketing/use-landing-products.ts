@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   listLandingProducts,
   type LandingProductView,
@@ -15,33 +16,23 @@ function mapErrorMessage(error: unknown): string {
 }
 
 export function useLandingProducts() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [products, setProducts] = useState<LandingProductView[]>([]);
+  const {
+    isLoading,
+    error,
+    data,
+    refetch,
+  } = useQuery({
+    queryKey: ["landing", "products"],
+    queryFn: async () => listLandingProducts(),
+    staleTime: 45_000,
+  });
 
   const reload = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
+    await refetch();
+  }, [refetch]);
 
-    try {
-      const allProducts = await listLandingProducts();
-      setProducts(allProducts);
-    } catch (error) {
-      setErrorMessage(mapErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      void reload();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [reload]);
+  const products: LandingProductView[] = data || [];
+  const errorMessage = error ? mapErrorMessage(error) : null;
 
   return {
     isLoading,

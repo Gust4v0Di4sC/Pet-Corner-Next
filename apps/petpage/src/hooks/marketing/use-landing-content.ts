@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   getLandingContentBundle,
   type LandingProductView,
@@ -23,41 +24,27 @@ function mapErrorMessage(error: unknown): string {
 }
 
 export function useLandingContent() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [contentState, setContentState] = useState<LandingContentState>({
-    products: [],
-    services: [],
-    testimonials: [],
+  const {
+    isLoading,
+    error,
+    data,
+    refetch,
+  } = useQuery({
+    queryKey: ["landing", "content-bundle"],
+    queryFn: getLandingContentBundle,
+    staleTime: 45_000,
   });
 
   const reload = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
+    await refetch();
+  }, [refetch]);
 
-    try {
-      const dataBundle = await getLandingContentBundle();
-      setContentState({
-        products: dataBundle.products,
-        services: dataBundle.services,
-        testimonials: dataBundle.testimonials,
-      });
-    } catch (error) {
-      setErrorMessage(mapErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      void reload();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [reload]);
+  const contentState: LandingContentState = data || {
+    products: [],
+    services: [],
+    testimonials: [],
+  };
+  const errorMessage = error ? mapErrorMessage(error) : null;
 
   return {
     isLoading,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   listLandingServices,
   type LandingServiceView,
@@ -15,33 +16,23 @@ function mapErrorMessage(error: unknown): string {
 }
 
 export function useLandingServices() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [services, setServices] = useState<LandingServiceView[]>([]);
+  const {
+    isLoading,
+    error,
+    data,
+    refetch,
+  } = useQuery({
+    queryKey: ["landing", "services"],
+    queryFn: async () => listLandingServices(),
+    staleTime: 45_000,
+  });
 
   const reload = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
+    await refetch();
+  }, [refetch]);
 
-    try {
-      const allServices = await listLandingServices();
-      setServices(allServices);
-    } catch (error) {
-      setErrorMessage(mapErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      void reload();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [reload]);
+  const services: LandingServiceView[] = data || [];
+  const errorMessage = error ? mapErrorMessage(error) : null;
 
   return {
     isLoading,
