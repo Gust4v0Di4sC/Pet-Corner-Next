@@ -3,6 +3,7 @@ import { Montserrat_Alternates, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AosInit } from "@/presentation/shared/components/aos-init";
+import { AppQueryProvider } from "@/presentation/shared/components/app-query-provider";
 import { FloatingSupportActions } from "@/presentation/support/components/floating-support-actions";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -100,9 +101,11 @@ export default function RootLayout({
       <body
         className={`${montserratAlternates.className}  antialiased`}
       >
-        {children}
-        <FloatingSupportActions />
-        <AosInit/>
+        <AppQueryProvider>
+          {children}
+          <FloatingSupportActions />
+          <AosInit/>
+        </AppQueryProvider>
       </body>
     </html>
   );
