@@ -6,6 +6,7 @@ export const ANIMALS_ROUTE = "/caes";
 export const PRODUCTS_ROUTE = "/prods";
 export const SERVICES_ROUTE = "/servicos";
 export const TESTIMONIALS_ROUTE = "/depoimentos";
+export const ORDERS_ROUTE = "/pedidos";
 
 type DashboardDomainMeta = {
   key: DashboardDomainKey;

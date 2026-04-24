@@ -1,12 +1,14 @@
-import { useMemo, useRef, useState } from "react";
+ï»¿import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import RecordDeleteModal from "./RecordDeleteModal";
 import { useToast } from "../../hooks/useToast";
+import { useAuth } from "../../hooks/useAuth";
 import RecordFormModal from "./RecordFormModal";
 import RecordList from "./RecordList";
 import type { RecordFormConfig, RecordFormData, RecordListGroup } from "./record.types";
+import { createAdminNotification } from "../../services/adminNotificationService";
 import "./records.css";
 
 type Props<TRecord extends { id?: string }, TPayload> = {
@@ -58,6 +60,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 }: Props<TRecord, TPayload>) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
@@ -98,6 +101,21 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
   const pendingDeleteRecordLabel = pendingDeleteRecordId
     ? recordItemsById.get(pendingDeleteRecordId) ?? formConfig.entityLabel
     : "";
+
+  const notifyAdminAction = (title: string, message: string) => {
+    if (!user?.uid) {
+      return;
+    }
+
+    void createAdminNotification({
+      title,
+      message,
+      category: "records",
+      source: "petCorner",
+    }).catch(() => {
+      return;
+    });
+  };
 
   const openCreateModal = () => {
     setActiveRecordId(null);
@@ -171,7 +189,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     const selectedRecord = recordsById.get(recordId);
 
     if (!selectedRecord) {
-      toast.warning("Não foi possível localizar o registro.");
+      toast.warning("NÃ£o foi possÃ­vel localizar o registro.");
       return;
     }
 
@@ -182,7 +200,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
 
   const handleDeleteRecord = (recordId: string) => {
     if (!recordsById.has(recordId)) {
-      toast.warning("Não foi possível localizar o registro.");
+      toast.warning("NÃ£o foi possÃ­vel localizar o registro.");
       return;
     }
 
@@ -199,9 +217,13 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     try {
       await onDelete(pendingDeleteRecordId);
       toast.success(formConfig.deleteSuccessMessage);
+      notifyAdminAction(
+        "Registro removido",
+        `${formConfig.entityLabel} ${pendingDeleteRecordLabel || pendingDeleteRecordId} foi removido(a).`
+      );
       setPendingDeleteRecordId(null);
     } catch {
-      toast.warning("Não foi possível excluir o registro agora.");
+      toast.warning("NÃ£o foi possÃ­vel excluir o registro agora.");
     } finally {
       setBusyRecordId(null);
     }
@@ -230,9 +252,17 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
       if (activeRecordId) {
         await onUpdate(activeRecordId, payload);
         toast.success(formConfig.editSuccessMessage);
+        notifyAdminAction(
+          "Registro atualizado",
+          `${formConfig.entityLabel} ${String(formData.name ?? "").trim() || activeRecordId} foi atualizado(a).`
+        );
       } else {
         await onCreate(payload);
         toast.success(formConfig.createSuccessMessage);
+        notifyAdminAction(
+          "Novo registro criado",
+          `${formConfig.entityLabel} ${String(formData.name ?? "").trim() || "sem nome"} foi cadastrado(a).`
+        );
       }
 
       closeFormModal();
@@ -240,7 +270,7 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Não foi possível salvar o registro agora."
+          : "NÃ£o foi possÃ­vel salvar o registro agora."
       );
     } finally {
       setIsSubmitting(false);
@@ -304,3 +334,6 @@ export default function RecordManagementView<TRecord extends { id?: string }, TP
     </section>
   );
 }
+
+
+

@@ -2,15 +2,23 @@ header.header {
   grid-area: header;
   background-color: #fb8b24;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.15rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
   height: 100%;
   min-height: var(--header-height);
   padding: 0.35rem 1.25rem 0.45rem;
   text-align: left;
   box-shadow: var(--shadow);
+}
+
+.header__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .header__title {
@@ -34,6 +42,16 @@ header.header {
   font-size: 0.9rem;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 @media (max-width: 575px) {

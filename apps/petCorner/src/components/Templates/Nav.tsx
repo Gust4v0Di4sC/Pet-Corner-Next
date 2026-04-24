@@ -8,6 +8,7 @@ import {
   ANIMALS_ROUTE,
   CLIENTS_ROUTE,
   DASHBOARD_ROUTE,
+  ORDERS_ROUTE,
   PRODUCTS_ROUTE,
   SERVICES_ROUTE,
   TESTIMONIALS_ROUTE,
@@ -24,6 +25,7 @@ export default function Nav() {
     { to: ANIMALS_ROUTE, icon: "paw", label: "Animais" },
     { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
     { to: SERVICES_ROUTE, icon: "scissors", label: "Servicos" },
+    { to: ORDERS_ROUTE, icon: "shopping-bag", label: "Pedidos" },
     { to: TESTIMONIALS_ROUTE, icon: "comments", label: "Depoimentos" },
   ];
 
