@@ -1,12 +1,52 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return isAuthenticated() && request.auth.token.admin == true;
     }
 
     function isOwner(customerId) {
-      return request.auth != null && request.auth.uid == customerId;
+      return isAuthenticated() && request.auth.uid == customerId;
+    }
+
+    function isValidCustomerToAdminNotificationCreate() {
+      return isAuthenticated()
+        && request.resource.data.source == "petpage"
+        && request.resource.data.actorCustomerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.message is string
+        && request.resource.data.category is string
+        && request.resource.data.createdAtIso is string
+        && request.resource.data.isRead == false;
+    }
+
+    function isValidTopLevelOrderCreate() {
+      return isAuthenticated()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.orderCode is string
+        && request.resource.data.status is string
+        && request.resource.data.createdAtIso is string;
+    }
+
+    function isValidCustomerOrderMirrorCreate(customerId) {
+      return isOwner(customerId)
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.orderCode is string
+        && request.resource.data.status is string
+        && request.resource.data.createdAtIso is string;
+    }
+
+    function isValidDeliveryIssueCreate() {
+      return isAuthenticated()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.message is string
+        && request.resource.data.status is string
+        && request.resource.data.createdAtIso is string
+        && request.resource.data.updatedAtIso is string;
     }
 
     match /clientes/{clientId} {
@@ -38,12 +78,36 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.customerId == request.auth.uid);
+      allow create: if isAdmin() || isValidTopLevelOrderCreate();
+      allow update, delete: if isAdmin();
+    }
+
+    match /deliveryIssues/{issueId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.customerId == request.auth.uid);
+      allow create: if isAdmin() || isValidDeliveryIssueCreate();
+      allow update, delete: if isAdmin();
+    }
+
     match /customers/{customerId} {
       allow read, write: if isAdmin() || isOwner(customerId);
     }
 
+    match /customers/{customerId}/orders/{orderId} {
+      allow read: if isAdmin() || isOwner(customerId);
+      allow create: if isAdmin() || isValidCustomerOrderMirrorCreate(customerId);
+      allow update, delete: if isAdmin();
+    }
+
     match /customers/{customerId}/{document=**} {
-      allow read, write: if isAdmin() || isOwner(customerId);
+      allow read, write: if isAdmin() || (isOwner(customerId) && !document.matches('^orders/.*'));
+    }
+
+    match /adminNotifications/{notificationId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || isValidCustomerToAdminNotificationCreate();
+      allow update, delete: if isAdmin();
     }
 
     match /{document=**} {
