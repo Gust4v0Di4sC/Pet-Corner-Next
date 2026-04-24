@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Cart } from "@/domain/cart-checkout/entities/cart";
 import {
   CUSTOMER_CART_CHANGED_EVENT,
   clearCart,
   loadCustomerOrGuestCart,
   setCartItemQuantity,
+  type CartOperationResult,
   type CartPersistenceMode,
 } from "@/services/cart-checkout/customer-cart.service";
 
@@ -32,59 +34,73 @@ function mapErrorMessage(error: unknown): string {
   return "Nao foi possivel carregar o carrinho agora.";
 }
 
-export function useCustomerCart(options: UseCustomerCartOptions = {}) {
-  const normalizedCustomerId = useMemo(() => options.customerId?.trim(), [options.customerId]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isMutating, setIsMutating] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [mode, setMode] = useState<CartPersistenceMode>("local");
-  const [cart, setCart] = useState<Cart>({
-    customerId: normalizedCustomerId,
+function createEmptyCart(customerId?: string): Cart {
+  return {
+    customerId,
     items: [],
     subtotalInCents: 0,
-  });
+  };
+}
 
-  const loadCart = useCallback(async (config?: { background?: boolean }) => {
-    const isBackground = Boolean(config?.background);
-    if (!isBackground) {
-      setIsLoading(true);
-      setErrorMessage(null);
-    }
-    try {
-      const result = await loadCustomerOrGuestCart({
+export function useCustomerCart(options: UseCustomerCartOptions = {}) {
+  const queryClient = useQueryClient();
+  const normalizedCustomerId = useMemo(() => options.customerId?.trim(), [options.customerId]);
+  const [mutationErrorMessage, setMutationErrorMessage] = useState<string | null>(null);
+
+  const cartQueryKey = useMemo(
+    () => ["customer-cart", normalizedCustomerId || "guest"] as const,
+    [normalizedCustomerId]
+  );
+
+  const {
+    isLoading,
+    data,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: cartQueryKey,
+    queryFn: async () =>
+      loadCustomerOrGuestCart({
         customerId: normalizedCustomerId,
         mergeGuestCart: Boolean(normalizedCustomerId),
-      });
-      setCart(result.cart);
-      setMode(result.mode);
-    } catch (error) {
-      if (!isBackground) {
-        setErrorMessage(mapErrorMessage(error));
-      }
-    } finally {
-      if (!isBackground) {
-        setIsLoading(false);
-      }
-    }
-  }, [normalizedCustomerId]);
+      }),
+    staleTime: 10_000,
+    refetchOnWindowFocus: true,
+  });
 
-  const reload = useCallback(async () => {
-    await loadCart();
-  }, [loadCart]);
+  const updateQuantityMutation = useMutation({
+    mutationFn: async (payload: { productId: string; quantity: number }) =>
+      setCartItemQuantity({
+        productId: payload.productId,
+        quantity: payload.quantity,
+        customerId: normalizedCustomerId,
+      }),
+    onSuccess: (result) => {
+      setMutationErrorMessage(null);
+      queryClient.setQueryData<CartOperationResult>(cartQueryKey, result);
+    },
+    onError: (mutationError) => {
+      setMutationErrorMessage(mapErrorMessage(mutationError));
+    },
+  });
 
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      void loadCart();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [loadCart]);
+  const clearAllMutation = useMutation({
+    mutationFn: async () =>
+      clearCart({
+        customerId: normalizedCustomerId,
+      }),
+    onSuccess: (result) => {
+      setMutationErrorMessage(null);
+      queryClient.setQueryData<CartOperationResult>(cartQueryKey, result);
+    },
+    onError: (mutationError) => {
+      setMutationErrorMessage(mapErrorMessage(mutationError));
+    },
+  });
 
   useEffect(() => {
     const handleCartChanged = () => {
-      void loadCart({ background: true });
+      void queryClient.invalidateQueries({ queryKey: cartQueryKey });
     };
 
     window.addEventListener(CUSTOMER_CART_CHANGED_EVENT, handleCartChanged);
@@ -92,28 +108,22 @@ export function useCustomerCart(options: UseCustomerCartOptions = {}) {
     return () => {
       window.removeEventListener(CUSTOMER_CART_CHANGED_EVENT, handleCartChanged);
     };
-  }, [loadCart]);
+  }, [cartQueryKey, queryClient]);
+
+  const reload = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const updateQuantity = useCallback(
     async (productId: string, quantity: number) => {
-      setIsMutating(true);
-      setErrorMessage(null);
-
+      setMutationErrorMessage(null);
       try {
-        const result = await setCartItemQuantity({
-          productId,
-          quantity,
-          customerId: normalizedCustomerId,
-        });
-        setCart(result.cart);
-        setMode(result.mode);
-      } catch (error) {
-        setErrorMessage(mapErrorMessage(error));
-      } finally {
-        setIsMutating(false);
+        await updateQuantityMutation.mutateAsync({ productId, quantity });
+      } catch {
+        return;
       }
     },
-    [normalizedCustomerId]
+    [updateQuantityMutation]
   );
 
   const removeItem = useCallback(
@@ -124,26 +134,22 @@ export function useCustomerCart(options: UseCustomerCartOptions = {}) {
   );
 
   const clearAll = useCallback(async () => {
-    setIsMutating(true);
-    setErrorMessage(null);
-
+    setMutationErrorMessage(null);
     try {
-      const result = await clearCart({
-        customerId: normalizedCustomerId,
-      });
-      setCart(result.cart);
-      setMode(result.mode);
-    } catch (error) {
-      setErrorMessage(mapErrorMessage(error));
-    } finally {
-      setIsMutating(false);
+      await clearAllMutation.mutateAsync();
+    } catch {
+      return;
     }
-  }, [normalizedCustomerId]);
+  }, [clearAllMutation]);
+
+  const cart = data?.cart || createEmptyCart(normalizedCustomerId);
+  const mode: CartPersistenceMode = data?.mode || "local";
+  const queryErrorMessage = error ? mapErrorMessage(error) : null;
 
   return {
     isLoading,
-    isMutating,
-    errorMessage,
+    isMutating: updateQuantityMutation.isPending || clearAllMutation.isPending,
+    errorMessage: mutationErrorMessage || queryErrorMessage,
     mode,
     cart,
     reload,

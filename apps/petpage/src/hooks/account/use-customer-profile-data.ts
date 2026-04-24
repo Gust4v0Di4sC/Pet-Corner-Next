@@ -1,15 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCustomerProfileDataBundle,
   type CustomerAccountProfile,
-  registerCustomerPet,
-  saveCustomerDeliveryAddress,
   type CustomerDeliveryAddress,
   type CustomerFavorite,
   type CustomerOrder,
   type CustomerPet,
+  type CustomerProfileDataBundle,
+  registerCustomerPet,
+  saveCustomerDeliveryAddress,
 } from "@/services/account/customer-profile.service";
 
 type UseCustomerProfileDataOptions = {
@@ -54,142 +56,137 @@ function mapErrorMessage(error: unknown): string {
   return "Nao foi possivel concluir a operacao agora.";
 }
 
+function createEmptyProfileDataBundle(): CustomerProfileDataBundle {
+  return {
+    profile: null,
+    pets: [],
+    orders: [],
+    favorites: [],
+    address: null,
+  };
+}
+
 export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
-  const isFetchingRef = useRef(false);
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [mutationErrorMessage, setMutationErrorMessage] = useState<string | null>(null);
+  const normalizedCustomerId = options.customerId.trim();
+  const normalizedName = options.name?.trim() || "";
+  const normalizedEmail = options.email.trim();
+  const hasValidCustomerId = Boolean(normalizedCustomerId);
 
-  const [profile, setProfile] = useState<CustomerAccountProfile | null>(null);
-  const [pets, setPets] = useState<CustomerPet[]>([]);
-  const [orders, setOrders] = useState<CustomerOrder[]>([]);
-  const [favorites, setFavorites] = useState<CustomerFavorite[]>([]);
-  const [address, setAddress] = useState<CustomerDeliveryAddress | null>(null);
+  const profileQueryKey = useMemo(
+    () =>
+      [
+        "customer-profile",
+        "bundle",
+        normalizedCustomerId,
+        normalizedName,
+        normalizedEmail,
+      ] as const,
+    [normalizedCustomerId, normalizedEmail, normalizedName]
+  );
 
-  const [isCreatingPet, setIsCreatingPet] = useState(false);
-  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const {
+    data,
+    error,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: profileQueryKey,
+    enabled: hasValidCustomerId,
+    refetchInterval: hasValidCustomerId ? 45_000 : false,
+    refetchOnWindowFocus: true,
+    queryFn: async () =>
+      getCustomerProfileDataBundle({
+        customerId: normalizedCustomerId,
+        name: normalizedName || undefined,
+        email: normalizedEmail,
+      }),
+  });
 
-  const loadData = useCallback(async (config?: { background?: boolean }) => {
-    if (isFetchingRef.current) {
+  const createPetMutation = useMutation({
+    mutationFn: async (input: CreatePetInput) =>
+      registerCustomerPet({
+        customerId: normalizedCustomerId,
+        name: input.name,
+        animalType: input.animalType,
+        breed: input.breed,
+        age: input.age,
+        weight: input.weight,
+      }),
+    onSuccess: (createdPet) => {
+      setMutationErrorMessage(null);
+      queryClient.setQueryData<CustomerProfileDataBundle>(
+        profileQueryKey,
+        (currentData) => {
+          const safeCurrentData = currentData || createEmptyProfileDataBundle();
+          return {
+            ...safeCurrentData,
+            pets: [
+              createdPet,
+              ...safeCurrentData.pets.filter((pet) => pet.id !== createdPet.id),
+            ],
+          };
+        }
+      );
+    },
+    onError: (mutationError) => {
+      setMutationErrorMessage(mapErrorMessage(mutationError));
+    },
+  });
+
+  const saveAddressMutation = useMutation({
+    mutationFn: async (input: SaveAddressInput) =>
+      saveCustomerDeliveryAddress({
+        customerId: normalizedCustomerId,
+        zipCode: input.zipCode,
+        street: input.street,
+        number: input.number,
+        district: input.district,
+        city: input.city,
+        state: input.state,
+        complement: input.complement,
+      }),
+    onSuccess: (savedAddress) => {
+      setMutationErrorMessage(null);
+      queryClient.setQueryData<CustomerProfileDataBundle>(
+        profileQueryKey,
+        (currentData) => {
+          const safeCurrentData = currentData || createEmptyProfileDataBundle();
+          return {
+            ...safeCurrentData,
+            address: savedAddress,
+          };
+        }
+      );
+    },
+    onError: (mutationError) => {
+      setMutationErrorMessage(mapErrorMessage(mutationError));
+    },
+  });
+
+  const reload = useCallback(async () => {
+    if (!hasValidCustomerId) {
       return;
     }
 
-    const isBackground = Boolean(config?.background);
-    isFetchingRef.current = true;
-
-    if (!isBackground) {
-      setLoading(true);
-    }
-
-    try {
-      const dataBundle = await getCustomerProfileDataBundle({
-        customerId: options.customerId,
-        name: options.name,
-        email: options.email,
-      });
-
-      setProfile(dataBundle.profile);
-      setPets(dataBundle.pets);
-      setOrders(dataBundle.orders);
-      setFavorites(dataBundle.favorites);
-      setAddress(dataBundle.address);
-      setErrorMessage(null);
-    } catch (error) {
-      setErrorMessage(mapErrorMessage(error));
-    } finally {
-      if (!isBackground) {
-        setLoading(false);
-      }
-      isFetchingRef.current = false;
-    }
-  }, [options.customerId, options.email, options.name]);
-
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      void loadData();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [loadData]);
-
-  useEffect(() => {
-    const refreshData = () => {
-      void loadData({ background: true });
-    };
-
-    const intervalId = window.setInterval(refreshData, 45000);
-    const handleFocus = () => refreshData();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refreshData();
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [loadData]);
+    await refetch();
+  }, [hasValidCustomerId, refetch]);
 
   const createPet = useCallback(
     async (input: CreatePetInput) => {
-      setErrorMessage(null);
-      setIsCreatingPet(true);
-
-      try {
-        const createdPet = await registerCustomerPet({
-          customerId: options.customerId,
-          name: input.name,
-          animalType: input.animalType,
-          breed: input.breed,
-          age: input.age,
-          weight: input.weight,
-        });
-
-        setPets((currentPets) => [createdPet, ...currentPets]);
-        return createdPet;
-      } catch (error) {
-        setErrorMessage(mapErrorMessage(error));
-        throw error;
-      } finally {
-        setIsCreatingPet(false);
-      }
+      setMutationErrorMessage(null);
+      return createPetMutation.mutateAsync(input);
     },
-    [options.customerId]
+    [createPetMutation]
   );
 
   const saveAddress = useCallback(
     async (input: SaveAddressInput) => {
-      setErrorMessage(null);
-      setIsSavingAddress(true);
-
-      try {
-        const savedAddress = await saveCustomerDeliveryAddress({
-          customerId: options.customerId,
-          zipCode: input.zipCode,
-          street: input.street,
-          number: input.number,
-          district: input.district,
-          city: input.city,
-          state: input.state,
-          complement: input.complement,
-        });
-
-        setAddress(savedAddress);
-        return savedAddress;
-      } catch (error) {
-        setErrorMessage(mapErrorMessage(error));
-        throw error;
-      } finally {
-        setIsSavingAddress(false);
-      }
+      setMutationErrorMessage(null);
+      return saveAddressMutation.mutateAsync(input);
     },
-    [options.customerId]
+    [saveAddressMutation]
   );
 
   const setProfileImageUrl = useCallback(
@@ -199,30 +196,46 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
         return;
       }
 
-      setProfile((currentProfile) => ({
-        customerId: currentProfile?.customerId || options.customerId,
-        name: currentProfile?.name || options.name?.trim() || "Cliente Pet Corner",
-        email: currentProfile?.email || options.email,
-        updatedAtIso: new Date().toISOString(),
-        profileImageUrl: normalizedImageUrl,
-      }));
+      queryClient.setQueryData<CustomerProfileDataBundle>(
+        profileQueryKey,
+        (currentData) => {
+          const safeCurrentData = currentData || createEmptyProfileDataBundle();
+          const currentProfile = safeCurrentData.profile;
+
+          return {
+            ...safeCurrentData,
+            profile: {
+              customerId: currentProfile?.customerId || normalizedCustomerId,
+              name: currentProfile?.name || normalizedName || "Cliente Pet Corner",
+              email: currentProfile?.email || normalizedEmail,
+              updatedAtIso: new Date().toISOString(),
+              profileImageUrl: normalizedImageUrl,
+            },
+          };
+        }
+      );
     },
-    [options.customerId, options.email, options.name]
+    [normalizedCustomerId, normalizedEmail, normalizedName, profileQueryKey, queryClient]
   );
 
+  const safeData = data || createEmptyProfileDataBundle();
+  const queryErrorMessage = error ? mapErrorMessage(error) : null;
+  const errorMessage = mutationErrorMessage || queryErrorMessage;
+
   return {
-    loading,
+    loading: hasValidCustomerId ? isLoading : false,
     errorMessage,
-    profile,
-    pets,
-    orders,
-    favorites,
-    address,
-    isCreatingPet,
-    isSavingAddress,
+    profile: safeData.profile as CustomerAccountProfile | null,
+    pets: safeData.pets as CustomerPet[],
+    orders: safeData.orders as CustomerOrder[],
+    favorites: safeData.favorites as CustomerFavorite[],
+    address: safeData.address as CustomerDeliveryAddress | null,
+    isCreatingPet: createPetMutation.isPending,
+    isSavingAddress: saveAddressMutation.isPending,
     setProfileImageUrl,
     createPet,
     saveAddress,
-    reload: loadData,
+    reload,
   };
 }
+

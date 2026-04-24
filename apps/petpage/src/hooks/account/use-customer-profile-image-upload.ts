@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   saveCustomerProfileImage,
   type CustomerProfileImageAsset,
@@ -20,34 +21,27 @@ function mapUploadErrorMessage(error: unknown): string {
 }
 
 export function useCustomerProfileImageUpload() {
-  const [isUploading, setIsUploading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const uploadMutation = useMutation({
+    mutationFn: async (input: UploadCustomerProfileImageInput): Promise<CustomerProfileImageAsset> =>
+      saveCustomerProfileImage(input),
+  });
 
   const clearError = useCallback(() => {
-    setErrorMessage(null);
-  }, []);
+    uploadMutation.reset();
+  }, [uploadMutation]);
 
   const uploadProfileImage = useCallback(
     async (input: UploadCustomerProfileImageInput): Promise<CustomerProfileImageAsset> => {
-      setErrorMessage(null);
-      setIsUploading(true);
-
-      try {
-        return await saveCustomerProfileImage(input);
-      } catch (error) {
-        setErrorMessage(mapUploadErrorMessage(error));
-        throw error;
-      } finally {
-        setIsUploading(false);
-      }
+      return uploadMutation.mutateAsync(input);
     },
-    []
+    [uploadMutation]
   );
 
   return {
-    isUploading,
-    errorMessage,
+    isUploading: uploadMutation.isPending,
+    errorMessage: uploadMutation.error ? mapUploadErrorMessage(uploadMutation.error) : null,
     clearError,
     uploadProfileImage,
   };
 }
+

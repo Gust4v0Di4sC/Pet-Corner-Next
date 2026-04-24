@@ -1,12 +1,18 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   queryCustomerDeliveryChat,
   type CustomerDeliveryChatResponse,
 } from "@/services/support/customer-delivery-chat.service";
 
 type ChatRole = "user" | "assistant";
+
+type SendDeliveryChatInput = {
+  text: string;
+  orderCode?: string;
+};
 
 export type CustomerDeliveryChatMessage = {
   id: string;
@@ -28,7 +34,6 @@ function makeInitialAssistantMessage(): CustomerDeliveryChatMessage {
 }
 
 export function useCustomerDeliveryChat() {
-  const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState<CustomerDeliveryChatMessage[]>([
     makeInitialAssistantMessage(),
   ]);
@@ -39,29 +44,14 @@ export function useCustomerDeliveryChat() {
     [reactId]
   );
 
-  const sendMessage = async (text: string, orderCode?: string) => {
-    const trimmedText = text.trim();
-    if (!trimmedText || isSending) {
-      return;
-    }
-
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        id: createMessageId(),
-        role: "user",
-        text: trimmedText,
-      },
-    ]);
-    setIsSending(true);
-
-    try {
-      const response = await queryCustomerDeliveryChat({
-        message: trimmedText,
+  const sendMessageMutation = useMutation({
+    mutationFn: async (input: SendDeliveryChatInput) =>
+      queryCustomerDeliveryChat({
+        message: input.text,
         sessionId,
-        orderCode,
-      });
-
+        orderCode: input.orderCode,
+      }),
+    onSuccess: (response) => {
       setMessages((currentMessages) => [
         ...currentMessages,
         {
@@ -76,7 +66,8 @@ export function useCustomerDeliveryChat() {
           },
         },
       ]);
-    } catch (error) {
+    },
+    onError: (error) => {
       const message =
         error instanceof Error && error.message.trim()
           ? error.message
@@ -90,8 +81,31 @@ export function useCustomerDeliveryChat() {
           text: message,
         },
       ]);
-    } finally {
-      setIsSending(false);
+    },
+  });
+
+  const sendMessage = async (text: string, orderCode?: string) => {
+    const trimmedText = text.trim();
+    if (!trimmedText || sendMessageMutation.isPending) {
+      return;
+    }
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        id: createMessageId(),
+        role: "user",
+        text: trimmedText,
+      },
+    ]);
+
+    try {
+      await sendMessageMutation.mutateAsync({
+        text: trimmedText,
+        orderCode,
+      });
+    } catch {
+      return;
     }
   };
 
@@ -100,7 +114,7 @@ export function useCustomerDeliveryChat() {
   };
 
   return {
-    isSending,
+    isSending: sendMessageMutation.isPending,
     messages,
     sendMessage,
     resetConversation,

@@ -215,6 +215,26 @@ export function subscribeCustomerNotifications(
   );
 }
 
+export async function listCustomerNotifications(customerId: string): Promise<CustomerNotification[]> {
+  const normalizedCustomerId = normalizeCustomerId(customerId);
+  if (!normalizedCustomerId) {
+    return [];
+  }
+
+  const notificationsQuery = query(
+    customerNotificationsCollectionRef(normalizedCustomerId),
+    orderBy("createdAt", "desc"),
+    limit(30)
+  );
+  const snapshot = await getDocs(notificationsQuery);
+
+  return snapshot.docs
+    .map((documentSnapshot) =>
+      mapCustomerNotificationRecord(documentSnapshot.id, documentSnapshot.data())
+    )
+    .filter((notification): notification is CustomerNotification => notification !== null);
+}
+
 export async function markCustomerNotificationAsRead(
   customerId: string,
   notificationId: string
