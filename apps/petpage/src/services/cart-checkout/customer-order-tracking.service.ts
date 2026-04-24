@@ -47,6 +47,10 @@ function normalizeOrderStatus(value: unknown): OrderStatus {
   return isOrderStatus(value) ? value : "pedido_recebido";
 }
 
+function normalizePaymentMethod(value: unknown): "credit_card" | "stripe" {
+  return toStringValue(value).trim() === "stripe" ? "stripe" : "credit_card";
+}
+
 function toIsoString(value: unknown): string | null {
   if (typeof value === "string" && Number.isFinite(Date.parse(value))) {
     return new Date(value).toISOString();
@@ -171,6 +175,7 @@ function mapOrderDocument(
     payload.paymentSummary && typeof payload.paymentSummary === "object"
       ? (payload.paymentSummary as Record<string, unknown>)
       : {};
+  const paymentMethod = normalizePaymentMethod(paymentSummaryRecord.method);
 
   const createdAtIso =
     toIsoString(payload.createdAtIso) ||
@@ -207,12 +212,30 @@ function mapOrderDocument(
       complement: toStringValue(deliveryRecord.complement).trim(),
     },
     paymentSummary: {
-      method: "credit_card",
+      method: paymentMethod,
       cardHolderName: toStringValue(paymentSummaryRecord.cardHolderName).trim(),
       cardLast4: toStringValue(paymentSummaryRecord.cardLast4).trim(),
       expiryMonth: Math.max(Math.round(toNumberValue(paymentSummaryRecord.expiryMonth, 0)), 0),
       expiryYear: Math.max(Math.round(toNumberValue(paymentSummaryRecord.expiryYear, 0)), 0),
+      provider: paymentMethod === "stripe" ? "stripe" : undefined,
+      checkoutSessionId: toStringValue(paymentSummaryRecord.checkoutSessionId).trim(),
+      paymentIntentId: toStringValue(paymentSummaryRecord.paymentIntentId).trim(),
+      paymentStatus: toStringValue(paymentSummaryRecord.paymentStatus).trim(),
     },
+    stripe:
+      payload.stripe && typeof payload.stripe === "object"
+        ? {
+            checkoutSessionId: toStringValue(
+              (payload.stripe as Record<string, unknown>).checkoutSessionId
+            ).trim(),
+            paymentIntentId: toStringValue(
+              (payload.stripe as Record<string, unknown>).paymentIntentId
+            ).trim(),
+            paymentStatus: toStringValue(
+              (payload.stripe as Record<string, unknown>).paymentStatus
+            ).trim(),
+          }
+        : undefined,
     createdAtIso,
     updatedAtIso,
   };

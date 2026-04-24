@@ -9,10 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import fallbackProduct from "@/assets/fallbackproduct.png";
 import { useCustomerCart } from "@/hooks/cart-checkout/use-customer-cart";
 import { saveCustomerDeliveryAddress } from "@/services/account/customer-profile.service";
-import {
-  finalizeCustomerCheckout,
-  getCartItemsCount,
-} from "@/services/cart-checkout/customer-cart.service";
+import { getCartItemsCount } from "@/services/cart-checkout/customer-cart.service";
 import { formatPriceBRL } from "@/utils/catalog/price";
 import {
   applyZipCodeMask,
@@ -22,7 +19,6 @@ import {
 } from "@/utils/validation/input-sanitizers";
 import {
   checkoutDeliveryStepSchema,
-  checkoutPaymentStepSchema,
 } from "@/validation/checkout-schemas";
 
 type CheckoutFormProps = {
@@ -45,13 +41,6 @@ type DeliveryFormState = {
   complement: string;
 };
 
-type PaymentFormState = {
-  cardNumber: string;
-  cardHolderName: string;
-  cardExpiry: string;
-  cvv: string;
-};
-
 const DELIVERY_FEE_IN_CENTS = 1490;
 
 function fieldLabelClassName() {
@@ -64,6 +53,14 @@ function fieldInputClassName() {
 
 function stepLabelClassName(isActive: boolean) {
   return isActive ? "text-amber-50" : "text-amber-100/65";
+}
+
+function isPermissionDeniedError(error: unknown): boolean {
+  if (error && typeof error === "object" && (error as { code?: unknown }).code === "permission-denied") {
+    return true;
+  }
+
+  return error instanceof Error && error.message.toLowerCase().includes("permission");
 }
 
 function formatPhoneMask(value: string): string {
@@ -83,26 +80,10 @@ function formatPhoneMask(value: string): string {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
-function formatCardNumberMask(value: string): string {
-  const digits = digitsOnly(value).slice(0, 16);
-  if (!digits) {
-    return "";
-  }
-  return digits.match(/.{1,4}/g)?.join(" ") || digits;
-}
-
-function formatCardExpiryMask(value: string): string {
-  const digits = digitsOnly(value).slice(0, 4);
-  if (digits.length <= 2) {
-    return digits;
-  }
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-}
-
 export function CheckoutForm({ customerId, customerName, customerEmail }: CheckoutFormProps) {
   const [activeStep, setActiveStep] = useState<CheckoutStep>("delivery");
   const [isSavingDelivery, setIsSavingDelivery] = useState(false);
-  const [isFinalizingOrder, setIsFinalizingOrder] = useState(false);
+  const [isCreatingStripeSession, setIsCreatingStripeSession] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -116,13 +97,6 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
     district: "",
     state: "",
     complement: "",
-  });
-
-  const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
-    cardNumber: "",
-    cardHolderName: customerName?.trim() || "",
-    cardExpiry: "",
-    cvv: "",
   });
 
   const { isLoading, errorMessage: cartErrorMessage, cart } = useCustomerCart({
@@ -154,24 +128,6 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
     }));
   };
 
-  const handlePaymentInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-
-    const nextValue =
-      name === "cardNumber"
-        ? formatCardNumberMask(value)
-        : name === "cardExpiry"
-          ? formatCardExpiryMask(value)
-          : name === "cvv"
-            ? digitsOnly(value).slice(0, 4)
-            : value;
-
-    setPaymentForm((currentValue) => ({
-      ...currentValue,
-      [name]: nextValue,
-    }));
-  };
-
   const handleContinueToPayment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -188,19 +144,25 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
     setIsSavingDelivery(true);
 
     try {
-      await saveCustomerDeliveryAddress({
-        customerId,
-        zipCode: parsedDelivery.data.zipCode,
-        street: parsedDelivery.data.street,
-        number: parsedDelivery.data.number,
-        district: parsedDelivery.data.district,
-        city: parsedDelivery.data.city,
-        state: parsedDelivery.data.state,
-        complement: parsedDelivery.data.complement,
-      });
+      try {
+        await saveCustomerDeliveryAddress({
+          customerId,
+          zipCode: parsedDelivery.data.zipCode,
+          street: parsedDelivery.data.street,
+          number: parsedDelivery.data.number,
+          district: parsedDelivery.data.district,
+          city: parsedDelivery.data.city,
+          state: parsedDelivery.data.state,
+          complement: parsedDelivery.data.complement,
+        });
+      } catch (error) {
+        if (!isPermissionDeniedError(error)) {
+          throw error;
+        }
+      }
 
       setActiveStep("payment");
-      setSuccessMessage("Endereco validado e salvo. Agora informe o pagamento.");
+      setSuccessMessage("Endereco validado e salvo. Confira o resumo antes de pagar.");
     } catch (error) {
       const message =
         error instanceof Error && error.message
@@ -212,7 +174,7 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
     }
   };
 
-  const handleFinalizeOrder = async (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateStripeCheckoutSession = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -231,44 +193,43 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
       return;
     }
 
-    const parsedPayment = checkoutPaymentStepSchema.safeParse(paymentForm);
-    if (!parsedPayment.success) {
-      setErrorMessage(
-        getFirstZodErrorMessage(parsedPayment.error, "Confira os dados de pagamento.")
-      );
-      return;
-    }
-
-    setIsFinalizingOrder(true);
+    setIsCreatingStripeSession(true);
 
     try {
-      const checkoutResult = await finalizeCustomerCheckout({
-        customerId,
-        delivery: parsedDelivery.data,
-        payment: {
-          cardHolderName: parsedPayment.data.cardHolderName,
-          cardLast4: parsedPayment.data.cardLast4,
-          expiryMonth: parsedPayment.data.expiryMonth,
-          expiryYear: parsedPayment.data.expiryYear,
+      const response = await fetch("/api/stripe/checkout/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        shippingInCents,
+        body: JSON.stringify({
+          delivery: parsedDelivery.data,
+          cart: {
+            items: cart.items.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+            })),
+          },
+        }),
       });
+      const result = (await response.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
 
-      setSuccessMessage(
-        `Pedido ${checkoutResult.orderLabel} finalizado com sucesso. Acompanhe em Rastreamento.`
-      );
-      setPaymentForm((currentValue) => ({
-        ...currentValue,
-        cvv: "",
-      }));
+      if (!response.ok || !result.url) {
+        throw new Error(result.error || "Nao foi possivel iniciar o checkout Stripe.");
+      }
+
+      setSuccessMessage("Redirecionando para o Stripe Checkout.");
+      window.location.assign(result.url);
     } catch (error) {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel finalizar o pedido agora.";
+          : "Nao foi possivel iniciar o checkout Stripe.";
       setErrorMessage(message);
     } finally {
-      setIsFinalizingOrder(false);
+      setIsCreatingStripeSession(false);
     }
   };
 
@@ -316,7 +277,7 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
             <p className="text-sm text-slate-300">
               {activeStep === "delivery"
                 ? "Preencha os dados para envio do pedido."
-                : "Pagamento com cartao para demonstracao do fluxo."}
+                : "Confira o pedido e siga para o Checkout seguro do Stripe."}
             </p>
           </CardHeader>
 
@@ -485,68 +446,41 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
                 </div>
               </form>
             ) : (
-              <form className="space-y-5" onSubmit={(event) => void handleFinalizeOrder(event)}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <label htmlFor="payment-cardNumber" className={fieldLabelClassName()}>
-                      Numero do cartao
-                    </label>
-                    <input
-                      id="payment-cardNumber"
-                      name="cardNumber"
-                      value={paymentForm.cardNumber}
-                      onChange={handlePaymentInputChange}
-                      className={fieldInputClassName()}
-                      placeholder="0000 0000 0000 0000"
-                    />
+              <form
+                className="space-y-5"
+                onSubmit={(event) => void handleCreateStripeCheckoutSession(event)}
+              >
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-700 bg-[#111b2b] p-4">
+                    <p className="text-sm font-semibold text-slate-100">Entrega</p>
+                    <p className="mt-2 text-sm text-slate-300">
+                      {deliveryForm.fullName}
+                      <br />
+                      {deliveryForm.street}, {deliveryForm.number} - {deliveryForm.district}
+                      <br />
+                      {deliveryForm.city}/{deliveryForm.state} - {deliveryForm.zipCode}
+                    </p>
                   </div>
 
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <label htmlFor="payment-cardHolderName" className={fieldLabelClassName()}>
-                      Nome impresso
-                    </label>
-                    <input
-                      id="payment-cardHolderName"
-                      name="cardHolderName"
-                      value={paymentForm.cardHolderName}
-                      onChange={handlePaymentInputChange}
-                      className={fieldInputClassName()}
-                      placeholder="Nome no cartao"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label htmlFor="payment-cardExpiry" className={fieldLabelClassName()}>
-                      Validade
-                    </label>
-                    <input
-                      id="payment-cardExpiry"
-                      name="cardExpiry"
-                      value={paymentForm.cardExpiry}
-                      onChange={handlePaymentInputChange}
-                      className={fieldInputClassName()}
-                      placeholder="MM/AA"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label htmlFor="payment-cvv" className={fieldLabelClassName()}>
-                      CVV
-                    </label>
-                    <input
-                      id="payment-cvv"
-                      name="cvv"
-                      value={paymentForm.cvv}
-                      onChange={handlePaymentInputChange}
-                      className={fieldInputClassName()}
-                      placeholder="123"
-                    />
+                  <div className="rounded-2xl border border-slate-700 bg-[#111b2b] p-4">
+                    <p className="text-sm font-semibold text-slate-100">Pagamento</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-200">
+                        Cartao
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-200">
+                        Pix
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-slate-300">
+                      O pagamento sera concluido no ambiente hospedado do Stripe.
+                    </p>
                   </div>
                 </div>
 
                 <p className="inline-flex items-center gap-2 text-sm text-amber-100/70">
                   <Lock className="h-4 w-4" />
-                  Pagamento simulado para demonstracao.
+                  Pedido criado somente apos confirmacao de pagamento pelo Stripe.
                 </p>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
@@ -561,10 +495,10 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
 
                   <Button
                     type="submit"
-                    disabled={isFinalizingOrder || isLoading || !hasItems}
+                    disabled={isCreatingStripeSession || isLoading || !hasItems}
                     className="h-11 rounded-full bg-[#d97706] px-6 text-base font-semibold text-white hover:bg-[#c86f0a] disabled:opacity-60"
                   >
-                    {isFinalizingOrder ? "Finalizando..." : "Finalizar pedido"}
+                    {isCreatingStripeSession ? "Abrindo Stripe..." : "Pagar com Stripe"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>

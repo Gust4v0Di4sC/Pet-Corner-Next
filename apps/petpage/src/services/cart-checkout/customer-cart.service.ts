@@ -374,6 +374,13 @@ export async function loadCustomerOrGuestCart(
     const cart = options.mergeGuestCart
       ? await syncGuestCartToCustomerCart(normalizedCustomerId)
       : await cartRepository.getActiveCart(normalizedCustomerId);
+    const guestCart = loadGuestCart();
+    if (!options.mergeGuestCart && !cart.items.length && guestCart.items.length) {
+      return {
+        cart: guestCart,
+        mode: "local",
+      };
+    }
     const isRemoteCart =
       cart.customerId?.trim().toLowerCase() === normalizedCustomerId.toLowerCase();
 

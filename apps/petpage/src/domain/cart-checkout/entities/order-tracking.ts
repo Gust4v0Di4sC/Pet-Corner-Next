@@ -49,11 +49,20 @@ export type CustomerOrderTrackingView = {
     complement: string;
   };
   paymentSummary: {
-    method: "credit_card";
-    cardHolderName: string;
-    cardLast4: string;
-    expiryMonth: number;
-    expiryYear: number;
+    method: "credit_card" | "stripe";
+    cardHolderName?: string;
+    cardLast4?: string;
+    expiryMonth?: number;
+    expiryYear?: number;
+    provider?: "stripe";
+    checkoutSessionId?: string;
+    paymentIntentId?: string;
+    paymentStatus?: string;
+  };
+  stripe?: {
+    checkoutSessionId: string;
+    paymentIntentId: string;
+    paymentStatus: string;
   };
   createdAtIso: string;
   updatedAtIso: string;
