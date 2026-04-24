@@ -5,11 +5,15 @@ Este Worker guarda segredos fora do frontend e disponibiliza:
 - `POST /cosmos/sync` para sincronizar produtos da Cosmos.
 - `POST /cosmos/product-image` para buscar imagem de um produto por codigo/GTIN.
 - `POST /chat/query` para consultas de dados com Gemini + Firestore.
+- `POST /customer/chat/delivery` para suporte de rastreamento/entrega para clientes.
 - `POST /products/image/upload` para upload de imagem de produto (multipart).
+- `POST /profile/image/upload` para upload da foto de perfil do cliente (multipart).
 - `POST /products/image/import-url` para importar imagem remota (ex.: Cosmos) para o R2.
 - `GET /products/image/:key` para servir imagens salvas no R2.
 
-Todos os endpoints exigem usuario autenticado no Firebase com claim `admin == true`.
+Endpoints administrativos (`/cosmos/*`, `/chat/query`, `/products/image/*`) exigem claim
+`admin == true`. O endpoint `/profile/image/upload` exige apenas usuario autenticado.
+O endpoint `/customer/chat/delivery` aceita usuario autenticado (cliente), sem claim admin.
 
 ## Configurar
 
@@ -46,6 +50,23 @@ VITE_CHAT_WORKER_URL=https://petcorner-cosmos-sync.<seu-subdominio>.workers.dev
 {
   "imageUrl": "https://.../products/image/products/admin/racao-....jpg",
   "key": "products/admin/racao-....jpg",
+  "contentType": "image/jpeg",
+  "size": 123456,
+  "source": "upload"
+}
+```
+
+### Upload da foto de perfil
+
+- Endpoint: `POST /profile/image/upload`
+- Headers: `Authorization: Bearer <firebase-id-token>`
+- Body: `multipart/form-data` com `file`
+- Resposta:
+
+```json
+{
+  "imageUrl": "https://.../products/image/profileimages/uid/avatar-....jpg",
+  "key": "profileimages/uid/avatar-....jpg",
   "contentType": "image/jpeg",
   "size": 123456,
   "source": "upload"

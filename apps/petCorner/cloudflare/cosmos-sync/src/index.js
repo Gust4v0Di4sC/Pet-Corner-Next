@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
+﻿import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const COSMOS_API_BASE_URL = "https://api.cosmos.bluesoft.com.br";
 const COSMOS_SOURCE_FILE_NAME = "Cosmos API";
@@ -6,6 +6,7 @@ const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
 const DEFAULT_PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const PRODUCT_IMAGE_KEY_PREFIX = "products";
+const PROFILE_IMAGE_KEY_PREFIX = "profileimages";
 const PRODUCT_IMAGE_ROUTE_PREFIX = "/products/image";
 const FIREBASE_JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
@@ -140,6 +141,14 @@ const CHAT_RATE_LIMIT_STORE = new Map();
 const CHAT_ALLOWED_ACTIONS = new Set(["count", "list", "sum", "avg"]);
 const CHAT_ALLOWED_OPERATORS = new Set(["eq", "contains", "gt", "gte", "lt", "lte"]);
 const DEFAULT_CHAT_LIMIT = 5;
+const CUSTOMER_DELIVERY_STATUS_LABELS = {
+  pedido_recebido: "Pedido recebido",
+  em_preparacao: "Em preparacao",
+  em_transporte: "Em transporte",
+  entregue: "Entregue",
+  problema_entrega: "Problema na entrega",
+  cancelado: "Cancelado",
+};
 
 class HttpError extends Error {
   constructor(status, message, options = {}) {
@@ -286,7 +295,18 @@ function getBearerToken(request) {
   return token;
 }
 
-async function verifyAdminFirebaseToken(token, env) {
+function getOptionalBearerToken(request) {
+  const authorization = request.headers.get("Authorization") ?? "";
+  const [scheme, token] = authorization.split(" ");
+
+  if (scheme !== "Bearer" || !token) {
+    return null;
+  }
+
+  return token;
+}
+
+async function verifyFirebaseToken(token, env) {
   if (!env.FIREBASE_PROJECT_ID) {
     throw new HttpError(500, "A variavel FIREBASE_PROJECT_ID nao foi configurada no Worker.");
   }
@@ -298,10 +318,6 @@ async function verifyAdminFirebaseToken(token, env) {
     });
     const payload = verifiedToken.payload;
 
-    if (payload.admin !== true) {
-      throw new HttpError(403, "Acesso restrito a administradores.");
-    }
-
     return payload;
   } catch (error) {
     if (error instanceof HttpError) {
@@ -310,6 +326,16 @@ async function verifyAdminFirebaseToken(token, env) {
 
     throw new HttpError(401, "Token Firebase invalido ou expirado.");
   }
+}
+
+async function verifyAdminFirebaseToken(token, env) {
+  const payload = await verifyFirebaseToken(token, env);
+
+  if (payload.admin !== true) {
+    throw new HttpError(403, "Acesso restrito a administradores.");
+  }
+
+  return payload;
 }
 
 function normalizeCatalogCode(code) {
@@ -560,6 +586,14 @@ function createProductImageKey({ userId, codeHint, extension }) {
   return `${PRODUCT_IMAGE_KEY_PREFIX}/${safeUserSegment}/${safeCodeSegment}-${timestamp}-${randomSegment}.${extension}`;
 }
 
+function createProfileImageKey({ userId, extension }) {
+  const safeUserSegment = slugifyPathSegment(userId, "cliente");
+  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
+  const randomSegment = crypto.randomUUID().slice(0, 8);
+
+  return `${PROFILE_IMAGE_KEY_PREFIX}/${safeUserSegment}/avatar-${timestamp}-${randomSegment}.${extension}`;
+}
+
 function getProductImageRouteUrl(request, key) {
   const requestUrl = new URL(request.url);
   const encodedKey = encodePathSegments(key);
@@ -567,6 +601,18 @@ function getProductImageRouteUrl(request, key) {
 }
 
 function buildProductImageUrl(request, env, key) {
+  const publicBaseUrl = String(env.PRODUCT_IMAGES_PUBLIC_BASE_URL ?? "").trim();
+
+  if (publicBaseUrl) {
+    const normalizedPublicBaseUrl = publicBaseUrl.replace(/\/+$/, "");
+    const encodedKey = encodePathSegments(key);
+    return `${normalizedPublicBaseUrl}/${encodedKey}`;
+  }
+
+  return getProductImageRouteUrl(request, key);
+}
+
+function buildProfileImageUrl(request, env, key) {
   const publicBaseUrl = String(env.PRODUCT_IMAGES_PUBLIC_BASE_URL ?? "").trim();
 
   if (publicBaseUrl) {
@@ -819,7 +865,7 @@ function createFallbackIntent(question) {
     return { action: "avg", collection };
   }
 
-  if (/\b(soma|somatorio|somat[oó]rio|total de)\b/i.test(question)) {
+  if (/\b(soma|somatorio|somat[oÃ³]rio|total de)\b/i.test(question)) {
     return { action: "sum", collection };
   }
 
@@ -1379,6 +1425,258 @@ async function fetchCollectionDocuments(collection, idToken, env, chatConfig) {
   };
 }
 
+function encodeFirestoreValue(value) {
+  if (value === null || value === undefined) {
+    return { nullValue: null };
+  }
+
+  if (typeof value === "string") {
+    return { stringValue: value };
+  }
+
+  if (typeof value === "boolean") {
+    return { booleanValue: value };
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return { nullValue: null };
+    }
+
+    if (Number.isInteger(value)) {
+      return { integerValue: String(value) };
+    }
+
+    return { doubleValue: value };
+  }
+
+  if (value instanceof Date) {
+    return { timestampValue: value.toISOString() };
+  }
+
+  if (Array.isArray(value)) {
+    return {
+      arrayValue: {
+        values: value.map((item) => encodeFirestoreValue(item)),
+      },
+    };
+  }
+
+  if (typeof value === "object") {
+    return {
+      mapValue: {
+        fields: encodeFirestoreFields(value),
+      },
+    };
+  }
+
+  return { stringValue: String(value) };
+}
+
+function encodeFirestoreFields(payload) {
+  const fields = {};
+
+  Object.entries(payload || {}).forEach(([fieldName, fieldValue]) => {
+    fields[fieldName] = encodeFirestoreValue(fieldValue);
+  });
+
+  return fields;
+}
+
+async function createFirestoreDocument({ env, idToken, collectionPath, payload }) {
+  if (!env.FIREBASE_PROJECT_ID) {
+    throw new HttpError(500, "A variavel FIREBASE_PROJECT_ID nao foi configurada no Worker.");
+  }
+
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionPath}`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fields: encodeFirestoreFields(payload),
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new HttpError(
+      response.status >= 400 && response.status < 500 ? response.status : 500,
+      `Falha ao persistir dados no Firestore. ${text}`.trim()
+    );
+  }
+
+  const createdPayload = await response.json();
+  return decodeFirestoreDocument(createdPayload);
+}
+
+async function fetchCustomerOrdersForDeliveryChat(customerId, idToken, env) {
+  if (!env.FIREBASE_PROJECT_ID) {
+    throw new HttpError(500, "A variavel FIREBASE_PROJECT_ID nao foi configurada no Worker.");
+  }
+
+  const endpointBase = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/customers/${encodeURIComponent(customerId)}/orders`;
+  const records = [];
+  let nextPageToken = "";
+
+  while (records.length < 60) {
+    const endpoint = new URL(endpointBase);
+    endpoint.searchParams.set("pageSize", String(Math.min(20, 60 - records.length)));
+
+    if (nextPageToken) {
+      endpoint.searchParams.set("pageToken", nextPageToken);
+    }
+
+    const response = await fetch(endpoint.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpError(401, "Sem permissao para consultar os pedidos do cliente.");
+    }
+
+    if (!response.ok) {
+      throw new HttpError(
+        response.status >= 400 && response.status < 500 ? response.status : 500,
+        "Falha ao consultar pedidos do cliente."
+      );
+    }
+
+    const payload = await response.json();
+    const documents = Array.isArray(payload?.documents) ? payload.documents : [];
+    documents.forEach((document) => {
+      records.push(decodeFirestoreDocument(document));
+    });
+
+    nextPageToken = typeof payload?.nextPageToken === "string" ? payload.nextPageToken : "";
+    if (!nextPageToken || !documents.length) {
+      break;
+    }
+  }
+
+  return records.sort((left, right) =>
+    String(right?.updatedAtIso || right?.createdAtIso || "").localeCompare(
+      String(left?.updatedAtIso || left?.createdAtIso || "")
+    )
+  );
+}
+
+function normalizeOrderCode(value) {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+}
+
+function findCustomerOrder(orders, requestedOrderCode) {
+  if (!orders.length) {
+    return null;
+  }
+
+  const normalizedCode = normalizeOrderCode(requestedOrderCode);
+  if (normalizedCode) {
+    const byCode = orders.find(
+      (order) =>
+        normalizeOrderCode(order?.orderCode || order?.label || "") === normalizedCode ||
+        normalizeOrderCode(order?.id || "") === normalizedCode
+    );
+
+    if (byCode) {
+      return byCode;
+    }
+  }
+
+  return orders[0];
+}
+
+function inferCustomerDeliveryIntent(message) {
+  const normalizedMessage = String(message ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    /\b(problema|atraso|nao chegou|nÃ£o chegou|reclama|erro|extravio|ocorreu)\b/.test(
+      normalizedMessage
+    )
+  ) {
+    return "report_issue";
+  }
+
+  if (
+    /\b(como funciona|como e o processo|processo de entrega|prazo|tempo de entrega|transportadora|frete|entregam)\b/.test(
+      normalizedMessage
+    )
+  ) {
+    return "faq_delivery";
+  }
+
+  if (
+    /\b(rastre|onde|status|pedido|codigo|c[oÃ³]digo|previs[aÃ£]o)\b/.test(
+      normalizedMessage
+    )
+  ) {
+    return "tracking";
+  }
+
+  return "other";
+}
+
+async function askGeminiForCustomerDelivery({ message, model, env, context }) {
+  const endpoint = `${GEMINI_API_BASE_URL}/models/${encodeURIComponent(
+    model
+  )}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+  const prompt = [
+    "Voce e um assistente de entrega da PetCorner para clientes finais.",
+    "Responda em portugues brasileiro, de forma objetiva e amigavel.",
+    "Nao invente informacoes que nao estejam no contexto.",
+    "Se faltar dados para rastrear, informe de forma clara e sugira acoes.",
+    "Contexto disponivel:",
+    context,
+    `Mensagem do cliente: ${message}`,
+  ].join("\n");
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 420,
+      },
+    }),
+  });
+
+  if (response.status === 429) {
+    throw new HttpError(429, "Limite de cota do Gemini atingido. Tente novamente em instantes.");
+  }
+
+  if (!response.ok) {
+    throw new Error(`Falha ao consultar o Gemini para entrega (status ${response.status}).`);
+  }
+
+  const payload = await response.json();
+  const outputText = extractGeminiText(payload).trim();
+
+  if (!outputText) {
+    throw new Error("O Gemini nao retornou texto para o assistente de entrega.");
+  }
+
+  return outputText;
+}
+
 function applyRateLimit(userId, chatConfig) {
   const now = Date.now();
   const bucketKey = String(userId || "anonymous");
@@ -1498,6 +1796,40 @@ async function storeProductImage({
   };
 }
 
+async function storeProfileImage({
+  request,
+  env,
+  userId,
+  imageBuffer,
+  contentType,
+  extension,
+}) {
+  const bucket = ensureProductImagesBucket(env);
+  const key = createProfileImageKey({
+    userId,
+    extension,
+  });
+
+  await bucket.put(key, imageBuffer, {
+    httpMetadata: {
+      contentType,
+      cacheControl: "public, max-age=31536000, immutable",
+    },
+    customMetadata: {
+      source: "profile-upload",
+      uploadedBy: userId,
+    },
+  });
+
+  return {
+    imageUrl: buildProfileImageUrl(request, env, key),
+    key,
+    contentType,
+    size: imageBuffer.byteLength,
+    source: "upload",
+  };
+}
+
 async function handleProductImageUpload(request, env) {
   if (request.method !== "POST") {
     return jsonResponse(
@@ -1569,6 +1901,83 @@ async function handleProductImageUpload(request, env) {
       env,
       error,
       "Nao foi possivel enviar a imagem para o bucket."
+    );
+  }
+}
+
+async function handleProfileImageUpload(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use POST para enviar foto de perfil." },
+      { status: 405 }
+    );
+  }
+
+  const imageConfig = getProductImageConfig(env);
+
+  try {
+    const idToken = getBearerToken(request);
+    const tokenPayload = await verifyFirebaseToken(idToken, env);
+    const userId = String(tokenPayload.user_id ?? tokenPayload.sub ?? "").trim();
+
+    if (!userId) {
+      throw new HttpError(401, "Token Firebase invalido para upload da foto de perfil.");
+    }
+
+    const formData = await parseMultipartBody(request);
+    const fileField = formData.get("file");
+
+    if (!isFileLike(fileField)) {
+      throw new HttpError(400, "Selecione uma imagem no campo file.");
+    }
+
+    const file = fileField;
+    const fileName = String(file.name ?? "profile-image");
+    const contentType = resolveImageMimeType(file.type, fileName);
+    const extension = resolveImageExtension(contentType, fileName);
+
+    if (file.size <= 0) {
+      throw new HttpError(400, "A imagem enviada esta vazia.");
+    }
+
+    if (file.size > imageConfig.maxBytes) {
+      throw new HttpError(
+        413,
+        `Imagem maior que o limite permitido (${imageConfig.maxBytes} bytes).`
+      );
+    }
+
+    const imageBuffer = await file.arrayBuffer();
+
+    if (!imageBuffer.byteLength) {
+      throw new HttpError(400, "A imagem enviada esta vazia.");
+    }
+
+    if (imageBuffer.byteLength > imageConfig.maxBytes) {
+      throw new HttpError(
+        413,
+        `Imagem maior que o limite permitido (${imageConfig.maxBytes} bytes).`
+      );
+    }
+
+    const payload = await storeProfileImage({
+      request,
+      env,
+      userId,
+      imageBuffer,
+      contentType,
+      extension,
+    });
+
+    return jsonResponse(request, env, payload, { status: 200 });
+  } catch (error) {
+    return respondWithError(
+      request,
+      env,
+      error,
+      "Nao foi possivel enviar a foto de perfil para o bucket."
     );
   }
 }
@@ -1851,6 +2260,257 @@ async function handleChatQuery(request, env) {
   }
 }
 
+function extractOrderCodeFromMessage(message) {
+  const matchedCode = String(message ?? "")
+    .toUpperCase()
+    .match(/PED-[A-Z0-9]{4,}/);
+
+  return matchedCode ? matchedCode[0] : "";
+}
+
+function buildCustomerDeliveryProcessSummary() {
+  return [
+    "- Etapa 1: pedido recebido e validado.",
+    "- Etapa 2: separacao e preparacao de itens no centro de distribuicao.",
+    "- Etapa 3: envio para rota de entrega.",
+    "- Etapa 4: entrega no endereco informado.",
+    "- Se houver problema, o cliente pode abrir ticket para o time de entrega.",
+  ].join("\n");
+}
+
+function buildMatchedOrderPayload(order) {
+  if (!order) {
+    return undefined;
+  }
+
+  const status = String(order.status ?? "").trim() || "pedido_recebido";
+  const statusLabel =
+    String(order.statusLabel ?? "").trim() ||
+    CUSTOMER_DELIVERY_STATUS_LABELS[status] ||
+    "Pedido recebido";
+  const orderCode = String(order.orderCode ?? order.label ?? "").trim();
+
+  return {
+    orderId: String(order.id ?? "").trim(),
+    orderCode,
+    status,
+    statusLabel,
+    updatedAtIso: String(order.updatedAtIso ?? order.createdAtIso ?? new Date().toISOString()),
+  };
+}
+
+function buildSuggestedActions(intent, hasAuth) {
+  if (!hasAuth && (intent === "tracking" || intent === "report_issue")) {
+    return ["Fazer login para consultar seus pedidos", "Informar codigo PED no chat"];
+  }
+
+  if (intent === "tracking") {
+    return ["Acompanhar atualizacoes em /rastreamento", "Acionar WhatsApp para suporte imediato"];
+  }
+
+  if (intent === "report_issue") {
+    return ["Aguardar retorno da equipe de entrega", "Consultar ticket no historico de mensagens"];
+  }
+
+  return ["Acessar /rastreamento para detalhes dos pedidos", "Acionar suporte via WhatsApp"];
+}
+
+async function handleCustomerDeliveryChat(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse(
+      request,
+      env,
+      { message: "Use POST para consultar o assistente de entrega." },
+      { status: 405 }
+    );
+  }
+
+  if (!env.GEMINI_API_KEY) {
+    return jsonResponse(
+      request,
+      env,
+      { message: "O segredo GEMINI_API_KEY ainda nao foi configurado no Worker." },
+      { status: 500 }
+    );
+  }
+
+  const chatConfig = getChatConfig(env);
+
+  try {
+    const body = await parseRequestBody(request);
+    const message = String(body?.message ?? body?.question ?? "").trim();
+    const orderCodeFromBody = normalizeOrderCode(body?.orderCode ?? "");
+    const sessionId = String(body?.sessionId ?? "").trim();
+
+    if (!message) {
+      throw new HttpError(400, "Informe uma mensagem no campo message.");
+    }
+
+    if (message.length > chatConfig.maxQuestionLength) {
+      throw new HttpError(
+        400,
+        `Mensagem muito longa. Limite atual: ${chatConfig.maxQuestionLength} caracteres.`
+      );
+    }
+
+    const optionalToken = getOptionalBearerToken(request);
+    let idToken = null;
+    let tokenPayload = null;
+    let customerId = "";
+
+    if (optionalToken) {
+      idToken = optionalToken;
+      tokenPayload = await verifyFirebaseToken(optionalToken, env);
+      customerId = String(tokenPayload.user_id ?? tokenPayload.sub ?? "").trim();
+    }
+
+    const rateLimitUserKey = customerId || sessionId || "anonymous-delivery";
+    const rateLimit = applyRateLimit(`delivery:${rateLimitUserKey}`, chatConfig);
+
+    if (!rateLimit.allowed) {
+      throw new HttpError(429, "Limite de consultas por minuto atingido. Tente novamente em instantes.", {
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      });
+    }
+
+    const intent = inferCustomerDeliveryIntent(message);
+    const requiresAuth = intent === "tracking" || intent === "report_issue";
+
+    if (requiresAuth && !customerId) {
+      return jsonResponse(
+        request,
+        env,
+        {
+          answer:
+            "Para consultar rastreamento ou abrir problema de entrega, faca login na sua conta antes de continuar.",
+          intent,
+          suggestedActions: buildSuggestedActions(intent, false),
+        },
+        { status: 200 }
+      );
+    }
+
+    let customerOrders = [];
+    let matchedOrder = null;
+
+    if (customerId && idToken) {
+      customerOrders = await fetchCustomerOrdersForDeliveryChat(customerId, idToken, env);
+      const orderCodeFromMessage = extractOrderCodeFromMessage(message);
+      matchedOrder = findCustomerOrder(
+        customerOrders,
+        orderCodeFromBody || normalizeOrderCode(orderCodeFromMessage)
+      );
+    }
+
+    let issueTicketId = undefined;
+
+    if (intent === "report_issue" && customerId && idToken) {
+      const issueRecord = await createFirestoreDocument({
+        env,
+        idToken,
+        collectionPath: "deliveryIssues",
+        payload: {
+          customerId,
+          orderId: String(matchedOrder?.id ?? "").trim(),
+          orderCode: String(matchedOrder?.orderCode ?? matchedOrder?.label ?? "").trim(),
+          message,
+          severity: /\b(urgente|grave|preju[iÃ­]zo|critico|cr[iÃ­]tico)\b/i.test(message)
+            ? "high"
+            : "medium",
+          status: "aberto",
+          createdAtIso: new Date().toISOString(),
+          updatedAtIso: new Date().toISOString(),
+        },
+      });
+
+      issueTicketId = issueRecord.id;
+
+      await createFirestoreDocument({
+        env,
+        idToken,
+        collectionPath: "adminNotifications",
+        payload: {
+          title: "Novo problema de entrega",
+          message: `Cliente ${customerId} reportou um problema de entrega${issueTicketId ? ` (ticket ${issueTicketId})` : ""}.`,
+          category: "order",
+          source: "petpage",
+          actorCustomerId: customerId,
+          isRead: false,
+          createdAtIso: new Date().toISOString(),
+        },
+      });
+    }
+
+    const contextLines = [
+      `Cliente autenticado: ${customerId ? "sim" : "nao"}`,
+      `Intencao detectada: ${intent}`,
+      `Codigo solicitado: ${orderCodeFromBody || extractOrderCodeFromMessage(message) || "nao informado"}`,
+      `Total de pedidos disponiveis: ${customerOrders.length}`,
+      `Pedido selecionado: ${
+        matchedOrder
+          ? `${matchedOrder.orderCode || matchedOrder.label || matchedOrder.id} - ${
+              matchedOrder.statusLabel ||
+              CUSTOMER_DELIVERY_STATUS_LABELS[matchedOrder.status] ||
+              matchedOrder.status ||
+              "Pedido recebido"
+            }`
+          : "nenhum"
+      }`,
+      `Resumo do processo de entrega:\n${buildCustomerDeliveryProcessSummary()}`,
+      issueTicketId ? `Ticket de problema aberto: ${issueTicketId}` : "Ticket de problema aberto: nao",
+    ];
+
+    let answer = "";
+
+    try {
+      answer = await askGeminiForCustomerDelivery({
+        message,
+        model: chatConfig.model,
+        env,
+        context: contextLines.join("\n"),
+      });
+    } catch {
+      if (intent === "tracking") {
+        answer = matchedOrder
+          ? `Seu pedido ${matchedOrder.orderCode || matchedOrder.label || matchedOrder.id} esta em ${
+              matchedOrder.statusLabel ||
+              CUSTOMER_DELIVERY_STATUS_LABELS[matchedOrder.status] ||
+              matchedOrder.status ||
+              "processamento"
+            }.`
+          : "Nao encontrei um pedido correspondente com os dados informados.";
+      } else if (intent === "report_issue") {
+        answer = issueTicketId
+          ? `Seu problema foi registrado com sucesso. Ticket ${issueTicketId}. Nossa equipe de entrega vai analisar o caso.`
+          : "Registramos sua mensagem e encaminhamos para a equipe de entrega.";
+      } else {
+        answer =
+          "O fluxo de entrega passa por recebimento do pedido, separacao, transporte e entrega. Se precisar, informe seu codigo PED para rastrear.";
+      }
+    }
+
+    return jsonResponse(
+      request,
+      env,
+      {
+        answer,
+        intent,
+        matchedOrder: buildMatchedOrderPayload(matchedOrder),
+        issueTicketId,
+        suggestedActions: buildSuggestedActions(intent, true),
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    return respondWithError(
+      request,
+      env,
+      error,
+      "Nao foi possivel processar a consulta do assistente de entrega."
+    );
+  }
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
@@ -1866,6 +2526,10 @@ export default {
 
     if (normalizedPathname === "/products/image/upload") {
       return handleProductImageUpload(request, env);
+    }
+
+    if (normalizedPathname === "/profile/image/upload") {
+      return handleProfileImageUpload(request, env);
     }
 
     if (normalizedPathname === "/products/image/import-url") {
@@ -1885,6 +2549,10 @@ export default {
       return handleChatQuery(request, env);
     }
 
+    if (normalizedPathname === "/customer/chat/delivery") {
+      return handleCustomerDeliveryChat(request, env);
+    }
+
     if (normalizedPathname === "/" || normalizedPathname === "/cosmos/sync") {
       return handleCosmosSync(request, env);
     }
@@ -1894,9 +2562,10 @@ export default {
       env,
       {
         message:
-          "Rota nao encontrada. Use /chat/query, /cosmos/sync, /cosmos/product-image, /products/image/upload ou /products/image/import-url.",
+          "Rota nao encontrada. Use /chat/query, /customer/chat/delivery, /cosmos/sync, /cosmos/product-image, /products/image/upload, /profile/image/upload ou /products/image/import-url.",
       },
       { status: 404 }
     );
   },
 };
+
