@@ -1,8 +1,6 @@
-import type { RecordFormField, RecordFormMask } from "../Records/record.types";
+import type { FormField, FormFieldMask, FormInputChangeEvent } from "./form.types";
 
-import type { FormInputChangeEvent } from "./form.types";
-
-const defaultMaskByType: Partial<Record<RecordFormField["type"], RecordFormMask>> = {
+const defaultMaskByType: Partial<Record<FormField["type"], FormFieldMask>> = {
   phone: { mask: "(00) 00000-0000" },
 };
 
@@ -27,7 +25,7 @@ export function formatDateToString(date: Date): string {
   return `${day}/${month}/${year}`;
 }
 
-export function getFieldMask(field: RecordFormField): RecordFormMask | undefined {
+export function getFieldMask(field: FormField): FormFieldMask | undefined {
   return field.mask ?? defaultMaskByType[field.type];
 }
 
