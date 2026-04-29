@@ -2,22 +2,13 @@ import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import logoimg from "../../assets/Logo.svg";
-import RecordManagementView from "../../components/Records/RecordManagementView";
-import type {
-  RecordFormConfig,
-  RecordFormData,
-  RecordFormField,
-  RecordListGroup,
-} from "../../components/Records/record.types";
-import {
-  createInitialFormData,
-} from "../../components/Records/record.utils";
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
+import type { RecordFormData } from "../../components/Records/record.types";
 import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
-import { useToast } from "../../hooks/useToast";
-import { useProductCatalog } from "../../hooks/product/useProductCatalog";
+import { useProductCatalog } from "../../hooks/product";
 import { useProducts } from "../../hooks/useProducts";
+import { useToast } from "../../hooks/useToast";
 import { fetchCosmosProductImageByCode } from "../../services/cosmosCatalogService";
 import { setProductCatalogItemImage } from "../../services/productCatalogService";
 import {
@@ -25,114 +16,13 @@ import {
   uploadProductImage,
 } from "../../services/productImageService";
 import type { Product } from "../../types/product";
-import { productRecordSchema } from "../../validation/recordSchemas";
 import { normalizeCatalogCode } from "../../utils/product/productCatalog.util";
+import {
+  buildProductCatalogMap,
+  productNumberFormatter,
+} from "./produtos.records";
+import { ProdutosRecordsSection } from "./ProdutosRecordsSection";
 import "./produtos.css";
-
-const baseProductFields: RecordFormField[] = [
-  { name: "name", label: "Nome", type: "text" },
-  {
-    name: "price",
-    label: "Preco",
-    type: "number",
-    placeholder: "Ex.: 29,90",
-    inputMode: "decimal",
-    mask: {
-      mask: Number,
-      scale: 2,
-      signed: false,
-      min: 0,
-      max: 999999.99,
-      thousandsSeparator: "",
-      normalizeZeros: true,
-      padFractionalZeros: false,
-      radix: ",",
-      mapToRadix: ["."],
-    },
-  },
-  { name: "code", label: "Código", type: "text", placeholder: "Ex.: PET-RA-001" },
-  {
-    name: "imageUrl",
-    label: "Imagem do produto",
-    type: "file",
-    required: false,
-    accept: "image/*",
-  },
-  {
-    name: "quantity",
-    label: "Quantidade",
-    type: "number",
-    inputMode: "numeric",
-    placeholder: "Ex.: 12",
-    mask: {
-      mask: Number,
-      scale: 0,
-      signed: false,
-      min: 0,
-      max: 999999,
-      thousandsSeparator: "",
-      normalizeZeros: true,
-      radix: ",",
-      mapToRadix: ["."],
-    },
-  },
-];
-
-const numberFormatter = new Intl.NumberFormat("pt-BR");
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 2,
-});
-
-function formatNumberForInput(value: number, scale: number): string {
-  if (!Number.isFinite(value)) {
-    return "";
-  }
-
-  if (scale === 0) {
-    return String(Math.round(value));
-  }
-
-  return Number.isInteger(value) ? String(value) : value.toFixed(scale).replace(".", ",");
-}
-
-function buildProductListGroup(products: Product[]): RecordListGroup {
-  return {
-    title: "Lista de produtos",
-    subtitle: `${numberFormatter.format(products.length)} produtos no painel`,
-    emptyMessage: "Nenhum produto cadastrado até o momento.",
-    items: [...products]
-      .filter(
-        (product): product is Product & { id: string } =>
-          typeof product.id === "string" && Boolean(product.id)
-      )
-      .sort((left, right) => right.quantity - left.quantity)
-      .map((product) => ({
-        id: product.id,
-        title: product.name || "Produto sem nome",
-        subtitle: `Código ${product.code || "não informado"}`,
-        detail: `${currencyFormatter.format(product.price)} | ${numberFormatter.format(
-          product.quantity
-        )} unidades`,
-        badge: `Estoque ${numberFormatter.format(product.quantity)}`,
-      })),
-  };
-}
-
-function getProductFormData(product: Product): RecordFormData {
-  return {
-    name: product.name ?? "",
-    price: formatNumberForInput(product.price ?? 0, 2),
-    code: product.code ?? "",
-    imageUrl: product.imageUrl ?? "",
-    quantity: String(product.quantity ?? ""),
-  };
-}
-
-function buildProductPayload(formData: RecordFormData): Omit<Product, "id"> {
-  return productRecordSchema.parse(formData);
-}
 
 function isWorkerManagedProductImageUrl(imageUrl: string): boolean {
   try {
@@ -164,6 +54,11 @@ export default function ProdutosPage() {
   const codeImageCacheRef = useRef(new Map<string, string>());
   const codeLookupInFlightRef = useRef(new Set<string>());
 
+  const catalogByNormalizedCode = useMemo(
+    () => buildProductCatalogMap(catalogItems),
+    [catalogItems]
+  );
+
   const handleProductImageUpload = useCallback(
     async ({ file }: { fieldName: string; file: File; currentValue: string }) => {
       const uploaded = await uploadProductImage(file);
@@ -184,7 +79,10 @@ export default function ProdutosPage() {
         };
       }
 
-      if (!/^https?:\/\//i.test(normalizedImageUrl) || isWorkerManagedProductImageUrl(normalizedImageUrl)) {
+      if (
+        !/^https?:\/\//i.test(normalizedImageUrl) ||
+        isWorkerManagedProductImageUrl(normalizedImageUrl)
+      ) {
         return {
           ...payload,
           imageUrl: normalizedImageUrl,
@@ -217,21 +115,6 @@ export default function ProdutosPage() {
       await update(recordId, payloadWithImage);
     },
     [ensureProductImageInBucket, update]
-  );
-
-  const catalogOptions = useMemo(
-    () =>
-      catalogItems.map((item) => ({
-        value: item.code,
-        label: `${item.code} | ${item.name}`,
-      })),
-    [catalogItems]
-  );
-
-  const catalogByNormalizedCode = useMemo(
-    () =>
-      new Map(catalogItems.map((item) => [item.codeNormalized, item])),
-    [catalogItems]
   );
 
   const handleProductCodeImageFallback = useCallback(
@@ -325,69 +208,6 @@ export default function ProdutosPage() {
     [catalogByNormalizedCode]
   );
 
-  const productFormConfig = useMemo<RecordFormConfig>(
-    () => ({
-      entityLabel: "produto",
-      createTitle: "Novo produto",
-      createSubmitLabel: "Adicionar produto",
-      createSuccessMessage: "Produto cadastrado com sucesso!",
-      editTitle: "Editar produto",
-      editSubmitLabel: "Salvar alterações",
-      editSuccessMessage: "Produto atualizado com sucesso!",
-      deleteSuccessMessage: "Produto removido com sucesso!",
-      fields: baseProductFields,
-      resolveFields: (_formData, context) =>
-        baseProductFields.map((field) =>
-          field.name !== "code"
-            ? field
-            : {
-                ...field,
-                type: context.isEditing ? "text" : "autocomplete",
-                options: context.isEditing ? undefined : catalogOptions,
-                placeholder: context.isEditing
-                  ? "Ex.: PET-RA-001"
-                  : catalogOptions.length
-                    ? "Digite ou selecione um código do catálogo"
-                    : "Importe uma planilha ou sincronize via Cosmos",
-                helperText: context.isEditing
-                  ? undefined
-                  : catalogOptions.length
-                    ? `${numberFormatter.format(
-                        catalogOptions.length
-                      )} códigos disponíveis para autopreenchimento.`
-                    : "Nenhum catálogo carregado. Importe CSV/XLSX ou sincronize via Cosmos.",
-              }
-        ),
-      mapInput: ({ name, value, currentData, isEditing }) => {
-        const nextData = { ...currentData, [name]: value };
-
-        if (isEditing || name !== "code") {
-          return nextData;
-        }
-
-        const matchedCatalogItem = catalogByNormalizedCode.get(normalizeCatalogCode(value));
-
-        if (!matchedCatalogItem) {
-          return nextData;
-        }
-
-        return {
-          ...nextData,
-          code: matchedCatalogItem.code,
-          name: matchedCatalogItem.name,
-          imageUrl: matchedCatalogItem.imageUrl ?? nextData.imageUrl,
-          price: formatNumberForInput(matchedCatalogItem.price, 2),
-          quantity:
-            typeof matchedCatalogItem.quantity === "number"
-              ? formatNumberForInput(matchedCatalogItem.quantity, 0)
-              : nextData.quantity,
-        };
-      },
-      initialValues: createInitialFormData(baseProductFields),
-    }),
-    [catalogByNormalizedCode, catalogOptions]
-  );
-
   const handleOpenFilePicker = () => {
     fileInputRef.current?.click();
   };
@@ -402,19 +222,19 @@ export default function ProdutosPage() {
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Não foi possível sincronizar o catálogo via Cosmos agora."
+          : "Nao foi possivel sincronizar o catalogo via Cosmos agora."
       );
     }
   };
 
   const handleClearCatalog = async () => {
     if (!catalogItems.length) {
-      toast.info("Não há códigos importados para limpar.");
+      toast.info("Nao ha codigos importados para limpar.");
       return;
     }
 
     const shouldClear = window.confirm(
-      "Deseja realmente limpar todas as importações do catálogo? Essa ação remove a lista de códigos de autopreenchimento."
+      "Deseja realmente limpar todas as importacoes do catalogo? Essa acao remove a lista de codigos de autopreenchimento."
     );
 
     if (!shouldClear) {
@@ -424,13 +244,13 @@ export default function ProdutosPage() {
     try {
       const deletedItems = await clearCatalog();
       toast.success(
-        `Catálogo limpo com sucesso. ${numberFormatter.format(deletedItems)} registro(s) removido(s).`
+        `Catalogo limpo com sucesso. ${productNumberFormatter.format(deletedItems)} registro(s) removido(s).`
       );
     } catch (error) {
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Não foi possível limpar as importações agora."
+          : "Nao foi possivel limpar as importacoes agora."
       );
     }
   };
@@ -445,13 +265,13 @@ export default function ProdutosPage() {
     try {
       const summary = await importCatalog(file);
       toast.success(
-        `Catálogo importado: ${summary.imported} novos, ${summary.updated} atualizados e ${summary.ignored} ignorados.`
+        `Catalogo importado: ${summary.imported} novos, ${summary.updated} atualizados e ${summary.ignored} ignorados.`
       );
     } catch (error) {
       toast.warning(
         error instanceof Error && error.message
           ? error.message
-          : "Não foi possível importar o catálogo agora."
+          : "Nao foi possivel importar o catalogo agora."
       );
     } finally {
       event.target.value = "";
@@ -459,11 +279,11 @@ export default function ProdutosPage() {
   };
 
   const templateHref = `${import.meta.env.BASE_URL}product-catalog-template.csv`;
-  const importCatalogTooltip = "Importar catálogo via arquivo CSV ou XLSX";
+  const importCatalogTooltip = "Importar catalogo via arquivo CSV ou XLSX";
   const cosmosSyncTooltip =
-    "Sincroniza o catálogo base da Cosmos e atualiza os códigos no sistema.";
+    "Sincroniza o catalogo base da Cosmos e atualiza os codigos no sistema.";
   const clearCatalogTooltip =
-    "Remove todos os códigos importados para reiniciar o catálogo.";
+    "Remove todos os codigos importados para reiniciar o catalogo.";
 
   return (
     <AppShell logoSrc={logoimg}>
@@ -500,7 +320,7 @@ export default function ProdutosPage() {
                   onClick={handleOpenFilePicker}
                   disabled={isCatalogMutating}
                   title={importCatalogTooltip}
-                  aria-label={isImporting ? "Importando catálogo" : "Importar catálogo"}
+                  aria-label={isImporting ? "Importando catalogo" : "Importar catalogo"}
                 >
                   <i
                     className={`fa ${isImporting ? "fa-spinner fa-spin" : "fa-file-arrow-up"}`}
@@ -528,7 +348,7 @@ export default function ProdutosPage() {
                   onClick={handleClearCatalog}
                   disabled={isCatalogMutating || catalogItems.length === 0}
                   title={clearCatalogTooltip}
-                  aria-label={isClearingCatalog ? "Limpando importações" : "Limpar importações"}
+                  aria-label={isClearingCatalog ? "Limpando importacoes" : "Limpar importacoes"}
                 >
                   <i
                     className={`fa ${isClearingCatalog ? "fa-spinner fa-spin" : "fa-trash-can"}`}
@@ -558,17 +378,17 @@ export default function ProdutosPage() {
                       className="product-catalog-card__paw-loader"
                       role="status"
                       aria-live="polite"
-                      aria-label="Carregando códigos disponíveis"
+                      aria-label="Carregando codigos disponiveis"
                     >
                       <i className="fa fa-paw" aria-hidden="true" />
                       <i className="fa fa-paw" aria-hidden="true" />
                       <i className="fa fa-paw" aria-hidden="true" />
                     </span>
                   ) : (
-                    numberFormatter.format(catalogItems.length)
+                    productNumberFormatter.format(catalogItems.length)
                   )}
                 </strong>
-                <span>códigos disponíveis</span>
+                <span>codigos disponiveis</span>
               </article>
               <article>
                 <strong>{isCatalogLoading ? "..." : "CSV / XLSX / Cosmos"}</strong>
@@ -577,27 +397,20 @@ export default function ProdutosPage() {
             </div>
 
             <div className="product-catalog-card__summary">
-              <strong>Última importação:</strong>{" "}
+              <strong>Ultima importacao:</strong>{" "}
               {lastImportSummary
-                ? `${lastImportSummary.sourceFileName} | ${lastImportSummary.validRows} válidos | ${lastImportSummary.imported} novos | ${lastImportSummary.updated} atualizados | ${lastImportSummary.ignored} ignorados`
-                : "nenhuma importação realizada ainda."}
+                ? `${lastImportSummary.sourceFileName} | ${lastImportSummary.validRows} validos | ${lastImportSummary.imported} novos | ${lastImportSummary.updated} atualizados | ${lastImportSummary.ignored} ignorados`
+                : "nenhuma importacao realizada ainda."}
             </div>
           </section>
 
-          <RecordManagementView
-            listGroup={buildProductListGroup(items)}
-            records={items}
-            formConfig={productFormConfig}
+          <ProdutosRecordsSection
+            items={items}
             isLoading={isLoading}
-            listPageSize={4}
-            backRoute={DASHBOARD_ROUTE}
-            showBackButton={false}
-            addAriaLabel="Adicionar novo produto"
-            getFormData={getProductFormData}
-            buildPayload={buildProductPayload}
-            onCreate={handleCreateProduct}
-            onUpdate={handleUpdateProduct}
-            onDelete={remove}
+            catalogItems={catalogItems}
+            create={handleCreateProduct}
+            update={handleUpdateProduct}
+            remove={remove}
             onFileUpload={handleProductImageUpload}
             onInputAsyncEffect={handleProductCodeImageFallback}
           />
@@ -606,4 +419,3 @@ export default function ProdutosPage() {
     </AppShell>
   );
 }
-

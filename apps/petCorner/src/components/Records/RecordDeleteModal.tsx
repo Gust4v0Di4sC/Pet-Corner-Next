@@ -1,42 +1,33 @@
-import { useEffect } from "react";
+import { useModalDismiss } from "../../hooks/records";
 
 type Props = {
   open: boolean;
-  entityLabel: string;
-  recordLabel: string;
-  isSubmitting?: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
+  content: {
+    entityLabel: string;
+    recordLabel: string;
+  };
+  state?: {
+    isSubmitting?: boolean;
+  };
+  actions: {
+    onClose: () => void;
+    onConfirm: () => void;
+  };
 };
 
 export default function RecordDeleteModal({
   open,
-  entityLabel,
-  recordLabel,
-  isSubmitting = false,
-  onClose,
-  onConfirm,
+  content,
+  state,
+  actions,
 }: Props) {
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
+  const isSubmitting = state?.isSubmitting ?? false;
 
-    const previousOverflow = document.body.style.overflow;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) {
-        onClose();
-      }
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isSubmitting, onClose, open]);
+  useModalDismiss({
+    open,
+    disabled: isSubmitting,
+    onClose: actions.onClose,
+  });
 
   if (!open) {
     return null;
@@ -45,7 +36,7 @@ export default function RecordDeleteModal({
   return (
     <div
       className="record-modal-overlay"
-      onClick={isSubmitting ? undefined : onClose}
+      onClick={isSubmitting ? undefined : actions.onClose}
       role="presentation"
     >
       <div
@@ -59,7 +50,7 @@ export default function RecordDeleteModal({
         <button
           type="button"
           className="record-modal__close"
-          onClick={onClose}
+          onClick={actions.onClose}
           aria-label="Fechar modal"
           disabled={isSubmitting}
         >
@@ -73,12 +64,12 @@ export default function RecordDeleteModal({
 
           <div className="record-confirm-modal__content">
             <p className="record-confirm-modal__eyebrow">Confirmar exclusao</p>
-            <h2 id="record-delete-modal-title">Excluir {entityLabel}?</h2>
+            <h2 id="record-delete-modal-title">Excluir {content.entityLabel}?</h2>
             <p id="record-delete-modal-description">
-              Você esta prestes a remover <strong>{recordLabel}</strong> permanentemente.
+              VocÃª esta prestes a remover <strong>{content.recordLabel}</strong> permanentemente.
             </p>
             <p className="record-confirm-modal__warning">
-              Essa ação não pode ser desfeita.
+              Essa aÃ§Ã£o nÃ£o pode ser desfeita.
             </p>
           </div>
 
@@ -86,7 +77,7 @@ export default function RecordDeleteModal({
             <button
               type="button"
               className="record-confirm-modal__button record-confirm-modal__button--secondary"
-              onClick={onClose}
+              onClick={actions.onClose}
               disabled={isSubmitting}
             >
               Cancelar
@@ -95,7 +86,7 @@ export default function RecordDeleteModal({
             <button
               type="button"
               className="record-confirm-modal__button record-confirm-modal__button--danger"
-              onClick={onConfirm}
+              onClick={actions.onConfirm}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Excluindo..." : "Excluir registro"}

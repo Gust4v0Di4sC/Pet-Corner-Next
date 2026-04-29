@@ -1,40 +1,14 @@
-export type RecordFormOption = {
-  value: string;
-  label: string;
-};
+import type {
+  FormData as BaseFormData,
+  FormField,
+  FormFieldMask,
+  FormFieldOption,
+} from "../Form/form.types";
 
-export type RecordFormMask =
-  | {
-      mask: string;
-    }
-  | {
-      mask: NumberConstructor;
-      scale?: number;
-      signed?: boolean;
-      thousandsSeparator?: string;
-      padFractionalZeros?: boolean;
-      normalizeZeros?: boolean;
-      radix?: string;
-      mapToRadix?: string[];
-      min?: number;
-      max?: number;
-    };
-
-export type RecordFormField = {
-  name: string;
-  label: string;
-  type: "text" | "email" | "phone" | "date" | "number" | "select" | "autocomplete" | "file";
-  placeholder?: string;
-  inputMode?: "text" | "email" | "tel" | "numeric" | "decimal";
-  options?: RecordFormOption[];
-  mask?: RecordFormMask;
-  disabled?: boolean;
-  helperText?: string;
-  required?: boolean;
-  accept?: string;
-};
-
-export type RecordFormData = Record<string, string>;
+export type RecordFormOption = FormFieldOption;
+export type RecordFormMask = FormFieldMask;
+export type RecordFormField = FormField;
+export type RecordFormData = BaseFormData;
 
 export type RecordFormConfig = {
   entityLabel: string;
