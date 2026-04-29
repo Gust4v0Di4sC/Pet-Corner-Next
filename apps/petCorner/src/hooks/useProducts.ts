@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
 
 import type { Product, UseProductsReturn } from "../types/product";
-import { useCreateProduct } from "./product/useCreateProduct";
-import { useDeleteProduct } from "./product/useDeleteProduct";
-import { useEditProduct } from "./product/useEditProduct";
-import { useListProducts } from "./product/useListProducts";
-import { useSearchProduct } from "./product/useSearchProduct";
+import {
+  useCreateProduct,
+  useDeleteProduct,
+  useEditProduct,
+  useListProducts,
+  useSearchProduct,
+} from "./product";
 
 export const useProducts = (rota: string = "prods"): UseProductsReturn => {
   const [selected, setSelected] = useState<Product | null>(null);

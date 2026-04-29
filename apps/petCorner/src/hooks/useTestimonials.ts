@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
 import type { Testimonial, UseTestimonialsReturn } from "../types/testimonial";
-import { useCreateTestimonial } from "./testimonial/useCreateTestimonial";
-import { useDeleteTestimonial } from "./testimonial/useDeleteTestimonial";
-import { useEditTestimonial } from "./testimonial/useEditTestimonial";
-import { useListTestimonials } from "./testimonial/useListTestimonials";
-import { useSearchTestimonial } from "./testimonial/useSearchTestimonial";
+import {
+  useCreateTestimonial,
+  useDeleteTestimonial,
+  useEditTestimonial,
+  useListTestimonials,
+  useSearchTestimonial,
+} from "./testimonial";
 
 export const useTestimonials = (rota: string = "testimonials"): UseTestimonialsReturn => {
   const [selected, setSelected] = useState<Testimonial | null>(null);

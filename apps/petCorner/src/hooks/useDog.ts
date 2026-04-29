@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
 
 import type { Dog, UseDogReturn } from "../types/dog";
-import { useCreateDog } from "./dog/useCreateDog";
-import { useDeleteDog } from "./dog/useDeleteDog";
-import { useEditDog } from "./dog/useEditDog";
-import { useListDogs } from "./dog/useListDogs";
-import { useSearchDog } from "./dog/useSearchDog";
+import {
+  useCreateDog,
+  useDeleteDog,
+  useEditDog,
+  useListDogs,
+  useSearchDog,
+} from "./dog";
 
 export const useDog = (rota: string = "dogs"): UseDogReturn => {
   const [selected, setSelected] = useState<Dog | null>(null);

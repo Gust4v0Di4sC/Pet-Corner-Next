@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
 
 import type { PetService, UseServicesReturn } from "../types/petService";
-import { useCreateService } from "./service/useCreateService";
-import { useDeleteService } from "./service/useDeleteService";
-import { useEditService } from "./service/useEditService";
-import { useListServices } from "./service/useListServices";
-import { useSearchService } from "./service/useSearchService";
+import {
+  useCreateService,
+  useDeleteService,
+  useEditService,
+  useListServices,
+  useSearchService,
+} from "./service";
 
 export const useServices = (rota: string = "services"): UseServicesReturn => {
   const [selected, setSelected] = useState<PetService | null>(null);

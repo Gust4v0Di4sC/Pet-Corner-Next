@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
 
 import type { Client, ClientDisplay, UseClientReturn } from "../types/client";
-import { useCreateClient } from "./client/useCreateClient";
-import { useDeleteClient } from "./client/useDeleteClient";
-import { useEditClient } from "./client/useEditClient";
-import { useListClients } from "./client/useListClients";
-import { useSearchClient } from "./client/useSearchClient";
+import {
+  useCreateClient,
+  useDeleteClient,
+  useEditClient,
+  useListClients,
+  useSearchClient,
+} from "./client";
 
 export const useClient = (rota: string): UseClientReturn => {
   const [selected, setSelected] = useState<ClientDisplay | null>(null);
