@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { CUSTOMER_SESSION_COOKIE } from "@/infrastructure/auth/session-constants";
+import { CUSTOMER_SESSION_COOKIE } from "@/lib/auth/session-constants";
 
 const PROTECTED_ROUTES = new Set(["/profile", "/checkout", "/rastreamento"]);
 

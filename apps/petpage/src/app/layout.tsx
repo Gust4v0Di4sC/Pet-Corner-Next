@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Montserrat_Alternates, Geist } from "next/font/google";
-import "./globals.css";
+import "@/styles/globals.css";
 import { cn } from "@/lib/utils";
-import { AosInit } from "@/presentation/shared/components/aos-init";
-import { AppQueryProvider } from "@/presentation/shared/components/app-query-provider";
-import { FloatingSupportActions } from "@/presentation/support/components/floating-support-actions";
+import { AosInit } from "@/providers/aos-init";
+import { AppQueryProvider } from "@/providers/app-query-provider";
+import { FloatingSupportActions } from "@/features/support/components/floating-support-actions";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 

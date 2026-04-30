@@ -1,25 +1,16 @@
-import { Footer } from "@/presentation/marketing/components/footer";
-import { NavBar } from "@/presentation/marketing/components/nav-bar";
-import { ProductDetailPage } from "@/presentation/marketing/components/product-detail-page";
+import { ProductDetailRoutePage } from "@/features/marketing/pages/product-detail-route-page";
 
 export const dynamic = "force-dynamic";
 
-type ProductDetailRoutePageProps = {
+type ProductDetailPageProps = {
   params: Promise<{
     id: string;
   }>;
 };
 
-export default async function ProductDetailRoutePage({
-  params,
-}: ProductDetailRoutePageProps) {
+export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { id } = await params;
 
-  return (
-    <main className="bg-[#f6f2e8] text-slate-900">
-      <NavBar />
-      <ProductDetailPage productId={id} />
-      <Footer />
-    </main>
-  );
+  return <ProductDetailRoutePage productId={id} />;
 }
+

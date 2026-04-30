@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { StructuralAuthRepository } from "@/infrastructure/auth/structural-auth.repository";
+import { StructuralAuthRepository } from "@/lib/auth/structural-auth.repository";
 import {
   CUSTOMER_SESSION_COOKIE,
   CUSTOMER_SESSION_MAX_AGE_SECONDS,
-} from "@/infrastructure/auth/session-constants";
+} from "@/lib/auth/session-constants";
 import {
   createSessionCookieValue,
-} from "@/infrastructure/auth/session-cookie";
-import { sanitizeRedirectPath } from "@/utils/shared/route";
+} from "@/lib/auth/session-cookie";
+import { sanitizeRedirectPath } from "@/lib/routing/route";
 
 type SessionPayload = {
   customerId: string;

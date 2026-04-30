@@ -1,6 +1,5 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
@@ -51,10 +50,23 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
-  const Comp = asChild ? Slot.Root : "button"
+  if (asChild && React.isValidElement<{ className?: string }>(props.children)) {
+    const child = props.children
+
+    return React.cloneElement(child, {
+      ...props,
+      className: cn(
+        buttonVariants({
+          variant,
+          size,
+          className: cn(child.props.className, className),
+        })
+      ),
+    })
+  }
 
   return (
-    <Comp
+    <button
       data-slot="button"
       data-variant={variant}
       data-size={size}

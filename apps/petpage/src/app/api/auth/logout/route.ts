@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { CUSTOMER_SESSION_COOKIE } from "@/infrastructure/auth/session-constants";
-import { sanitizeRedirectPath } from "@/utils/shared/route";
+import { CUSTOMER_SESSION_COOKIE } from "@/lib/auth/session-constants";
+import { sanitizeRedirectPath } from "@/lib/routing/route";
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") || "";

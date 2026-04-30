@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { getStripeServerClient, getStripeWebhookSecret } from "@/infrastructure/stripe/stripe-server";
-import { fulfillStripeCheckoutSession } from "@/services/cart-checkout/stripe-order-fulfillment.server";
+import { getStripeServerClient, getStripeWebhookSecret } from "@/lib/stripe/stripe-server";
+import { fulfillStripeCheckoutSession } from "@/features/cart-checkout/services/stripe-order-fulfillment.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

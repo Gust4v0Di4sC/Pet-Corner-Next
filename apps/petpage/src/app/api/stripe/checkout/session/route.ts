@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { checkoutDeliveryStepSchema } from "@/validation/checkout-schemas";
-import { readServerCustomerSession } from "@/utils/auth/customer-session.server";
-import { getFirstZodErrorMessage } from "@/utils/validation/input-sanitizers";
+import { checkoutDeliveryStepSchema } from "@/features/cart-checkout/validation/checkout-schemas";
+import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
+import { getFirstZodErrorMessage } from "@/lib/validation/input-sanitizers";
 import {
   DEFAULT_CHECKOUT_SHIPPING_IN_CENTS,
   loadServerCustomerCart,
   resolveCheckoutCart,
   saveStripePendingCheckout,
-} from "@/services/cart-checkout/stripe-order-fulfillment.server";
-import { getPublicAppUrl, getStripeServerClient } from "@/infrastructure/stripe/stripe-server";
+} from "@/features/cart-checkout/services/stripe-order-fulfillment.server";
+import { getPublicAppUrl, getStripeServerClient } from "@/lib/stripe/stripe-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

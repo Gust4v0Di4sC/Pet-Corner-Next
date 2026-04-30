@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 type ErrorPageProps = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -13,13 +15,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         Nao foi possivel renderizar esta pagina agora. Tente novamente.
       </p>
       <p className="text-xs text-slate-500">{error.digest ? `Ref: ${error.digest}` : error.message}</p>
-      <button
+      <Button
         type="button"
         onClick={() => reset()}
         className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
       >
         Tentar novamente
-      </button>
+      </Button>
     </main>
   );
 }
