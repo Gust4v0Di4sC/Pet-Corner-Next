@@ -13,5 +13,5 @@ body{
 
 @font-face {
     font-family: 'Montserrat Alternates';
-    src: local('Montserrat Alternates'), url(../assets/MontserratAlternates-Bold.ttf) format('truetype');
+    src: local('Montserrat Alternates'), url(./assets/MontserratAlternates-Bold.ttf) format('truetype');
   }
