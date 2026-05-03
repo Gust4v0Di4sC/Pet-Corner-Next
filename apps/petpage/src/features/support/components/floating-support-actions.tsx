@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle, PhoneCall, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,26 @@ const QUICK_ACTIONS = [
   "Quero reportar um problema na entrega.",
 ];
 
+const subscribeToHydration = () => () => undefined;
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+
 export function FloatingSupportActions() {
   const pathname = usePathname();
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot
+  );
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const { isSending, messages, sendMessage } = useCustomerDeliveryChat();
   const messagesRef = useRef<HTMLDivElement | null>(null);
 
-  const shouldHide = useMemo(() => pathname.startsWith("/app-react"), [pathname]);
+  const shouldHide = useMemo(
+    () => pathname === "/" || pathname.startsWith("/app-react"),
+    [pathname]
+  );
 
   useEffect(() => {
     if (!isChatOpen) {
@@ -51,7 +63,7 @@ export function FloatingSupportActions() {
     });
   }, [isChatOpen, messages]);
 
-  if (shouldHide) {
+  if (!isHydrated || shouldHide) {
     return null;
   }
 

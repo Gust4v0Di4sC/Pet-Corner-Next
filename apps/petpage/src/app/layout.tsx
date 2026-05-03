@@ -100,6 +100,7 @@ export default function RootLayout({
     >
       <body
         className={`${montserratAlternates.className}  antialiased`}
+        suppressHydrationWarning
       >
         <AppQueryProvider>
           {children}

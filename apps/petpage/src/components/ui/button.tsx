@@ -45,13 +45,14 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
-  if (asChild && React.isValidElement<{ className?: string }>(props.children)) {
-    const child = props.children
+  if (asChild && React.isValidElement<{ className?: string }>(children)) {
+    const child = children
 
     return React.cloneElement(child, {
       ...props,
@@ -72,7 +73,9 @@ function Button({
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {children}
+    </button>
   )
 }
 
