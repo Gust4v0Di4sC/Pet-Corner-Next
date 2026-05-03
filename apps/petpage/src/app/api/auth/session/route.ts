@@ -8,6 +8,7 @@ import {
 import {
   createSessionCookieValue,
 } from "@/lib/auth/session-cookie";
+import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
 import { sanitizeRedirectPath } from "@/lib/routing/route";
 
 type SessionPayload = {
@@ -16,6 +17,11 @@ type SessionPayload = {
   email: string;
   next: string;
 };
+
+export async function GET() {
+  const session = await readServerCustomerSession();
+  return NextResponse.json({ ok: true, session });
+}
 
 const emailValidationSchema = z.string().email();
 const sessionPayloadSchema = z

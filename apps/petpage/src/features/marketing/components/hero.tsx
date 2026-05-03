@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import { PawPrint, ArrowRight, Star } from "lucide-react";
 import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
