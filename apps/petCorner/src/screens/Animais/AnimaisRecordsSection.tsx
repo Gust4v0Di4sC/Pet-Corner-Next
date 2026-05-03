@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
 import { RecordBackButton } from "../../components/Records/RecordBackButton";
-import { RecordCreateButton } from "../../components/Records/RecordCreateButton";
 import RecordDeleteModal from "../../components/Records/RecordDeleteModal";
 import RecordFormModal from "../../components/Records/RecordFormModal";
 import RecordList from "../../components/Records/RecordList";
@@ -23,7 +22,6 @@ import {
 type Props = {
   items: Dog[];
   isLoading: boolean;
-  create: (payload: Omit<Dog, "id">) => Promise<void>;
   update: (recordId: string, payload: Omit<Dog, "id">) => Promise<void>;
   remove: (recordId: string) => Promise<void>;
 };
@@ -31,7 +29,6 @@ type Props = {
 export function AnimaisRecordsSection({
   items,
   isLoading,
-  create,
   update,
   remove,
 }: Props) {
@@ -54,7 +51,7 @@ export function AnimaisRecordsSection({
     config: dogFormConfig,
     getFormData: getDogFormData,
     buildPayload: buildDogPayload,
-    onCreate: create,
+    onCreate: async () => undefined,
     onUpdate: update,
     notifyAdminAction,
   });
@@ -80,11 +77,6 @@ export function AnimaisRecordsSection({
         className="record-panel--page"
         onEditRecord={formController.openEdit}
         onDeleteRecord={deleteController.open}
-      />
-
-      <RecordCreateButton
-        ariaLabel="Adicionar novo animal"
-        onClick={formController.openCreate}
       />
 
       <RecordFormModal
