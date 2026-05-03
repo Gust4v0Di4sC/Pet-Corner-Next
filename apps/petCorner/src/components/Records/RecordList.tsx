@@ -3,6 +3,7 @@ import { useRecordPagination } from "../../hooks/records";
 import { RecordCard } from "./RecordCard";
 import { RecordPagination } from "./RecordPagination";
 import type { RecordListGroup } from "./record.types";
+import "./records.css";
 
 type Props = RecordListGroup & {
   isLoading: boolean;
