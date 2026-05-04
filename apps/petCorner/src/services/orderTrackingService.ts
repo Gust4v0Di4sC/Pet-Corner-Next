@@ -130,7 +130,7 @@ function mapOrderItems(payload: unknown): OrderItem[] {
   }
 
   return payload
-    .map((item) => {
+    .map((item): OrderItem | null => {
       if (!isRecord(item)) {
         return null;
       }
@@ -144,14 +144,16 @@ function mapOrderItems(payload: unknown): OrderItem[] {
         return null;
       }
 
-      return {
+      const orderItem: OrderItem = {
         productId,
         title,
         category: toStringValue(item.category).trim() || undefined,
         imageUrl: toStringValue(item.imageUrl).trim() || undefined,
         quantity,
         unitPriceInCents,
-      } satisfies OrderItem;
+      };
+
+      return orderItem;
     })
     .filter((item): item is OrderItem => item !== null);
 }
