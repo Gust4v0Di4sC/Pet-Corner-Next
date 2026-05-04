@@ -26,8 +26,8 @@ export function Footer() {
               className="h-8 w-auto"
             />
             <p className="max-w-sm text-sm leading-relaxed text-slate-300">
-              Cuidando do seu melhor amigo com amor e dedicacao. Produtos e
-              servicos pensados para quem realmente ama animais.
+              Cuidando do seu melhor amigo com amor e dedicação. Produtos e
+              serviços pensados para quem realmente ama animais.
             </p>
             <div className="flex items-center gap-2">
               {socialLinks.map((social) => {
@@ -59,9 +59,9 @@ export function Footer() {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-white">Horario</h3>
-            <p className="text-sm text-slate-300">Seg a Sex - 8h as 19h</p>
-            <p className="text-sm text-slate-300">Sabado - 9h as 17h</p>
+            <h3 className="text-lg font-semibold text-white">Horário</h3>
+            <p className="text-sm text-slate-300">Seg. a sex. - 8h às 19h</p>
+            <p className="text-sm text-slate-300">Sábado - 9h às 17h</p>
             <p className="text-sm text-slate-300">Domingo - Fechado</p>
           </div>
         </div>

@@ -12,7 +12,7 @@ function mapErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return "Nao foi possivel carregar os servicos agora.";
+  return "Não foi possível carregar os serviços agora.";
 }
 
 export function useLandingServices() {

@@ -63,13 +63,13 @@ export function CustomerNotificationDrawer({ customerId }: CustomerNotificationD
         type="button"
         tabIndex={0}
         onClick={closeDrawer}
-        aria-label="Fechar painel de notificacoes"
+        aria-label="Fechar painel de notificações"
         className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] transition-opacity duration-200 opacity-100"
       />
 
       <aside
         id="customer-notifications-panel"
-        aria-label="Notificacoes"
+        aria-label="Notificações"
         className="absolute right-0 top-0 isolate h-full w-full max-w-[440px] overflow-hidden border-l border-slate-300/70 bg-[#f4f0e6] shadow-[0_25px_60px_-20px_rgba(15,23,42,0.55)] transition-transform duration-300 translate-x-0"
       >
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(251,139,36,0.09),transparent_170px)]" />
@@ -78,11 +78,11 @@ export function CustomerNotificationDrawer({ customerId }: CustomerNotificationD
         <div className="relative flex h-full flex-col">
           <header className="flex items-center justify-between border-b border-slate-300/80 bg-[#f2f2f3] px-6 py-5">
             <div className="space-y-0.5">
-              <h2 className="text-3xl font-semibold leading-none text-slate-900">Notificacoes</h2>
+              <h2 className="text-3xl font-semibold leading-none text-slate-900">Notificações</h2>
               <p className="text-sm text-slate-500">
                 {unreadCount > 0
-                  ? `${unreadCount} nao lida${unreadCount > 1 ? "s" : ""}`
-                  : "Voce esta em dia"}
+                  ? `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}`
+                  : "Você está em dia"}
               </p>
             </div>
             <Button
@@ -128,9 +128,9 @@ export function CustomerNotificationDrawer({ customerId }: CustomerNotificationD
               </div>
             ) : notifications.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-5 text-center">
-                <p className="text-sm font-medium text-slate-700">Sem notificacoes por enquanto.</p>
+                <p className="text-sm font-medium text-slate-700">Sem notificações por enquanto.</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Novidades sobre carrinho, perfil e pedidos aparecerao aqui.
+                  Novidades sobre carrinho, perfil e pedidos aparecerão aqui.
                 </p>
               </div>
             ) : (
@@ -194,7 +194,7 @@ export function CustomerNotificationDrawer({ customerId }: CustomerNotificationD
         onClick={() => setIsOpen(true)}
         aria-expanded={isOpen}
         aria-controls="customer-notifications-panel"
-        aria-label="Abrir notificacoes"
+        aria-label="Abrir notificações"
         className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
       >
         <Bell className="h-5 w-5" />

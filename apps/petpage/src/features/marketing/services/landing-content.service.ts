@@ -97,7 +97,7 @@ function mapProduct(record: LandingProductRecord): LandingProductView {
     code: record.code.trim(),
     quantity: Math.max(Math.round(record.quantity), 0),
     image: safeImageUrl,
-    badge: record.badge.trim() || (hasStock ? "Disponivel" : "Sob encomenda"),
+    badge: record.badge.trim() || (hasStock ? "Disponível" : "Sob encomenda"),
   };
 }
 
@@ -129,8 +129,8 @@ function mapService(record: LandingServiceRecord): LandingServiceView {
   const iconKey = categoryToIconKey(record.category);
   const safeDuration = Math.max(Math.round(record.durationMinutes), 0);
   const durationLabel = safeDuration
-    ? `Duracao ~ ${safeDuration} min`
-    : "Duracao sob consulta";
+    ? `Duração ~ ${safeDuration} min`
+    : "Duração sob consulta";
   const safeDescription = sanitizePublicDescription(
     record.description,
     "Atendimento especializado com cuidado e carinho para o seu pet."
@@ -139,7 +139,7 @@ function mapService(record: LandingServiceRecord): LandingServiceView {
   return {
     id: record.id,
     title: record.name.trim(),
-    category: record.category.trim() || "Servicos",
+    category: record.category.trim() || "Serviços",
     description: safeDescription,
     duration: durationLabel,
     price: BRL_FORMATTER.format(Math.max(record.price, 0)),

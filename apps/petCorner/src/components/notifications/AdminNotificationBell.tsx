@@ -22,10 +22,10 @@ export default function AdminNotificationBell() {
 
   const bellLabel = useMemo(() => {
     if (unreadCount <= 0) {
-      return "Notificacoes";
+      return "Notificações";
     }
 
-    return `Notificacoes (${unreadCount} nao lidas)`;
+    return `Notificações (${unreadCount} não lidas)`;
   }, [unreadCount]);
 
   useEffect(() => {
@@ -77,11 +77,11 @@ export default function AdminNotificationBell() {
       </button>
 
       {isOpen ? (
-        <section className="admin-notification__panel" role="dialog" aria-label="Notificacoes administrativas">
+        <section className="admin-notification__panel" role="dialog" aria-label="Notificações administrativas">
           <header className="admin-notification__panel-header">
             <div>
-              <h3>Notificacoes</h3>
-              <p>{unreadCount > 0 ? `${unreadCount} nao lida(s)` : "Sem pendencias"}</p>
+              <h3>Notificações</h3>
+              <p>{unreadCount > 0 ? `${unreadCount} não lida(s)` : "Sem pendências"}</p>
             </div>
             <button
               type="button"
@@ -104,7 +104,7 @@ export default function AdminNotificationBell() {
               </div>
             ) : notifications.length === 0 ? (
               <p className="admin-notification__empty">
-                Nenhuma notificacao disponivel no momento.
+                Nenhuma notificação disponível no momento.
               </p>
             ) : (
               <ul className="admin-notification__list">
