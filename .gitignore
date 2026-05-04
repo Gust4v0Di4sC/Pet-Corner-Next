@@ -1,5 +1,7 @@
 node_modules/
 apps/petpage/public/app-react/
 firebase-debug.log
+apps/.playwright-mcp/
+apps/petpage-*.log
 **/AGENTS.md
 **/agents.md
