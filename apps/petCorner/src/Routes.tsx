@@ -6,6 +6,7 @@ import {
   CLIENTS_ROUTE,
   DASHBOARD_ROUTE,
   ORDERS_ROUTE,
+  APPOINTMENTS_ROUTE,
   PRODUCTS_ROUTE,
   SERVICES_ROUTE,
   TESTIMONIALS_ROUTE,
@@ -19,6 +20,7 @@ const ClientesPage = lazy(() => import("./screens/Clientes/ClientesPage"));
 const AnimaisPage = lazy(() => import("./screens/Animais/AnimaisPage"));
 const ProdutosPage = lazy(() => import("./screens/Produtos/ProdutosPage"));
 const ServicosPage = lazy(() => import("./screens/Servicos/ServicosPage"));
+const AgendamentosPage = lazy(() => import("./screens/Agendamentos/AgendamentosPage"));
 const DepoimentosPage = lazy(() => import("./screens/Depoimentos/DepoimentosPage"));
 const PedidosPage = lazy(() => import("./screens/Pedidos/PedidosPage"));
 const NotFoundPage = lazy(() => import("./screens/NotFound/NotFoundPage"));
@@ -90,6 +92,15 @@ export default function RoutesApp() {
           element={
             <PrivateRoute>
               <ServicosPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path={APPOINTMENTS_ROUTE}
+          element={
+            <PrivateRoute>
+              <AgendamentosPage />
             </PrivateRoute>
           }
         />

@@ -49,6 +49,10 @@ service cloud.firestore {
         && request.resource.data.updatedAtIso is string;
     }
 
+    function isAppointmentOwner() {
+      return isAuthenticated() && resource.data.customerId == request.auth.uid;
+    }
+
     match /clientes/{clientId} {
       allow read, create, update, delete: if isAdmin() || isOwner(clientId);
     }
@@ -90,6 +94,21 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /appointmentSettings/{settingsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isAdmin() || isAppointmentOwner();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /appointmentLocks/{lockId} {
+      allow read, write: if isAdmin();
+    }
+
     match /customers/{customerId} {
       allow read, write: if isAdmin() || isOwner(customerId);
     }
@@ -98,6 +117,13 @@ service cloud.firestore {
       allow read: if isAdmin() || isOwner(customerId);
       allow create: if isAdmin() || isValidCustomerOrderMirrorCreate(customerId);
       allow update, delete: if isAdmin();
+    }
+
+    match /customers/{customerId}/notifications/{notificationId} {
+      allow read: if isAdmin() || isOwner(customerId);
+      allow create: if isAdmin() || isOwner(customerId);
+      allow update: if isAdmin() || isOwner(customerId);
+      allow delete: if isAdmin();
     }
 
     match /customers/{customerId}/{document=**} {

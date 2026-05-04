@@ -7,6 +7,7 @@ export const PRODUCTS_ROUTE = "/prods";
 export const SERVICES_ROUTE = "/servicos";
 export const TESTIMONIALS_ROUTE = "/depoimentos";
 export const ORDERS_ROUTE = "/pedidos";
+export const APPOINTMENTS_ROUTE = "/agendamentos";
 
 type DashboardDomainMeta = {
   key: DashboardDomainKey;

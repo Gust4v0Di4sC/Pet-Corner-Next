@@ -9,6 +9,7 @@ import {
   CLIENTS_ROUTE,
   DASHBOARD_ROUTE,
   ORDERS_ROUTE,
+  APPOINTMENTS_ROUTE,
   PRODUCTS_ROUTE,
   SERVICES_ROUTE,
   TESTIMONIALS_ROUTE,
@@ -24,7 +25,8 @@ export default function Nav() {
     { to: CLIENTS_ROUTE, icon: "users", label: "Clientes" },
     { to: ANIMALS_ROUTE, icon: "paw", label: "Animais" },
     { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
-    { to: SERVICES_ROUTE, icon: "scissors", label: "Servicos" },
+    { to: SERVICES_ROUTE, icon: "scissors", label: "Serviços" },
+    { to: APPOINTMENTS_ROUTE, icon: "calendar", label: "Agendamentos" },
     { to: ORDERS_ROUTE, icon: "shopping-bag", label: "Pedidos" },
     { to: TESTIMONIALS_ROUTE, icon: "comments", label: "Depoimentos" },
   ];
@@ -59,7 +61,7 @@ export default function Nav() {
           </button>
 
           <div className="menu__brand">
-            <span>Navegacao</span>
+            <span>Navegação</span>
             <strong>PetCorner</strong>
           </div>
         </div>

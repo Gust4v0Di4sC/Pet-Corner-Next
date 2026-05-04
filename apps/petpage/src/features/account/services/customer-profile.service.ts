@@ -6,11 +6,13 @@ import {
   createCustomerPet,
   readCustomerAccountProfile,
   readCustomerAddress,
+  readCustomerAppointments,
   readCustomerFavorites,
   readCustomerOrders,
   readCustomerPets,
   type FirebaseCustomerAccountProfile,
   type FirebaseCustomerAddress,
+  type FirebaseCustomerAppointment,
   type FirebaseCustomerFavorite,
   type FirebaseCustomerOrder,
   type FirebaseCustomerPet,
@@ -29,6 +31,7 @@ export type CustomerProfileIdentity = {
 
 export type CustomerPet = FirebaseCustomerPet;
 export type CustomerOrder = FirebaseCustomerOrder;
+export type CustomerAppointment = FirebaseCustomerAppointment;
 export type CustomerFavorite = FirebaseCustomerFavorite;
 export type CustomerDeliveryAddress = FirebaseCustomerAddress;
 export type CustomerAccountProfile = FirebaseCustomerAccountProfile;
@@ -57,6 +60,7 @@ export type CustomerProfileDataBundle = {
   profile: CustomerAccountProfile | null;
   pets: CustomerPet[];
   orders: CustomerOrder[];
+  appointments: CustomerAppointment[];
   favorites: CustomerFavorite[];
   address: CustomerDeliveryAddress | null;
 };
@@ -131,10 +135,18 @@ export async function getCustomerProfileDataBundle(
   const resolvedIdentity = await resolveIdentity(identity);
   await syncCustomerProfile(resolvedIdentity);
 
-  const [profileResult, petsResult, ordersResult, favoritesResult, addressResult] = await Promise.allSettled([
+  const [
+    profileResult,
+    petsResult,
+    ordersResult,
+    appointmentsResult,
+    favoritesResult,
+    addressResult,
+  ] = await Promise.allSettled([
     readCustomerAccountProfile(resolvedIdentity.customerId),
     readCustomerPets(resolvedIdentity.customerId),
     readCustomerOrders(resolvedIdentity.customerId),
+    readCustomerAppointments(resolvedIdentity.customerId),
     readCustomerFavorites(resolvedIdentity.customerId),
     readCustomerAddress(resolvedIdentity.customerId),
   ]);
@@ -143,6 +155,8 @@ export async function getCustomerProfileDataBundle(
     profile: profileResult.status === "fulfilled" ? profileResult.value : null,
     pets: petsResult.status === "fulfilled" ? petsResult.value : [],
     orders: ordersResult.status === "fulfilled" ? ordersResult.value : [],
+    appointments:
+      appointmentsResult.status === "fulfilled" ? appointmentsResult.value : [],
     favorites: favoritesResult.status === "fulfilled" ? favoritesResult.value : [],
     address: addressResult.status === "fulfilled" ? addressResult.value : null,
   };

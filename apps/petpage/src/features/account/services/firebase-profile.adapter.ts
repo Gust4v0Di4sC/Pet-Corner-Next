@@ -23,6 +23,7 @@ export type FirebaseCustomerProfileAdapter = {
   adminDogsCollection: "dogs";
   petsCollection: "pets";
   ordersCollection: "orders";
+  appointmentsCollection: "appointments";
   favoritesCollection: "favorites";
   addressesCollection: "addresses";
   defaultAddressDocId: "delivery";
@@ -47,6 +48,18 @@ export type FirebaseCustomerOrder = {
   dateIso: string;
   status: string;
   totalLabel: string;
+};
+
+export type FirebaseCustomerAppointment = {
+  id: string;
+  customerId: string;
+  serviceName: string;
+  scheduledStartIso: string;
+  scheduledEndIso: string;
+  scheduledDateKey: string;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+  status: string;
 };
 
 export type FirebaseCustomerFavorite = {
@@ -109,6 +122,7 @@ export const firebaseCustomerProfileAdapter: FirebaseCustomerProfileAdapter = {
   adminDogsCollection: "dogs",
   petsCollection: "pets",
   ordersCollection: "orders",
+  appointmentsCollection: "appointments",
   favoritesCollection: "favorites",
   addressesCollection: "addresses",
   defaultAddressDocId: "delivery",
@@ -379,6 +393,39 @@ function mapOrderDocument(
     dateIso,
     status,
     totalLabel,
+  };
+}
+
+function mapAppointmentDocument(
+  id: string,
+  customerId: string,
+  payload: Record<string, unknown>
+): FirebaseCustomerAppointment | null {
+  const appointmentCustomerId = toStringValue(payload.customerId).trim();
+  const serviceName = toStringValue(payload.serviceName).trim();
+  const scheduledStartIso =
+    toIsoString(payload.scheduledStartIso) ||
+    toIsoString(payload.scheduledStart) ||
+    new Date().toISOString();
+  const scheduledEndIso =
+    toIsoString(payload.scheduledEndIso) ||
+    toIsoString(payload.scheduledEnd) ||
+    scheduledStartIso;
+
+  if (appointmentCustomerId !== customerId || !serviceName) {
+    return null;
+  }
+
+  return {
+    id,
+    customerId,
+    serviceName,
+    scheduledStartIso,
+    scheduledEndIso,
+    scheduledDateKey: toStringValue(payload.scheduledDateKey).trim(),
+    scheduledStartTime: toStringValue(payload.scheduledStartTime).trim(),
+    scheduledEndTime: toStringValue(payload.scheduledEndTime).trim(),
+    status: toStringValue(payload.status).trim() || "requested",
   };
 }
 
@@ -664,6 +711,30 @@ export async function readCustomerOrders(customerId: string): Promise<FirebaseCu
     })
     .filter((order): order is FirebaseCustomerOrder => order !== null)
     .sort((left, right) => right.dateIso.localeCompare(left.dateIso));
+}
+
+export async function readCustomerAppointments(
+  customerId: string
+): Promise<FirebaseCustomerAppointment[]> {
+  const appointmentsSnapshot = await getDocs(
+    query(
+      collection(getDb(), firebaseCustomerProfileAdapter.appointmentsCollection),
+      where("customerId", "==", customerId),
+      limit(30)
+    )
+  );
+
+  return appointmentsSnapshot.docs
+    .map((snapshot) => {
+      const payload = snapshot.data();
+      if (!isRecord(payload)) {
+        return null;
+      }
+
+      return mapAppointmentDocument(snapshot.id, customerId, payload);
+    })
+    .filter((appointment): appointment is FirebaseCustomerAppointment => appointment !== null)
+    .sort((left, right) => right.scheduledStartIso.localeCompare(left.scheduledStartIso));
 }
 
 export async function readCustomerFavorites(

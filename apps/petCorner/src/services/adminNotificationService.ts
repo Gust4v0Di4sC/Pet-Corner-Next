@@ -20,6 +20,7 @@ export type AdminNotificationCategory =
   | "records"
   | "catalog"
   | "order"
+  | "appointment"
   | "chat"
   | "security"
   | "system";
@@ -85,6 +86,7 @@ function toCategory(value: unknown): AdminNotificationCategory {
     normalizedValue === "records" ||
     normalizedValue === "catalog" ||
     normalizedValue === "order" ||
+    normalizedValue === "appointment" ||
     normalizedValue === "chat" ||
     normalizedValue === "security" ||
     normalizedValue === "system"

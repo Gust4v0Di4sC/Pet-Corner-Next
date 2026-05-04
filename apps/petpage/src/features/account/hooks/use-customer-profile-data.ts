@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCustomerProfileDataBundle,
   type CustomerAccountProfile,
+  type CustomerAppointment,
   type CustomerDeliveryAddress,
   type CustomerFavorite,
   type CustomerOrder,
@@ -61,6 +62,7 @@ function createEmptyProfileDataBundle(): CustomerProfileDataBundle {
     profile: null,
     pets: [],
     orders: [],
+    appointments: [],
     favorites: [],
     address: null,
   };
@@ -228,6 +230,7 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
     profile: safeData.profile as CustomerAccountProfile | null,
     pets: safeData.pets as CustomerPet[],
     orders: safeData.orders as CustomerOrder[],
+    appointments: safeData.appointments as CustomerAppointment[],
     favorites: safeData.favorites as CustomerFavorite[],
     address: safeData.address as CustomerDeliveryAddress | null,
     isCreatingPet: createPetMutation.isPending,
@@ -238,4 +241,3 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
     reload,
   };
 }
-

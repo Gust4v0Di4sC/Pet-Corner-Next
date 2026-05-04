@@ -160,16 +160,14 @@ export function ServiceDetailPage({ serviceId }: ServiceDetailPageProps) {
                 asChild
                 className="h-11 rounded-full bg-[#fb8b24] px-5 text-sm font-semibold text-white hover:bg-[#ef7e14]"
               >
-                <a
-                  href={`https://wa.me/5567999898999?text=Ola%2C%20quero%20agendar%20${encodeURIComponent(service.title)}`}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  href={`/agendamentos?serviceId=${encodeURIComponent(service.id)}`}
                   suppressHydrationWarning
                   className="inline-flex items-center gap-2"
                 >
-                  Agendar pelo WhatsApp
+                  Agendar horario
                   <ArrowRight className="h-4 w-4" />
-                </a>
+                </Link>
               </Button>
               <Button
                 asChild

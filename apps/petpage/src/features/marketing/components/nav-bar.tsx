@@ -11,7 +11,8 @@ import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
 const menuLinks = [
   { href: "/#inicio", label: "Inicio" },
   { href: "/#produtos", label: "Produtos" },
-  { href: "/#servicos", label: "Servicos" },
+  { href: "/#servicos", label: "Serviços" },
+  { href: "/agendamentos", label: "Agendar" },
   { href: "/#contato", label: "Contato" },
 ];
 
