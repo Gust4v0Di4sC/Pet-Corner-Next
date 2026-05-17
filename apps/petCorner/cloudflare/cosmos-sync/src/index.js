@@ -624,6 +624,83 @@ function buildProfileImageUrl(request, env, key) {
   return getProductImageRouteUrl(request, key);
 }
 
+function parseIpv4Address(hostname) {
+  const parts = hostname.split(".");
+
+  if (parts.length !== 4) {
+    return null;
+  }
+
+  const octets = parts.map((part) => {
+    if (!/^\d{1,3}$/.test(part)) {
+      return null;
+    }
+
+    const octet = Number(part);
+    return Number.isInteger(octet) && octet >= 0 && octet <= 255 ? octet : null;
+  });
+
+  return octets.every((octet) => octet !== null) ? octets : null;
+}
+
+function isBlockedIpv4Address(hostname) {
+  const octets = parseIpv4Address(hostname);
+
+  if (!octets) {
+    return false;
+  }
+
+  const [first, second, third, fourth] = octets;
+
+  return (
+    first === 0 ||
+    first === 10 ||
+    first === 127 ||
+    (first === 100 && second >= 64 && second <= 127) ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168) ||
+    (first === 192 && second === 0 && third === 0) ||
+    (first === 192 && second === 0 && third === 2) ||
+    (first === 198 && (second === 18 || second === 19)) ||
+    (first === 198 && second === 51 && third === 100) ||
+    (first === 203 && second === 0 && third === 113) ||
+    first >= 224 ||
+    (first === 255 && second === 255 && third === 255 && fourth === 255)
+  );
+}
+
+function isBlockedIpv6Address(hostname) {
+  const normalizedHostname = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+
+  if (!normalizedHostname.includes(":")) {
+    return false;
+  }
+
+  return (
+    normalizedHostname === "::1" ||
+    normalizedHostname === "::" ||
+    normalizedHostname.startsWith("fc") ||
+    normalizedHostname.startsWith("fd") ||
+    normalizedHostname.startsWith("fe80:") ||
+    normalizedHostname.startsWith("::ffff:10.") ||
+    normalizedHostname.startsWith("::ffff:127.") ||
+    normalizedHostname.startsWith("::ffff:169.254.") ||
+    normalizedHostname.startsWith("::ffff:192.168.")
+  );
+}
+
+function isBlockedImageImportHostname(hostname) {
+  const normalizedHostname = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+
+  return (
+    normalizedHostname === "localhost" ||
+    normalizedHostname.endsWith(".localhost") ||
+    isBlockedIpv4Address(normalizedHostname) ||
+    isBlockedIpv6Address(normalizedHostname)
+  );
+}
+
 function parseProductImageImportUrl(rawUrl) {
   const normalizedUrl = String(rawUrl ?? "").trim();
 
@@ -643,19 +720,37 @@ function parseProductImageImportUrl(rawUrl) {
     throw new HttpError(400, "Use apenas URLs HTTP(S) para importar imagem.");
   }
 
-  const lowerCaseHostname = parsedUrl.hostname.toLowerCase();
+  if (parsedUrl.username || parsedUrl.password) {
+    throw new HttpError(400, "URL de imagem nao pode conter credenciais.");
+  }
 
-  if (["localhost", "127.0.0.1", "::1"].includes(lowerCaseHostname)) {
+  if (isBlockedImageImportHostname(parsedUrl.hostname)) {
     throw new HttpError(400, "Hostname da URL de imagem nao permitido.");
   }
 
   return parsedUrl.toString();
 }
 
-async function fetchImageBufferFromUrl(sourceUrl, maxBytes) {
+async function fetchImageBufferFromUrl(sourceUrl, maxBytes, redirectCount = 0) {
+  if (redirectCount > 3) {
+    throw new HttpError(400, "A URL de imagem excedeu o limite de redirecionamentos.");
+  }
+
   const response = await fetch(sourceUrl, {
     method: "GET",
+    redirect: "manual",
   });
+
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location");
+
+    if (!location) {
+      throw new HttpError(400, "Redirecionamento de imagem sem destino.");
+    }
+
+    const redirectedUrl = parseProductImageImportUrl(new URL(location, sourceUrl).toString());
+    return fetchImageBufferFromUrl(redirectedUrl, maxBytes, redirectCount + 1);
+  }
 
   if (!response.ok) {
     throw new HttpError(
