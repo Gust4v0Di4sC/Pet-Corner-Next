@@ -1,184 +1,26 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  onAuthStateChanged,
   RecaptchaVerifier,
-  signInWithPhoneNumber,
   signInWithEmailAndPassword,
+  signInWithPhoneNumber,
   signInWithPopup,
-  signOut,
-  type Auth,
   type ConfirmationResult,
-  type User as FirebaseUser,
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 import { DASHBOARD_ROUTE } from "../components/Dashboard/dashboard.domain";
-import {
-  LEGACY_SESSION_STORAGE_KEY,
-  SESSION_COOKIE_KEY,
-  SESSION_TTL_MS,
-} from "../config/sessionConfig";
 import { getFirebaseAuth, googleProvider, microsoftProvider } from "../firebase";
-import { AdminAccessError, hasAdminAccess } from "../services/adminService";
-import type { AuthHookReturn, AuthUser, EmailCredentials } from "../types/Auth";
+import { AUTH_QUERY_KEY } from "./auth/adminAuthQuery";
+import { useAdminAuthStateSubscription } from "./auth/useAdminAuthStateSubscription";
+import { useAdminSessionExpiryWatcher } from "./auth/useAdminSessionExpiryWatcher";
+import { persistSession } from "../services/adminAuthSessionService";
 import {
-  readJsonCookie,
-  readLegacyLocalStorageJson,
-  removeCookieValue,
-  removeLegacyLocalStorageItem,
-  writeJsonCookie,
-} from "../utils/secureCookieStorage";
-
-const AUTH_QUERY_KEY = ["auth", "user"] as const;
-const SESSION_CHECK_INTERVAL_MS = 60 * 1000;
-const SESSION_TTL_SECONDS = SESSION_TTL_MS / 1000;
-const LEGACY_AUTH_TOKENS_STORAGE_KEY = "auth-tokens";
-
-type PersistedAuthSession = {
-  startedAt: number;
-  expiresAt: number;
-};
-type PersistedSessionStatus = "missing" | "valid" | "expired";
-
-const clearLegacyAuthTokenStorage = () => {
-  removeLegacyLocalStorageItem(LEGACY_AUTH_TOKENS_STORAGE_KEY);
-};
-
-const clearPersistedSession = () => {
-  removeCookieValue(SESSION_COOKIE_KEY);
-  removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
-  clearLegacyAuthTokenStorage();
-};
-
-const readPersistedSession = (): PersistedAuthSession | null => {
-  const parsed =
-    readJsonCookie<Partial<PersistedAuthSession>>(SESSION_COOKIE_KEY) ??
-    readLegacyLocalStorageJson<Partial<PersistedAuthSession>>(LEGACY_SESSION_STORAGE_KEY);
-
-  if (!parsed) {
-    removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
-    return null;
-  }
-
-  if (typeof parsed.startedAt !== "number" || typeof parsed.expiresAt !== "number") {
-    clearPersistedSession();
-    return null;
-  }
-
-  const session = {
-    startedAt: parsed.startedAt,
-    expiresAt: parsed.expiresAt,
-  };
-
-  writeJsonCookie(SESSION_COOKIE_KEY, session, { maxAgeSeconds: SESSION_TTL_SECONDS });
-  removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
-
-  return session;
-};
-
-const persistSession = (startTime = Date.now()) => {
-  const session: PersistedAuthSession = {
-    startedAt: startTime,
-    expiresAt: startTime + SESSION_TTL_MS,
-  };
-
-  writeJsonCookie(SESSION_COOKIE_KEY, session, { maxAgeSeconds: SESSION_TTL_SECONDS });
-  clearLegacyAuthTokenStorage();
-  removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
-};
-
-const getPersistedSessionStatus = (): PersistedSessionStatus => {
-  const persistedSession = readPersistedSession();
-
-  if (!persistedSession) {
-    return "missing";
-  }
-
-  return persistedSession.expiresAt > Date.now() ? "valid" : "expired";
-};
-
-async function signOutAndClearSession(auth: Auth): Promise<void> {
-  await signOut(auth).catch(() => undefined);
-  clearPersistedSession();
-}
-
-const mapFirebaseUser = (user: FirebaseUser | null): AuthUser | null =>
-  user ? { uid: user.uid, email: user.email, isAdmin: true } : null;
-
-async function resolveAuthorizedUser(
-  auth: Auth,
-  firebaseUser: FirebaseUser | null,
-  options?: { forceRefresh?: boolean; throwOnDenied?: boolean }
-): Promise<AuthUser | null> {
-  if (!firebaseUser) {
-    return null;
-  }
-
-  try {
-    const isAdmin = await hasAdminAccess(firebaseUser, options?.forceRefresh === true);
-
-    if (!isAdmin) {
-      await signOutAndClearSession(auth);
-
-      if (options?.throwOnDenied) {
-        throw new AdminAccessError();
-      }
-
-      return null;
-    }
-
-    return mapFirebaseUser(firebaseUser);
-  } catch (error) {
-    await signOutAndClearSession(auth);
-
-    if (error instanceof AdminAccessError) {
-      throw error;
-    }
-
-    throw error;
-  }
-}
-
-const fetchCurrentUser = async (): Promise<AuthUser | null> => {
-  const auth = await getFirebaseAuth();
-
-  if (!auth.currentUser) {
-    clearPersistedSession();
-  } else if (getPersistedSessionStatus() !== "valid") {
-    await signOutAndClearSession(auth);
-    return null;
-  }
-
-  const current = await resolveAuthorizedUser(auth, auth.currentUser, {
-    forceRefresh: true,
-  });
-
-  if (current) {
-    return current;
-  }
-
-  return new Promise((resolve, reject) => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (firebaseUser) => {
-        unsubscribe();
-
-        if (firebaseUser && getPersistedSessionStatus() === "expired") {
-          void signOutAndClearSession(auth).then(() => resolve(null));
-          return;
-        }
-
-        if (!firebaseUser) {
-          clearPersistedSession();
-        }
-
-        resolveAuthorizedUser(auth, firebaseUser).then(resolve).catch(reject);
-      },
-      reject
-    );
-  });
-};
+  fetchCurrentAdminUser,
+  resolveAuthorizedUser,
+  signOutAndClearSession,
+} from "../services/adminAuthorizationService";
+import type { AuthHookReturn, AuthUser, EmailCredentials } from "../types/Auth";
 
 export const useAuth = (): AuthHookReturn => {
   const queryClient = useQueryClient();
@@ -187,9 +29,12 @@ export const useAuth = (): AuthHookReturn => {
 
   const { data: user, isLoading } = useQuery<AuthUser | null>({
     queryKey: AUTH_QUERY_KEY,
-    queryFn: fetchCurrentUser,
+    queryFn: fetchCurrentAdminUser,
     staleTime: Infinity,
   });
+
+  useAdminAuthStateSubscription(queryClient);
+  useAdminSessionExpiryWatcher(queryClient, navigate);
 
   const clearPhoneLoginVerifier = useCallback(() => {
     phoneRecaptchaVerifierRef.current?.clear();
@@ -197,88 +42,10 @@ export const useAuth = (): AuthHookReturn => {
   }, []);
 
   useEffect(() => {
-    let isDisposed = false;
-    let unsubscribe: (() => void) | undefined;
-
-    getFirebaseAuth().then((auth) => {
-      if (isDisposed) {
-        return;
-      }
-
-      const syncAuthorizedUser = async (firebaseUser: FirebaseUser | null) => {
-        try {
-          if (firebaseUser && getPersistedSessionStatus() === "expired") {
-            await signOutAndClearSession(auth);
-
-            if (!isDisposed) {
-              queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
-            }
-
-            return;
-          }
-
-          if (!firebaseUser) {
-            clearPersistedSession();
-          }
-
-          const nextUser = await resolveAuthorizedUser(auth, firebaseUser);
-
-          if (!isDisposed) {
-            queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, nextUser);
-          }
-        } catch {
-          if (!isDisposed) {
-            queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
-          }
-        }
-      };
-
-      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        void syncAuthorizedUser(firebaseUser);
-      });
-    });
-
-    return () => {
-      isDisposed = true;
-      unsubscribe?.();
-    };
-  }, [queryClient]);
-
-  useEffect(() => {
     return () => {
       clearPhoneLoginVerifier();
     };
   }, [clearPhoneLoginVerifier]);
-
-  useEffect(() => {
-    let isDisposed = false;
-    const intervalId = window.setInterval(() => {
-      void (async () => {
-        const auth = await getFirebaseAuth();
-
-        if (!auth.currentUser) {
-          clearPersistedSession();
-          return;
-        }
-
-        if (getPersistedSessionStatus() !== "expired") {
-          return;
-        }
-
-        await signOutAndClearSession(auth);
-
-        if (!isDisposed) {
-          queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
-          navigate("/", { replace: true });
-        }
-      })();
-    }, SESSION_CHECK_INTERVAL_MS);
-
-    return () => {
-      isDisposed = true;
-      window.clearInterval(intervalId);
-    };
-  }, [navigate, queryClient]);
 
   const loginMutation = useMutation<boolean, Error, EmailCredentials>({
     mutationFn: async ({ email, password }) => {
@@ -349,7 +116,7 @@ export const useAuth = (): AuthHookReturn => {
       const recaptchaContainer = document.getElementById(recaptchaContainerId);
 
       if (!recaptchaContainer) {
-        throw new Error("Não foi possível iniciar a verificação por SMS.");
+        throw new Error("Nao foi possivel iniciar a verificacao por SMS.");
       }
 
       recaptchaContainer.innerHTML = "";
@@ -393,8 +160,7 @@ export const useAuth = (): AuthHookReturn => {
   const logoutMutation = useMutation<void, Error, void>({
     mutationFn: async () => {
       const auth = await getFirebaseAuth();
-      await signOut(auth);
-      clearPersistedSession();
+      await signOutAndClearSession(auth);
     },
     onSuccess: () => {
       queryClient.setQueryData<AuthUser | null>(AUTH_QUERY_KEY, null);
