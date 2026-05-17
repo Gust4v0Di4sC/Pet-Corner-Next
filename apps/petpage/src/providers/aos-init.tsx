@@ -1,19 +1,27 @@
 "use client"
 
 import { useEffect } from "react"
-import Aos from "aos"
 import 'aos/dist/aos.css'
 
 
 export function AosInit(){
 
     useEffect(() => {
+        let isMounted = true
+
         const initAos = () => {
-            Aos.init({
-                duration: 800,
-                once: true,
+            void import("aos").then((module) => {
+                if (!isMounted) {
+                    return
+                }
+
+                const Aos = module.default
+                Aos.init({
+                    duration: 800,
+                    once: true,
+                })
+                Aos.refreshHard()
             })
-            Aos.refreshHard()
         }
 
         let timeoutId: number | null = null
@@ -24,6 +32,7 @@ export function AosInit(){
         }
 
         return () => {
+            isMounted = false
             if (timeoutId !== null) {
                 window.clearTimeout(timeoutId)
             }

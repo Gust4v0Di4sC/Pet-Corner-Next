@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "@phosphor-icons/react",
+      "date-fns",
+      "radix-ui",
+      "@radix-ui/react-slot",
+    ],
+  },
+
   async rewrites() {
     return [
       {

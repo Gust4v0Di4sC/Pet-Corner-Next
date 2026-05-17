@@ -4,7 +4,7 @@ import "@/styles/globals.css";
 import { cn } from "@/lib/utils";
 import { AosInit } from "@/providers/aos-init";
 import { AppQueryProvider } from "@/providers/app-query-provider";
-import { FloatingSupportActions } from "@/features/support/components/floating-support-actions";
+import { FloatingSupportActionsLoader } from "@/features/support/components/floating-support-actions-loader";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -104,7 +104,7 @@ export default function RootLayout({
       >
         <AppQueryProvider>
           {children}
-          <FloatingSupportActions />
+          <FloatingSupportActionsLoader />
           <AosInit/>
         </AppQueryProvider>
       </body>

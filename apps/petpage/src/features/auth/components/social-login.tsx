@@ -1,6 +1,7 @@
 "use client";
 
-import { GoogleLogo, WindowsLogo } from "@phosphor-icons/react";
+import { GoogleLogo } from "@phosphor-icons/react/dist/csr/GoogleLogo";
+import { WindowsLogo } from "@phosphor-icons/react/dist/csr/WindowsLogo";
 
 import { Button } from "@/components/ui/button";
 
