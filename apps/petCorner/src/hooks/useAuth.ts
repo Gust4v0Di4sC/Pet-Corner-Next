@@ -14,13 +14,26 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { DASHBOARD_ROUTE } from "../components/Dashboard/dashboard.domain";
-import { SESSION_STORAGE_KEY, SESSION_TTL_MS } from "../config/sessionConfig";
+import {
+  LEGACY_SESSION_STORAGE_KEY,
+  SESSION_COOKIE_KEY,
+  SESSION_TTL_MS,
+} from "../config/sessionConfig";
 import { getFirebaseAuth, googleProvider, microsoftProvider } from "../firebase";
 import { AdminAccessError, hasAdminAccess } from "../services/adminService";
 import type { AuthHookReturn, AuthUser, EmailCredentials } from "../types/Auth";
+import {
+  readJsonCookie,
+  readLegacyLocalStorageJson,
+  removeCookieValue,
+  removeLegacyLocalStorageItem,
+  writeJsonCookie,
+} from "../utils/secureCookieStorage";
 
 const AUTH_QUERY_KEY = ["auth", "user"] as const;
 const SESSION_CHECK_INTERVAL_MS = 60 * 1000;
+const SESSION_TTL_SECONDS = SESSION_TTL_MS / 1000;
+const LEGACY_AUTH_TOKENS_STORAGE_KEY = "auth-tokens";
 
 type PersistedAuthSession = {
   startedAt: number;
@@ -28,56 +41,51 @@ type PersistedAuthSession = {
 };
 type PersistedSessionStatus = "missing" | "valid" | "expired";
 
-const canUseStorage = (): boolean =>
-  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+const clearLegacyAuthTokenStorage = () => {
+  removeLegacyLocalStorageItem(LEGACY_AUTH_TOKENS_STORAGE_KEY);
+};
 
 const clearPersistedSession = () => {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  removeCookieValue(SESSION_COOKIE_KEY);
+  removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
+  clearLegacyAuthTokenStorage();
 };
 
 const readPersistedSession = (): PersistedAuthSession | null => {
-  if (!canUseStorage()) {
+  const parsed =
+    readJsonCookie<Partial<PersistedAuthSession>>(SESSION_COOKIE_KEY) ??
+    readLegacyLocalStorageJson<Partial<PersistedAuthSession>>(LEGACY_SESSION_STORAGE_KEY);
+
+  if (!parsed) {
+    removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
     return null;
   }
 
-  const rawSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
-
-  if (!rawSession) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(rawSession) as Partial<PersistedAuthSession>;
-    if (typeof parsed.startedAt !== "number" || typeof parsed.expiresAt !== "number") {
-      clearPersistedSession();
-      return null;
-    }
-
-    return {
-      startedAt: parsed.startedAt,
-      expiresAt: parsed.expiresAt,
-    };
-  } catch {
+  if (typeof parsed.startedAt !== "number" || typeof parsed.expiresAt !== "number") {
     clearPersistedSession();
     return null;
   }
+
+  const session = {
+    startedAt: parsed.startedAt,
+    expiresAt: parsed.expiresAt,
+  };
+
+  writeJsonCookie(SESSION_COOKIE_KEY, session, { maxAgeSeconds: SESSION_TTL_SECONDS });
+  removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
+
+  return session;
 };
 
 const persistSession = (startTime = Date.now()) => {
-  if (!canUseStorage()) {
-    return;
-  }
-
   const session: PersistedAuthSession = {
     startedAt: startTime,
     expiresAt: startTime + SESSION_TTL_MS,
   };
 
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  writeJsonCookie(SESSION_COOKIE_KEY, session, { maxAgeSeconds: SESSION_TTL_SECONDS });
+  clearLegacyAuthTokenStorage();
+  removeLegacyLocalStorageItem(LEGACY_SESSION_STORAGE_KEY);
 };
 
 const getPersistedSessionStatus = (): PersistedSessionStatus => {
@@ -341,7 +349,7 @@ export const useAuth = (): AuthHookReturn => {
       const recaptchaContainer = document.getElementById(recaptchaContainerId);
 
       if (!recaptchaContainer) {
-        throw new Error("Não foi possível iniciar a verificação por SMS.");
+        throw new Error("NÃ£o foi possÃ­vel iniciar a verificaÃ§Ã£o por SMS.");
       }
 
       recaptchaContainer.innerHTML = "";
