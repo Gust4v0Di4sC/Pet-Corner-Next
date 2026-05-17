@@ -1,25 +1,13 @@
 "use client";
 
-import {
-  collection,
-  doc,
-  getFirestore,
-  serverTimestamp,
-  writeBatch,
-} from "firebase/firestore";
 import type { Cart, CartItem } from "@/features/cart-checkout/types/cart";
-import {
-  getOrderStatusDescription,
-  getOrderStatusLabel,
-  type OrderStatus,
-} from "@/features/cart-checkout/types/order-tracking";
 import {
   calculateSubtotalInCents,
   createEmptyCart,
   FirebaseCartRepository,
   normalizeCart,
 } from "@/features/cart-checkout/services/firebase-cart.adapter";
-import { getFirebaseApp, waitForFirebaseUser } from "@/lib/auth/firebase-auth.adapter";
+import { waitForFirebaseUser } from "@/lib/auth/firebase-auth.adapter";
 import {
   clearGuestCartStorage,
   readGuestCartFromStorage,
@@ -29,7 +17,6 @@ import {
   createAdminBroadcastNotification,
   createCustomerNotification,
 } from "@/features/notifications/services/customer-notification.service";
-import { formatPriceBRL } from "@/lib/formatters/price";
 
 export type CartPersistenceMode = "remote" | "local";
 
@@ -74,30 +61,7 @@ export type CheckoutDeliveryInput = {
   complement?: string;
 };
 
-export type CheckoutPaymentInput = {
-  cardHolderName: string;
-  cardLast4: string;
-  expiryMonth: number;
-  expiryYear: number;
-};
-
-type FinalizeCustomerCheckoutInput = {
-  customerId?: string;
-  delivery: CheckoutDeliveryInput;
-  payment: CheckoutPaymentInput;
-  shippingInCents?: number;
-};
-
-export type FinalizeCustomerCheckoutResult = {
-  orderId: string;
-  orderLabel: string;
-  subtotalInCents: number;
-  shippingInCents: number;
-  totalInCents: number;
-};
-
 const cartRepository = new FirebaseCartRepository();
-const DEFAULT_CHECKOUT_SHIPPING_IN_CENTS = 1490;
 
 function isPermissionDeniedError(error: unknown): boolean {
   if (error && typeof error === "object") {
@@ -219,27 +183,6 @@ function buildCart(customerId: string | undefined, items: CartItem[]): Cart {
     subtotalInCents: calculateSubtotalInCents(items),
     updatedAtIso: new Date().toISOString(),
   });
-}
-
-function createOrderLabel(orderId: string): string {
-  return `PED-${orderId.slice(0, 8).toUpperCase()}`;
-}
-
-function createInitialOrderStatusTimeline(createdAtIso: string): Array<{
-  status: OrderStatus;
-  label: string;
-  description: string;
-  createdAtIso: string;
-}> {
-  const status: OrderStatus = "pedido_recebido";
-  return [
-    {
-      status,
-      label: getOrderStatusLabel(status),
-      description: getOrderStatusDescription(status),
-      createdAtIso,
-    },
-  ];
 }
 
 function emitCartChanged(result: CartOperationResult): void {
@@ -538,148 +481,6 @@ export async function clearCart(
   };
   emitCartChanged(result);
   return result;
-}
-
-export async function finalizeCustomerCheckout(
-  input: FinalizeCustomerCheckoutInput
-): Promise<FinalizeCustomerCheckoutResult> {
-  const normalizedCustomerId = await resolveAuthCustomerId(input.customerId);
-  if (!normalizedCustomerId) {
-    throw new Error("Faca login para finalizar o pedido.");
-  }
-
-  const cartResult = await loadCustomerOrGuestCart({
-    customerId: normalizedCustomerId,
-    mergeGuestCart: true,
-  });
-  const activeCart = cartResult.cart;
-
-  if (!activeCart.items.length) {
-    throw new Error("Seu carrinho esta vazio.");
-  }
-
-  const shippingInCents = Math.max(
-    Math.round(input.shippingInCents ?? DEFAULT_CHECKOUT_SHIPPING_IN_CENTS),
-    0
-  );
-  const subtotalInCents = Math.max(Math.round(activeCart.subtotalInCents), 0);
-  const totalInCents = subtotalInCents + shippingInCents;
-  const createdAtIso = new Date().toISOString();
-
-  const firestore = getFirestore(getFirebaseApp());
-  const globalOrderRef = doc(collection(firestore, "orders"));
-  const orderId = globalOrderRef.id;
-  const orderCode = createOrderLabel(orderId);
-  const customerOrderRef = doc(
-    firestore,
-    "customers",
-    normalizedCustomerId,
-    "orders",
-    orderId
-  );
-  const status: OrderStatus = "pedido_recebido";
-  const statusLabel = getOrderStatusLabel(status);
-  const statusDescription = getOrderStatusDescription(status);
-  const statusTimeline = createInitialOrderStatusTimeline(createdAtIso);
-  const normalizedItems = activeCart.items.map((item) => ({
-    productId: item.productId,
-    title: item.title,
-    category: item.category || "",
-    imageUrl: item.imageUrl || "",
-    quantity: item.quantity,
-    unitPriceInCents: item.unitPriceInCents,
-  }));
-  const deliveryPayload = {
-    fullName: input.delivery.fullName,
-    phone: input.delivery.phone,
-    zipCode: input.delivery.zipCode,
-    city: input.delivery.city,
-    street: input.delivery.street,
-    number: input.delivery.number,
-    district: input.delivery.district,
-    state: input.delivery.state,
-    complement: input.delivery.complement || "",
-  };
-  const paymentSummaryPayload = {
-    method: "credit_card" as const,
-    cardHolderName: input.payment.cardHolderName,
-    cardLast4: input.payment.cardLast4,
-    expiryMonth: input.payment.expiryMonth,
-    expiryYear: input.payment.expiryYear,
-  };
-
-  const baseOrderPayload = {
-    orderId,
-    orderCode,
-    customerId: normalizedCustomerId,
-    label: orderCode,
-    status,
-    statusLabel,
-    statusDescription,
-    statusTimeline,
-    dateIso: createdAtIso,
-    createdAtIso,
-    updatedAtIso: createdAtIso,
-    subtotalInCents,
-    shippingInCents,
-    totalInCents,
-    total: totalInCents / 100,
-    totalLabel: formatPriceBRL(totalInCents),
-    items: normalizedItems,
-    delivery: deliveryPayload,
-    paymentSummary: paymentSummaryPayload,
-    source: "petpage-checkout",
-  };
-
-  const batch = writeBatch(firestore);
-  batch.set(
-    globalOrderRef,
-    {
-      ...baseOrderPayload,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
-  batch.set(
-    customerOrderRef,
-    {
-      ...baseOrderPayload,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
-  await batch.commit();
-
-  await clearCart({ customerId: normalizedCustomerId });
-
-  void createCustomerNotification({
-    customerId: normalizedCustomerId,
-    title: "Pedido finalizado",
-    message: `Seu pedido ${orderCode} foi recebido e esta em processamento.`,
-    category: "order",
-    linkHref: "/rastreamento",
-  }).catch(() => {
-    return;
-  });
-
-  void createAdminBroadcastNotification({
-    title: "Novo pedido no checkout",
-    message: `Cliente ${normalizedCustomerId} finalizou o pedido ${orderCode}.`,
-    category: "order",
-    actorCustomerId: normalizedCustomerId,
-  }).catch(() => {
-    return;
-  });
-
-  return {
-    orderId,
-    orderLabel: orderCode,
-    subtotalInCents,
-    shippingInCents,
-    totalInCents,
-  };
 }
 
 export function getCartItemsCount(cart: Cart): number {

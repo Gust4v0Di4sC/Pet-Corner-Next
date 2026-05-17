@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import type Stripe from "stripe";
 import type { Cart, CartItem } from "@/features/cart-checkout/types/cart";
@@ -60,12 +61,16 @@ function toNumberValue(value: unknown, fallback = 0): number {
   return fallback;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 function sanitizeCartItem(payload: unknown): CartItem | null {
-  if (!payload || typeof payload !== "object") {
+  if (!isRecord(payload)) {
     return null;
   }
 
-  const record = payload as Record<string, unknown>;
+  const record = payload;
   const productId = toStringValue(record.productId).trim();
   const title = toStringValue(record.title).trim();
   const quantity = Math.max(Math.round(toNumberValue(record.quantity, 0)), 0);
@@ -90,7 +95,7 @@ function calculateSubtotalInCents(items: CartItem[]): number {
 }
 
 function mapCart(customerId: string, payload: unknown): Cart {
-  if (!payload || typeof payload !== "object") {
+  if (!isRecord(payload)) {
     return {
       customerId,
       items: [],
@@ -99,7 +104,7 @@ function mapCart(customerId: string, payload: unknown): Cart {
     };
   }
 
-  const record = payload as Record<string, unknown>;
+  const record = payload;
   const items = Array.isArray(record.items)
     ? record.items
         .map((item) => sanitizeCartItem(item))
@@ -124,11 +129,11 @@ function centsFromProductPrice(value: unknown): number {
 }
 
 function normalizeCheckoutCartItemInput(payload: unknown): CheckoutCartItemInput | null {
-  if (!payload || typeof payload !== "object") {
+  if (!isRecord(payload)) {
     return null;
   }
 
-  const record = payload as Record<string, unknown>;
+  const record = payload;
   const productId = toStringValue(record.productId).trim();
   const quantity = Math.max(Math.round(toNumberValue(record.quantity, 0)), 0);
 
@@ -159,21 +164,21 @@ function createInitialOrderStatusTimeline(createdAtIso: string) {
   ];
 }
 
-function readDeliveryFromMetadata(metadata: Stripe.Metadata | null | undefined): CheckoutDeliveryInput | null {
-  if (!metadata) {
+function readDeliveryFromPayload(payload: unknown): CheckoutDeliveryInput | null {
+  if (!isRecord(payload)) {
     return null;
   }
 
   const delivery: CheckoutDeliveryInput = {
-    fullName: toStringValue(metadata.deliveryFullName).trim(),
-    phone: toStringValue(metadata.deliveryPhone).trim(),
-    zipCode: toStringValue(metadata.deliveryZipCode).trim(),
-    city: toStringValue(metadata.deliveryCity).trim(),
-    street: toStringValue(metadata.deliveryStreet).trim(),
-    number: toStringValue(metadata.deliveryNumber).trim(),
-    district: toStringValue(metadata.deliveryDistrict).trim(),
-    state: toStringValue(metadata.deliveryState).trim(),
-    complement: toStringValue(metadata.deliveryComplement).trim(),
+    fullName: toStringValue(payload.fullName).trim(),
+    phone: toStringValue(payload.phone).trim(),
+    zipCode: toStringValue(payload.zipCode).trim(),
+    city: toStringValue(payload.city).trim(),
+    street: toStringValue(payload.street).trim(),
+    number: toStringValue(payload.number).trim(),
+    district: toStringValue(payload.district).trim(),
+    state: toStringValue(payload.state).trim(),
+    complement: toStringValue(payload.complement).trim(),
   };
 
   if (
@@ -209,6 +214,17 @@ function toOrderItems(items: CartItem[]) {
     quantity: item.quantity,
     unitPriceInCents: item.unitPriceInCents,
   }));
+}
+
+function createCartHash(cart: Pick<Cart, "items" | "subtotalInCents">): string {
+  const payload = {
+    items: toOrderItems(cart.items).sort((firstItem, secondItem) =>
+      firstItem.productId.localeCompare(secondItem.productId)
+    ),
+    subtotalInCents: Math.max(Math.round(cart.subtotalInCents), 0),
+  };
+
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
 
 async function publishOrderNotifications(input: {
@@ -260,23 +276,23 @@ export async function loadServerCustomerCart(customerId: string): Promise<Cart> 
   return mapCart(normalizedCustomerId, snapshot.exists ? snapshot.data() : null);
 }
 
-export async function resolveCheckoutCart(
+async function buildValidatedCheckoutCart(
   customerId: string,
-  clientItems: unknown
+  requestedItemsPayload: unknown
 ): Promise<Cart> {
-  const remoteCart = await loadServerCustomerCart(customerId);
-  if (remoteCart.items.length) {
-    return remoteCart;
-  }
-
-  const requestedItems = Array.isArray(clientItems)
-    ? clientItems
+  const requestedItems = Array.isArray(requestedItemsPayload)
+    ? requestedItemsPayload
         .map((item) => normalizeCheckoutCartItemInput(item))
         .filter((item): item is CheckoutCartItemInput => item !== null)
     : [];
 
   if (!requestedItems.length) {
-    return remoteCart;
+    return {
+      customerId: customerId.trim(),
+      items: [],
+      subtotalInCents: 0,
+      updatedAtIso: new Date().toISOString(),
+    };
   }
 
   const db = getFirebaseServerFirestore();
@@ -321,6 +337,18 @@ export async function resolveCheckoutCart(
   };
 }
 
+export async function resolveCheckoutCart(
+  customerId: string,
+  clientItems: unknown
+): Promise<Cart> {
+  const remoteCart = await loadServerCustomerCart(customerId);
+  if (remoteCart.items.length) {
+    return buildValidatedCheckoutCart(customerId, remoteCart.items);
+  }
+
+  return buildValidatedCheckoutCart(customerId, clientItems);
+}
+
 export async function saveStripePendingCheckout(input: {
   checkoutSessionId: string;
   customerId: string;
@@ -330,8 +358,16 @@ export async function saveStripePendingCheckout(input: {
 }) {
   const db = getFirebaseServerFirestore();
   const normalizedCustomerId = input.customerId.trim();
+  const normalizedCart = mapCart(normalizedCustomerId, {
+    items: input.cart.items,
+    subtotalInCents: input.cart.subtotalInCents,
+    updatedAtIso: input.cart.updatedAtIso,
+  });
+  const normalizedShippingInCents = Math.max(Math.round(input.shippingInCents), 0);
+  const expectedTotalInCents = normalizedCart.subtotalInCents + normalizedShippingInCents;
+  const cartHash = createCartHash(normalizedCart);
 
-  if (!input.checkoutSessionId.trim() || !normalizedCustomerId || !input.cart.items.length) {
+  if (!input.checkoutSessionId.trim() || !normalizedCustomerId || !normalizedCart.items.length) {
     throw new Error("Dados insuficientes para salvar checkout pendente.");
   }
 
@@ -340,14 +376,17 @@ export async function saveStripePendingCheckout(input: {
       checkoutSessionId: input.checkoutSessionId,
       customerId: normalizedCustomerId,
       cart: {
-        items: toOrderItems(input.cart.items),
-        subtotalInCents: input.cart.subtotalInCents,
+        items: toOrderItems(normalizedCart.items),
+        subtotalInCents: normalizedCart.subtotalInCents,
       },
+      cartHash,
       delivery: {
         ...input.delivery,
         complement: input.delivery.complement || "",
       },
-      shippingInCents: input.shippingInCents,
+      shippingInCents: normalizedShippingInCents,
+      expectedTotalInCents,
+      status: "pending",
       createdAt: FieldValue.serverTimestamp(),
       createdAtIso: new Date().toISOString(),
     },
@@ -375,11 +414,22 @@ export async function fulfillStripeCheckoutSession(
     };
   }
 
-  const delivery = readDeliveryFromMetadata(session.metadata);
-  if (!delivery) {
+  const sessionAmountTotal =
+    typeof session.amount_total === "number" && Number.isFinite(session.amount_total)
+      ? Math.round(session.amount_total)
+      : null;
+  if (sessionAmountTotal === null) {
     return {
       status: "ignored",
-      reason: "missing delivery metadata",
+      reason: "missing Stripe amount_total",
+    };
+  }
+
+  const sessionCurrency = toStringValue(session.currency).trim().toLowerCase();
+  if (sessionCurrency && sessionCurrency !== "brl") {
+    return {
+      status: "ignored",
+      reason: `unexpected currency ${sessionCurrency}`,
     };
   }
 
@@ -393,10 +443,6 @@ export async function fulfillStripeCheckoutSession(
   const orderCode = createOrderLabel(orderId);
   const createdAtIso = new Date().toISOString();
   const status: OrderStatus = "pedido_recebido";
-  const shippingInCents = Math.max(
-    Math.round(toNumberValue(session.metadata?.shippingInCents, DEFAULT_CHECKOUT_SHIPPING_IN_CENTS)),
-    0
-  );
   const paymentIntentId = normalizePaymentIntentId(session.payment_intent);
 
   const transactionResult = await db.runTransaction(async (transaction) => {
@@ -413,27 +459,91 @@ export async function fulfillStripeCheckoutSession(
       };
     }
 
-    const remoteCart = mapCart(
-      normalizedCustomerId,
-      cartSnapshot.exists ? cartSnapshot.data() : null
-    );
     const pendingCheckout = pendingCheckoutSnapshot.exists ? pendingCheckoutSnapshot.data() : null;
-    const pendingCart =
-      pendingCheckout && typeof pendingCheckout.cart === "object"
-        ? mapCart(normalizedCustomerId, pendingCheckout.cart)
-        : null;
-    const activeCart = remoteCart.items.length ? remoteCart : pendingCart;
-
-    if (!activeCart?.items.length) {
+    if (!pendingCheckout) {
       return {
         status: "ignored" as const,
-        reason: "empty cart",
+        reason: "missing pending checkout snapshot",
       };
     }
 
-    const subtotalInCents = activeCart.subtotalInCents;
+    const pendingStatus = toStringValue(pendingCheckout.status).trim();
+    if (pendingStatus && pendingStatus !== "pending") {
+      return {
+        status: "ignored" as const,
+        reason: `pending checkout status ${pendingStatus}`,
+      };
+    }
+
+    const pendingCustomerId = toStringValue(pendingCheckout.customerId).trim();
+    if (pendingCustomerId !== normalizedCustomerId) {
+      return {
+        status: "ignored" as const,
+        reason: "pending checkout customer mismatch",
+      };
+    }
+
+    const pendingCart = mapCart(normalizedCustomerId, pendingCheckout.cart);
+
+    if (!pendingCart.items.length) {
+      return {
+        status: "ignored" as const,
+        reason: "empty pending checkout cart",
+      };
+    }
+
+    const pendingCartHash = toStringValue(pendingCheckout.cartHash).trim();
+    if (!pendingCartHash || pendingCartHash !== createCartHash(pendingCart)) {
+      return {
+        status: "ignored" as const,
+        reason: "pending checkout cart hash mismatch",
+      };
+    }
+
+    const delivery = readDeliveryFromPayload(pendingCheckout.delivery);
+    if (!delivery) {
+      return {
+        status: "ignored" as const,
+        reason: "invalid pending checkout delivery",
+      };
+    }
+
+    const shippingInCents = Math.max(
+      Math.round(
+        toNumberValue(pendingCheckout.shippingInCents, DEFAULT_CHECKOUT_SHIPPING_IN_CENTS)
+      ),
+      0
+    );
+    const expectedTotalInCents = Math.round(
+      toNumberValue(pendingCheckout.expectedTotalInCents, Number.NaN)
+    );
+    if (!Number.isFinite(expectedTotalInCents) || expectedTotalInCents <= 0) {
+      return {
+        status: "ignored" as const,
+        reason: "invalid pending checkout total",
+      };
+    }
+
+    if (sessionAmountTotal !== expectedTotalInCents) {
+      return {
+        status: "ignored" as const,
+        reason: "Stripe amount_total mismatch",
+      };
+    }
+
+    const subtotalInCents = pendingCart.subtotalInCents;
     const totalInCents = subtotalInCents + shippingInCents;
-    const normalizedItems = toOrderItems(activeCart.items);
+    if (totalInCents !== expectedTotalInCents) {
+      return {
+        status: "ignored" as const,
+        reason: "pending checkout total mismatch",
+      };
+    }
+
+    const currentCart = mapCart(normalizedCustomerId, cartSnapshot.exists ? cartSnapshot.data() : null);
+    const shouldClearActiveCart =
+      currentCart.items.length > 0 && createCartHash(currentCart) === pendingCartHash;
+    const normalizedItems = toOrderItems(pendingCart.items);
     const paymentSummary = {
       method: "stripe" as const,
       provider: "stripe",
@@ -472,6 +582,8 @@ export async function fulfillStripeCheckoutSession(
       paymentSummary,
       stripe: stripePayload,
       stripeCheckoutSessionId: session.id,
+      stripePendingCheckoutId: session.id,
+      cartHash: pendingCartHash,
       source: "petpage-stripe-checkout",
     };
 
@@ -485,6 +597,19 @@ export async function fulfillStripeCheckoutSession(
       createdAt: FieldValue.serverTimestamp(),
       createdAtIso,
     });
+    transaction.set(
+      pendingCheckoutRef,
+      {
+        status: "fulfilled",
+        orderId,
+        orderCode,
+        fulfilledAt: FieldValue.serverTimestamp(),
+        fulfilledAtIso: createdAtIso,
+        paymentIntentId,
+        paymentStatus: session.payment_status,
+      },
+      { merge: true }
+    );
     transaction.set(globalOrderRef, {
       ...baseOrderPayload,
       createdAt: FieldValue.serverTimestamp(),
@@ -495,17 +620,19 @@ export async function fulfillStripeCheckoutSession(
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    transaction.set(
-      cartRef,
-      {
-        customerId: normalizedCustomerId,
-        items: [],
-        subtotalInCents: 0,
-        updatedAtIso: createdAtIso,
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    if (shouldClearActiveCart) {
+      transaction.set(
+        cartRef,
+        {
+          customerId: normalizedCustomerId,
+          items: [],
+          subtotalInCents: 0,
+          updatedAtIso: createdAtIso,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
 
     return {
       status: "created" as const,
