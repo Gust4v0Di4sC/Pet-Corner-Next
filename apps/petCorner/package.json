@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "prepare:runtime-config": "node scripts/write-runtime-config.mjs",
-    "dev": "npm run prepare:runtime-config && vite",
-    "build": "npm run prepare:runtime-config && vite build",
-    "build:ci": "npm run prepare:runtime-config && tsc -b && vite build",
+    "dev": "node scripts/write-runtime-config.mjs && vite",
+    "build": "node scripts/write-runtime-config.mjs && vite build",
+    "build:ci": "node scripts/write-runtime-config.mjs && tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "npm run prepare:runtime-config && vite preview"
+    "preview": "node scripts/write-runtime-config.mjs && vite preview"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import type { Firestore } from "firebase/firestore";
 
 import { getFirebaseRuntimeConfig } from "./config/runtimeConfig";
 
@@ -24,7 +24,11 @@ export async function getFirebaseAuth(): Promise<Auth> {
 }
 
 export async function getFirestoreDB(): Promise<Firestore> {
-  const app = await getFirebaseApp();
+  const [{ getFirestore }, app] = await Promise.all([
+    import("firebase/firestore"),
+    getFirebaseApp(),
+  ]);
+
   return getFirestore(app);
 }
 

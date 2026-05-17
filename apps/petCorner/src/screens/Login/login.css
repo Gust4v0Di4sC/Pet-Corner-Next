@@ -38,13 +38,11 @@
     linear-gradient(115deg, rgba(253, 246, 242, 0.2) 0%, rgba(253, 246, 242, 0.08) 42%, rgba(253, 246, 242, 0.24) 100%),
     image-set(
       url("../../assets/pets.avif") type("image/avif"),
-      url("../../assets/pets.webp") type("image/webp"),
-      url("../../assets/pets.png") type("image/png")
+      url("../../assets/pets.webp") type("image/webp")
     ),
     image-set(
       url("../../assets/bghome.avif") type("image/avif"),
-      url("../../assets/bghome.webp") type("image/webp"),
-      url("../../assets/bghome.jpg") type("image/jpeg")
+      url("../../assets/bghome.webp") type("image/webp")
     );
   background-position: center, center, center;
   background-repeat: no-repeat, no-repeat, no-repeat;
@@ -738,8 +736,7 @@
       linear-gradient(180deg, rgba(15, 20, 26, 0.22) 0%, rgba(15, 20, 26, 0.08) 42%, rgba(15, 20, 26, 0.28) 100%),
       image-set(
         url("../../assets/bgphone.avif") type("image/avif"),
-        url("../../assets/bgphone.webp") type("image/webp"),
-        url("../../assets/bgphone.png") type("image/png")
+        url("../../assets/bgphone.webp") type("image/webp")
       );
     background-position: center, center top;
     background-repeat: no-repeat, no-repeat;

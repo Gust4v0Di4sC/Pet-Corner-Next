@@ -39,6 +39,14 @@ function getVendorChunk(id: string): string | undefined {
     return "vendor-router";
   }
 
+  if (
+    packageName === "@firebase/firestore" ||
+    packageName === "@firebase/webchannel-wrapper" ||
+    (packageName === "firebase" && id.includes("/firestore"))
+  ) {
+    return "vendor-firebase-firestore";
+  }
+
   if (packageName === "firebase" || packageName.startsWith("@firebase/")) {
     return "vendor-firebase";
   }
@@ -72,12 +80,12 @@ function getVendorChunk(id: string): string | undefined {
     return "vendor-form-widgets";
   }
 
-  if (
-    packageName === "@lottiefiles/dotlottie-react" ||
-    packageName === "@lottiefiles/dotlottie-web" ||
-    packageName === "react-tooltip"
-  ) {
-    return "vendor-widgets";
+  if (packageName === "@lottiefiles/dotlottie-react" || packageName === "@lottiefiles/dotlottie-web") {
+    return "vendor-lottie";
+  }
+
+  if (packageName === "react-tooltip") {
+    return "vendor-tooltip";
   }
 
   if (
