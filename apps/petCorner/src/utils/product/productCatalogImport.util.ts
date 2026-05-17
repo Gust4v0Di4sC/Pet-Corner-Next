@@ -94,6 +94,60 @@ function getRawValue(
   return "";
 }
 
+function parseCsvLine(line: string): string[] {
+  const cells: string[] = [];
+  let currentCell = "";
+  let isInsideQuotedCell = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    const nextCharacter = line[index + 1];
+
+    if (character === '"' && isInsideQuotedCell && nextCharacter === '"') {
+      currentCell += '"';
+      index += 1;
+      continue;
+    }
+
+    if (character === '"') {
+      isInsideQuotedCell = !isInsideQuotedCell;
+      continue;
+    }
+
+    if (character === "," && !isInsideQuotedCell) {
+      cells.push(currentCell);
+      currentCell = "";
+      continue;
+    }
+
+    currentCell += character;
+  }
+
+  cells.push(currentCell);
+  return cells;
+}
+
+function parseCsvRows(fileContents: string): Record<string, unknown>[] {
+  const lines = fileContents
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0);
+  const [headerLine, ...dataLines] = lines;
+
+  if (!headerLine) {
+    return [];
+  }
+
+  const headers = parseCsvLine(headerLine).map((header) => normalizeCell(header));
+
+  return dataLines.map((line) => {
+    const cells = parseCsvLine(line);
+    return Object.fromEntries(
+      headers.map((header, index) => [header, normalizeCell(cells[index])])
+    );
+  });
+}
+
 function buildImportItem(
   row: Record<string, unknown>,
   headers: Map<string, string>,
@@ -127,26 +181,14 @@ function buildImportItem(
 }
 
 export async function parseProductCatalogFile(file: File): Promise<ParsedCatalogFile> {
-  const { read, utils } = await import("xlsx");
   const normalizedFileName = file.name.toLowerCase();
 
-  if (!normalizedFileName.endsWith(".csv") && !normalizedFileName.endsWith(".xlsx")) {
-    throw new Error("Envie um arquivo CSV ou XLSX.");
+  if (!normalizedFileName.endsWith(".csv")) {
+    throw new Error("Envie um arquivo CSV.");
   }
 
-  const buffer = await file.arrayBuffer();
-  const workbook = read(buffer, { type: "array" });
-  const [firstSheetName] = workbook.SheetNames;
-
-  if (!firstSheetName) {
-    throw new Error("A planilha enviada nao possui abas validas.");
-  }
-
-  const sheet = workbook.Sheets[firstSheetName];
-  const rows = utils.sheet_to_json<Record<string, unknown>>(sheet, {
-    defval: "",
-    raw: false,
-  });
+  const fileContents = await file.text();
+  const rows = parseCsvRows(fileContents);
 
   if (!rows.length) {
     throw new Error("A planilha enviada nao possui linhas para importar.");

@@ -280,7 +280,7 @@ export default function ProdutosPage() {
   };
 
   const templateHref = `${import.meta.env.BASE_URL}product-catalog-template.csv`;
-  const importCatalogTooltip = "Importar catalogo via arquivo CSV ou XLSX";
+  const importCatalogTooltip = "Importar catalogo via arquivo CSV";
   const cosmosSyncTooltip =
     "Sincroniza o catalogo base da Cosmos e atualiza os codigos no sistema.";
   const clearCatalogTooltip =
@@ -309,7 +309,7 @@ export default function ProdutosPage() {
                 </button>
                 <h3>Importe uma tabela de produtos do pet shop</h3>
                 <p className="product-catalog-card__description">
-                  Envie um arquivo CSV ou XLSX, sincronize com a API do Cosmos ou
+                  Envie um arquivo CSV, sincronize com a API do Cosmos ou
                   baixe um template.
                 </p>
               </div>
@@ -355,7 +355,7 @@ export default function ProdutosPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.xlsx"
+                  accept=".csv"
                   className="product-catalog-card__input"
                   onChange={handleCatalogUpload}
                 />
@@ -383,7 +383,7 @@ export default function ProdutosPage() {
                 <span>codigos disponiveis</span>
               </article>
               <article>
-                <strong>{isCatalogLoading ? "..." : "CSV / XLSX / Cosmos"}</strong>
+                <strong>{isCatalogLoading ? "..." : "CSV / Cosmos"}</strong>
                 <span>fontes aceitas</span>
               </article>
             </div>

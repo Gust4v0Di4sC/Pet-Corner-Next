@@ -88,18 +88,6 @@ function getVendorChunk(id: string): string | undefined {
     return "vendor-tooltip";
   }
 
-  if (
-    packageName === "xlsx" ||
-    packageName === "cfb" ||
-    packageName === "codepage" ||
-    packageName === "crc-32" ||
-    packageName === "adler-32" ||
-    packageName === "ssf" ||
-    packageName === "wmf"
-  ) {
-    return "vendor-xlsx";
-  }
-
   return "vendor";
 }
 
