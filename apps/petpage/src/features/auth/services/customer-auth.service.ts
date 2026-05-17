@@ -1,35 +1,25 @@
 "use client";
 
-import { FirebaseError } from "firebase/app";
-import { upsertCustomerProfile } from "@/features/account/services/firebase-customer.adapter";
 import {
   createCustomerWithEmail,
   signInCustomerWithEmail,
   signInCustomerWithGoogle,
   signInCustomerWithMicrosoft,
 } from "@/lib/auth/firebase-auth.adapter";
+import { mapCustomerAuthError } from "@/features/auth/services/customer-auth-errors";
+import {
+  syncCustomerProfile,
+  type CustomerIdentityInput,
+} from "@/features/auth/services/customer-profile-sync.service";
+import {
+  openCustomerSession,
+  type SessionResponse,
+} from "@/features/auth/services/customer-session.service";
+
+export type { SessionResponse };
+export { mapCustomerAuthError };
 
 export type LoginMode = "email" | "google" | "microsoft";
-
-export type SessionResponse = {
-  ok: boolean;
-  nextPath: string;
-  customerId: string;
-};
-
-type IdentityInput = {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  providerId?: string;
-  getIdToken: (forceRefresh?: boolean) => Promise<string>;
-};
-
-type OpenSessionInput = {
-  name?: string;
-  nextPath: string;
-  idToken: string;
-};
 
 type EmailLoginInput = {
   email: string;
@@ -44,69 +34,8 @@ type EmailRegisterInput = {
   nextPath: string;
 };
 
-function mapProvider(providerId?: string): "password" | "google.com" | "microsoft.com" | "unknown" {
-  if (providerId === "password") return "password";
-  if (providerId === "google.com") return "google.com";
-  if (providerId === "microsoft.com") return "microsoft.com";
-  return "unknown";
-}
-
-function extractProviderId(identity: IdentityInput): string | undefined {
-  if (identity.providerId) {
-    return identity.providerId;
-  }
-  return identity.providerId;
-}
-
-async function openSession(input: OpenSessionInput): Promise<SessionResponse> {
-  const response = await fetch("/api/auth/session", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${input.idToken}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      name: input.name,
-      next: input.nextPath,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Falha ao abrir sessao do cliente.");
-  }
-
-  const payload = (await response.json()) as
-    | (SessionResponse & { session?: { customerId?: string } })
-    | { ok?: boolean; nextPath?: string; session?: { customerId?: string } };
-
-  return {
-    ok: Boolean(payload.ok),
-    nextPath: payload.nextPath || input.nextPath,
-    customerId: payload.session?.customerId || "",
-  };
-}
-
-async function syncCustomerProfile(identity: IdentityInput, fallbackName: string): Promise<void> {
-  const normalizedEmail = identity.email?.trim();
-  if (!normalizedEmail) {
-    return;
-  }
-
-  try {
-    await upsertCustomerProfile({
-      customerId: identity.uid,
-      email: normalizedEmail,
-      name: identity.displayName || fallbackName,
-      provider: mapProvider(extractProviderId(identity)),
-    });
-  } catch (error) {
-    // The profile sync must not block auth/session bootstrap.
-    console.warn("Customer profile sync skipped:", error);
-  }
-}
-
 async function completeAuthFlow(
-  identity: IdentityInput,
+  identity: CustomerIdentityInput,
   nextPath: string,
   fallbackEmail: string,
   fallbackName: string
@@ -122,7 +51,7 @@ async function completeAuthFlow(
 
   const idToken = await identity.getIdToken(true);
 
-  return openSession({
+  return openCustomerSession({
     name: normalizedName,
     nextPath,
     idToken,
@@ -195,51 +124,4 @@ export async function loginCustomerWithMicrosoft(nextPath: string): Promise<Sess
     "",
     "Cliente Pet Corner"
   );
-}
-
-export function mapCustomerAuthError(error: unknown, context: "login" | "register"): string {
-  if (error instanceof FirebaseError) {
-    switch (error.code) {
-      case "auth/user-not-found":
-        return "Usuario nao encontrado.";
-      case "auth/wrong-password":
-        return "Senha incorreta.";
-      case "auth/invalid-credential":
-        return "Email ou senha invalidos.";
-      case "auth/invalid-email":
-        return "Informe um email valido.";
-      case "auth/email-already-in-use":
-        return "Este email ja esta em uso.";
-      case "auth/weak-password":
-        return "A senha precisa ter pelo menos 6 caracteres.";
-      case "auth/account-exists-with-different-credential":
-        return "Ja existe uma conta com outro metodo para este email.";
-      case "auth/popup-blocked":
-        return "O navegador bloqueou o popup. Libere popups para continuar.";
-      case "auth/popup-closed-by-user":
-        return context === "register"
-          ? "Cadastro cancelado antes da conclusao."
-          : "Login cancelado antes da conclusao.";
-      case "auth/unauthorized-domain":
-        return "Dominio nao autorizado para login.";
-      case "auth/operation-not-allowed":
-        return context === "register"
-          ? "Metodo de cadastro nao habilitado no momento."
-          : "Metodo de login nao habilitado no momento.";
-      case "auth/too-many-requests":
-        return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
-      default:
-        return context === "register"
-          ? "Nao foi possivel concluir o cadastro agora."
-          : "Nao foi possivel autenticar agora.";
-    }
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return context === "register"
-    ? "Nao foi possivel concluir o cadastro."
-    : "Nao foi possivel concluir o login.";
 }
