@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { CustomerSession } from "@/features/auth/types/customer-session";
 import { CUSTOMER_SESSION_COOKIE } from "@/lib/auth/session-constants";
 import { isSessionExpired } from "@/lib/auth/session";
+import { readSignedSessionCookieValue } from "@/lib/auth/session-cookie";
 
 function hasValidDate(value: string): boolean {
   return Number.isFinite(Date.parse(value));
@@ -35,7 +36,12 @@ export function parseCustomerSessionCookieValue(
   }
 
   try {
-    const decodedPayload = Buffer.from(cookieValue, "base64url").toString("utf-8");
+    const decodedPayload = readSignedSessionCookieValue(cookieValue);
+
+    if (!decodedPayload) {
+      return null;
+    }
+
     const parsedPayload = JSON.parse(decodedPayload) as unknown;
 
     if (!isCustomerSession(parsedPayload)) {

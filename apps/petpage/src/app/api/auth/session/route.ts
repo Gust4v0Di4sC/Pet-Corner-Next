@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAuth } from "firebase-admin/auth";
 import { z } from "zod";
 import { StructuralAuthRepository } from "@/lib/auth/structural-auth.repository";
 import {
@@ -9,14 +10,19 @@ import {
   createSessionCookieValue,
 } from "@/lib/auth/session-cookie";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
+import { getFirebaseServerApp } from "@/lib/firebase/firebase-server";
 import { sanitizeRedirectPath } from "@/lib/routing/route";
 
 type SessionPayload = {
-  customerId: string;
   name: string;
-  email: string;
   next: string;
 };
+
+function readBearerToken(request: Request): string {
+  const authorizationHeader = request.headers.get("authorization") || "";
+  const match = /^Bearer\s+(.+)$/i.exec(authorizationHeader);
+  return match?.[1]?.trim() || "";
+}
 
 export async function GET() {
   const session = await readServerCustomerSession();
@@ -26,34 +32,14 @@ export async function GET() {
 const emailValidationSchema = z.string().email();
 const sessionPayloadSchema = z
   .object({
-    customerId: z.string().optional().default(""),
     name: z.string().optional().default(""),
-    email: z.string().optional().default(""),
     next: z.string().optional().default(""),
   })
-  .superRefine((input, context) => {
-    const normalizedEmail = input.email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      return;
-    }
-
-    if (!emailValidationSchema.safeParse(normalizedEmail).success) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["email"],
-        message: "Email de sessao invalido.",
-      });
-    }
-  })
   .transform((input): SessionPayload => {
-    const normalizedCustomerId = input.customerId.trim();
     const normalizedName = input.name.trim();
-    const normalizedEmail = input.email.trim().toLowerCase();
 
     return {
-      customerId: normalizedCustomerId || "customer-structural",
-      name: normalizedName || "Customer",
-      email: normalizedEmail || "customer@example.com",
+      name: normalizedName,
       next: sanitizeRedirectPath(input.next, "/profile"),
     };
   });
@@ -89,12 +75,40 @@ export async function POST(request: Request) {
     );
   }
 
+  const idToken = readBearerToken(request);
+  if (!idToken) {
+    return NextResponse.json(
+      { ok: false, error: "Token de autenticacao ausente." },
+      { status: 401 }
+    );
+  }
+
+  const decodedToken = await getAuth(getFirebaseServerApp())
+    .verifyIdToken(idToken)
+    .catch(() => null);
+
+  if (!decodedToken?.uid) {
+    return NextResponse.json(
+      { ok: false, error: "Token de autenticacao invalido." },
+      { status: 401 }
+    );
+  }
+
+  const tokenEmail = typeof decodedToken.email === "string" ? decodedToken.email.trim().toLowerCase() : "";
+  if (!emailValidationSchema.safeParse(tokenEmail).success) {
+    return NextResponse.json(
+      { ok: false, error: "Email autenticado invalido." },
+      { status: 401 }
+    );
+  }
+
+  const tokenName = typeof decodedToken.name === "string" ? decodedToken.name.trim() : "";
   const authRepository = new StructuralAuthRepository();
   const normalized = parsedPayload.data;
   const session = await authRepository.openSession({
-    customerId: normalized.customerId,
-    email: normalized.email,
-    name: normalized.name,
+    customerId: decodedToken.uid,
+    email: tokenEmail,
+    name: tokenName || normalized.name || "Cliente Pet Corner",
   });
 
   const nextPath = sanitizeRedirectPath(normalized.next, "/profile");

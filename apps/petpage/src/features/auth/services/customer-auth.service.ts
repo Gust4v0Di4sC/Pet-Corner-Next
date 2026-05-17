@@ -22,13 +22,13 @@ type IdentityInput = {
   email: string | null;
   displayName: string | null;
   providerId?: string;
+  getIdToken: (forceRefresh?: boolean) => Promise<string>;
 };
 
 type OpenSessionInput = {
-  customerId: string;
-  email: string;
   name?: string;
   nextPath: string;
+  idToken: string;
 };
 
 type EmailLoginInput = {
@@ -62,11 +62,10 @@ async function openSession(input: OpenSessionInput): Promise<SessionResponse> {
   const response = await fetch("/api/auth/session", {
     method: "POST",
     headers: {
+      authorization: `Bearer ${input.idToken}`,
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      customerId: input.customerId,
-      email: input.email,
       name: input.name,
       next: input.nextPath,
     }),
@@ -83,7 +82,7 @@ async function openSession(input: OpenSessionInput): Promise<SessionResponse> {
   return {
     ok: Boolean(payload.ok),
     nextPath: payload.nextPath || input.nextPath,
-    customerId: payload.session?.customerId || input.customerId,
+    customerId: payload.session?.customerId || "",
   };
 }
 
@@ -121,11 +120,12 @@ async function completeAuthFlow(
 
   await syncCustomerProfile(identity, normalizedName);
 
+  const idToken = await identity.getIdToken(true);
+
   return openSession({
-    customerId: identity.uid,
-    email: normalizedEmail,
     name: normalizedName,
     nextPath,
+    idToken,
   });
 }
 
@@ -138,6 +138,7 @@ export async function loginCustomerWithEmail(input: EmailLoginInput): Promise<Se
       email: credential.user.email,
       displayName: credential.user.displayName,
       providerId,
+      getIdToken: credential.user.getIdToken.bind(credential.user),
     },
     input.nextPath,
     input.email,
@@ -154,6 +155,7 @@ export async function registerCustomerWithEmail(input: EmailRegisterInput): Prom
       email: credential.user.email,
       displayName: credential.user.displayName,
       providerId,
+      getIdToken: credential.user.getIdToken.bind(credential.user),
     },
     input.nextPath,
     input.email,
@@ -170,6 +172,7 @@ export async function loginCustomerWithGoogle(nextPath: string): Promise<Session
       email: credential.user.email,
       displayName: credential.user.displayName,
       providerId,
+      getIdToken: credential.user.getIdToken.bind(credential.user),
     },
     nextPath,
     "",
@@ -186,6 +189,7 @@ export async function loginCustomerWithMicrosoft(nextPath: string): Promise<Sess
       email: credential.user.email,
       displayName: credential.user.displayName,
       providerId,
+      getIdToken: credential.user.getIdToken.bind(credential.user),
     },
     nextPath,
     "",
