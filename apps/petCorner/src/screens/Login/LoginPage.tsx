@@ -14,6 +14,7 @@ import { Navigate } from "react-router-dom";
 import { sendPasswordResetEmail } from "../../API/auth";
 import LoginForm from "../../components/Login/LoginForm";
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
+import { AppIcon } from "../../components/icons/AppIcon";
 import AppLoader from "../../components/Templates/AppLoader";
 import Logo from "../../components/Templates/Logo";
 import logoimg from "../../assets/Logo.svg";
@@ -463,7 +464,7 @@ export default function LoginPage() {
               aria-label="Fechar modal"
               disabled={isRecoveryActionBusy}
             >
-              <i className="fa fa-times" aria-hidden="true" />
+              <AppIcon name="times" />
             </button>
 
             <div className="login-reset-modal__header">

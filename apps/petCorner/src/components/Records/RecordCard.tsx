@@ -1,4 +1,5 @@
 import type { RecordListItem } from "./record.types";
+import { AppIcon } from "../icons/AppIcon";
 
 type Props = {
   item: RecordListItem;
@@ -37,7 +38,7 @@ export function RecordCard({
                 disabled={busyRecordId === item.id}
                 aria-label={`Editar ${item.title}`}
               >
-                <i className="fa fa-pencil" aria-hidden="true" />
+                <AppIcon name="pencil" />
               </button>
             )}
 
@@ -49,7 +50,7 @@ export function RecordCard({
                 disabled={busyRecordId === item.id}
                 aria-label={`Excluir ${item.title}`}
               >
-                <i className="fa fa-trash" aria-hidden="true" />
+                <AppIcon name="trash" />
               </button>
             )}
           </div>

@@ -1,4 +1,5 @@
 import { useModalDismiss } from "../../hooks/records";
+import { AppIcon } from "../icons/AppIcon";
 
 type Props = {
   open: boolean;
@@ -54,12 +55,12 @@ export default function RecordDeleteModal({
           aria-label="Fechar modal"
           disabled={isSubmitting}
         >
-          <i className="fa fa-times" aria-hidden="true" />
+          <AppIcon name="times" />
         </button>
 
         <div className="record-confirm-modal">
           <span className="record-confirm-modal__icon" aria-hidden="true">
-            <i className="fa fa-trash" />
+            <AppIcon name="trash" />
           </span>
 
           <div className="record-confirm-modal__content">

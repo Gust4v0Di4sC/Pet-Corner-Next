@@ -1,4 +1,6 @@
 // src/pages/Login/components/SocialLogin.tsx
+import { AppIcon } from "../icons/AppIcon";
+
 type Props = {
   onGoogle: () => Promise<boolean>;
   onMicrosoft: () => Promise<boolean>;
@@ -13,7 +15,7 @@ export default function SocialLogin({ onGoogle, onMicrosoft }: Props) {
         onClick={onGoogle}
         aria-label="Entrar com Google"
       >
-        <i className="fa-brands fa-google" />
+        <AppIcon name="google" />
       </button>
 
       <button
@@ -22,7 +24,7 @@ export default function SocialLogin({ onGoogle, onMicrosoft }: Props) {
         onClick={onMicrosoft}
         aria-label="Entrar com Microsoft"
       >
-        <i className="fa-brands fa-windows" />
+        <AppIcon name="windows" />
       </button>
     </section>
   );

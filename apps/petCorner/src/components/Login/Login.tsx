@@ -7,6 +7,7 @@ import Animation from "../../assets/Animation.lottie";
 import logoimg from "../../assets/Logo.svg";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
+import { AppIcon } from "../icons/AppIcon";
 import Logo from "../Templates/Logo";
 import "./login.css";
 
@@ -82,7 +83,7 @@ export default function Login() {
               className="social-button google"
               onClick={loginWithGoogle}
             >
-              <i className="fa-brands fa-google" />
+              <AppIcon name="google" />
             </button>
 
             <button
@@ -90,7 +91,7 @@ export default function Login() {
               className="social-button microsoft"
               onClick={loginWithMicrosoft}
             >
-              <i className="fa-brands fa-windows" />
+              <AppIcon name="windows" />
             </button>
           </section>
         </div>

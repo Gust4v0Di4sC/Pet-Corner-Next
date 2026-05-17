@@ -1,3 +1,5 @@
+import { AppIcon } from "../icons/AppIcon";
+
 type Props = {
   ariaLabel: string;
   onClick: () => void;
@@ -11,7 +13,7 @@ export function RecordCreateButton({ ariaLabel, onClick }: Props) {
       onClick={onClick}
       aria-label={ariaLabel}
     >
-      <i className="fa fa-plus" aria-hidden="true" />
+      <AppIcon name="plus" />
     </button>
   );
 }

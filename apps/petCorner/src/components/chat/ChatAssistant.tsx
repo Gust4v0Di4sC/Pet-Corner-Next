@@ -8,6 +8,7 @@ import {
 
 import { useToast } from "../../hooks/useToast";
 import { queryChat, type ChatQueryResult } from "../../services/chatService";
+import { AppIcon } from "../icons/AppIcon";
 import "./chat-assistant.css";
 
 type ChatRole = "user" | "assistant";
@@ -142,7 +143,7 @@ export default function ChatAssistant({ placement = "default" }: Props) {
         aria-label={isOpen ? "Fechar chat de consultas" : "Abrir chat de consultas"}
         title="Chat de consultas"
       >
-        <i className={`fa ${isOpen ? "fa-times" : "fa-comments"}`} aria-hidden="true" />
+        <AppIcon name={isOpen ? "times" : "comments"} />
       </button>
 
       <section
@@ -165,7 +166,7 @@ export default function ChatAssistant({ placement = "default" }: Props) {
             disabled={isSending}
             aria-label="Fechar"
           >
-            <i className="fa fa-times" />
+            <AppIcon name="times" />
           </button>
         </header>
 

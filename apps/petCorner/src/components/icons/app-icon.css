@@ -1,0 +1,15 @@
+.app-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}
+
+.app-icon--spin {
+  animation: app-icon-spin 0.9s linear infinite;
+}
+
+@keyframes app-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

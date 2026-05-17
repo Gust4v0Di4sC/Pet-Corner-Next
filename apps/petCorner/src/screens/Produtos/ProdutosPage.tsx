@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import logoimg from "../../assets/Logo.svg";
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
+import { AppIcon } from "../../components/icons/AppIcon";
 import type { RecordFormData } from "../../components/Records/record.types";
 import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
@@ -303,7 +304,7 @@ export default function ProdutosPage() {
                   className="product-catalog-card__back"
                   onClick={() => navigate(DASHBOARD_ROUTE)}
                 >
-                  <i className="fa fa-arrow-left" aria-hidden="true" />
+                  <AppIcon name="arrow-left" />
                   Voltar ao dashboard
                 </button>
                 <h3>Importe uma tabela de produtos do pet shop</h3>
@@ -322,10 +323,7 @@ export default function ProdutosPage() {
                   title={importCatalogTooltip}
                   aria-label={isImporting ? "Importando catalogo" : "Importar catalogo"}
                 >
-                  <i
-                    className={`fa ${isImporting ? "fa-spinner fa-spin" : "fa-file-arrow-up"}`}
-                    aria-hidden="true"
-                  />
+                  <AppIcon name={isImporting ? "spinner" : "file-arrow-up"} spin={isImporting} />
                 </button>
 
                 <button
@@ -336,10 +334,7 @@ export default function ProdutosPage() {
                   title={cosmosSyncTooltip}
                   aria-label={isSyncingCosmos ? "Sincronizando via Cosmos" : "Sincronizar via Cosmos"}
                 >
-                  <i
-                    className={`fa ${isSyncingCosmos ? "fa-spinner fa-spin" : "fa-arrows-rotate"}`}
-                    aria-hidden="true"
-                  />
+                  <AppIcon name={isSyncingCosmos ? "spinner" : "arrows-rotate"} spin={isSyncingCosmos} />
                 </button>
 
                 <button
@@ -350,10 +345,7 @@ export default function ProdutosPage() {
                   title={clearCatalogTooltip}
                   aria-label={isClearingCatalog ? "Limpando importacoes" : "Limpar importacoes"}
                 >
-                  <i
-                    className={`fa ${isClearingCatalog ? "fa-spinner fa-spin" : "fa-trash-can"}`}
-                    aria-hidden="true"
-                  />
+                  <AppIcon name={isClearingCatalog ? "spinner" : "trash-can"} spin={isClearingCatalog} />
                 </button>
 
                 <a className="product-catalog-card__link" href={templateHref} download>
@@ -380,9 +372,9 @@ export default function ProdutosPage() {
                       aria-live="polite"
                       aria-label="Carregando codigos disponiveis"
                     >
-                      <i className="fa fa-paw" aria-hidden="true" />
-                      <i className="fa fa-paw" aria-hidden="true" />
-                      <i className="fa fa-paw" aria-hidden="true" />
+                      <AppIcon name="paw" />
+                      <AppIcon name="paw" />
+                      <AppIcon name="paw" />
                     </span>
                   ) : (
                     productNumberFormatter.format(catalogItems.length)

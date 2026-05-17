@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import logoimg from "../../assets/Logo.svg";
+import { AppIcon } from "../../components/icons/AppIcon";
 import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
 import { useAppointments } from "../../hooks/useAppointments";
@@ -207,7 +208,10 @@ export default function AgendamentosPage() {
               onClick={() => void appointmentsState.reloadAppointments()}
               disabled={appointmentsState.isLoading}
             >
-              <i className={`fa ${appointmentsState.isLoading ? "fa-spinner fa-spin" : "fa-rotate-right"}`} />
+              <AppIcon
+                name={appointmentsState.isLoading ? "spinner" : "rotate-right"}
+                spin={appointmentsState.isLoading}
+              />
               Atualizar
             </button>
           </header>

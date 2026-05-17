@@ -7,6 +7,7 @@ import {
   verifyPasswordResetActionCode,
 } from "../../API/auth";
 import logoimg from "../../assets/Logo.svg";
+import { AppIcon } from "../../components/icons/AppIcon";
 import {
   adminResetPasswordSchema,
   getFirstZodErrorMessage,
@@ -159,14 +160,14 @@ export default function ResetPasswordPage() {
 
           {status === "loading" ? (
             <div className="login-reset-panel__state">
-              <i className="fa fa-spinner fa-spin" aria-hidden="true" />
+              <AppIcon name="spinner" spin />
               <p>Validando link de redefinição...</p>
             </div>
           ) : null}
 
           {status === "invalid" ? (
             <div className="login-reset-panel__state">
-              <i className="fa fa-triangle-exclamation" aria-hidden="true" />
+              <AppIcon name="triangle-exclamation" />
               <p>{errorMessage}</p>
               <Link className="btn-primary login-reset-panel__action" to="/">
                 Voltar para login
@@ -210,7 +211,7 @@ export default function ResetPasswordPage() {
 
           {status === "success" ? (
             <div className="login-reset-panel__state">
-              <i className="fa fa-circle-check" aria-hidden="true" />
+              <AppIcon name="circle-check" />
               <p>Senha atualizada com sucesso. Você já pode entrar novamente.</p>
               <Link className="btn-primary login-reset-panel__action" to={returnPath}>
                 Ir para login

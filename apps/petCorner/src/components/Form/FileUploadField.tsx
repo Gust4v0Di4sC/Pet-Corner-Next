@@ -3,6 +3,7 @@ import { useState, type ChangeEvent } from "react";
 import type { FileUploadHandler, FormField, FormInputChangeHandler } from "./form.types";
 import { FormFieldFrame } from "./FormFieldFrame";
 import { createSyntheticInputChange } from "./form.utils";
+import { AppIcon } from "../icons/AppIcon";
 
 type Props = {
   field: FormField;
@@ -89,7 +90,7 @@ export function FileUploadField({
           aria-disabled={isDisabled || isUploading}
         >
           <span className="form-file-upload__icon" aria-hidden="true">
-            <i className="fa fa-arrow-up-from-bracket" />
+            <AppIcon name="arrow-up-from-bracket" />
           </span>
           <span className="form-file-upload__droptext">Selecionar imagem</span>
           <small className="form-file-upload__hint">JPG, PNG, WEBP, GIF ou AVIF</small>
@@ -114,7 +115,7 @@ export function FileUploadField({
 
         {isUploading ? (
           <small className="form-file-upload__status">
-            <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Enviando imagem...
+            <AppIcon name="spinner" spin /> Enviando imagem...
           </small>
         ) : null}
 

@@ -4,6 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 
 import { useAuth } from "../../hooks/useAuth";
+import { AppIcon } from "../icons/AppIcon";
 import {
   ANIMALS_ROUTE,
   CLIENTS_ROUTE,
@@ -57,7 +58,7 @@ export default function Nav() {
             aria-expanded={isOpen}
             aria-label={isOpen ? "Retrair menu" : "Expandir menu"}
           >
-            <i className={`fa ${isOpen ? "fa-times" : "fa-bars"}`} />
+            <AppIcon name={isOpen ? "times" : "bars"} />
           </button>
 
           <div className="menu__brand">
@@ -76,7 +77,7 @@ export default function Nav() {
               data-tooltip-content={item.label}
               data-tooltip-place="right"
             >
-              <i className={`fa fa-${item.icon}`} />
+              <AppIcon name={item.icon} />
               <span>{item.label}</span>
             </NavLink>
           ))}
@@ -90,7 +91,7 @@ export default function Nav() {
           data-tooltip-content="Logout"
           data-tooltip-place="right"
         >
-          <i className="fa fa-sign-out" />
+          <AppIcon name="sign-out" />
           <span>Logout</span>
         </button>
       </nav>

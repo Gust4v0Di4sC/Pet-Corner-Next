@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminNotifications } from "../../hooks/useAdminNotifications";
+import { AppIcon } from "../icons/AppIcon";
 import "./admin-notification-bell.css";
 
 function formatNotificationDate(value: string): string {
@@ -70,7 +71,7 @@ export default function AdminNotificationBell() {
         aria-label={bellLabel}
         onClick={() => setIsOpen((currentValue) => !currentValue)}
       >
-        <i className="fa fa-bell" aria-hidden="true" />
+        <AppIcon name="bell" />
         {unreadCount > 0 ? (
           <span className="admin-notification__badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
         ) : null}

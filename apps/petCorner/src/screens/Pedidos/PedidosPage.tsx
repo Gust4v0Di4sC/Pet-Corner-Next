@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import logoimg from "../../assets/Logo.svg";
+import { AppIcon } from "../../components/icons/AppIcon";
 import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
 import { useOrderOperations } from "../../hooks/useOrderOperations";
@@ -199,7 +200,7 @@ export default function PedidosPage() {
               onClick={() => void handleRefresh()}
               disabled={isLoading}
             >
-              <i className={`fa ${isLoading ? "fa-spinner fa-spin" : "fa-rotate-right"}`} />
+              <AppIcon name={isLoading ? "spinner" : "rotate-right"} spin={isLoading} />
               Atualizar
             </button>
           </header>
@@ -446,4 +447,3 @@ export default function PedidosPage() {
     </AppShell>
   );
 }
-

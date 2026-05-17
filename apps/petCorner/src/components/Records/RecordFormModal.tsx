@@ -3,6 +3,7 @@ import type { ChangeEventHandler, FormEventHandler } from "react";
 import { FormActions } from "../Form/FormActions";
 import { FormFields } from "../Form/FormFields";
 import { FormLayout } from "../Form/FormLayout";
+import { AppIcon } from "../icons/AppIcon";
 import type { FileUploadHandler } from "../Form/form.types";
 import { useModalDismiss } from "../../hooks/records";
 import type { RecordFormData, RecordFormField } from "./record.types";
@@ -59,7 +60,7 @@ export default function RecordFormModal({ open, content, form, actions }: Props)
           aria-label="Fechar modal"
           disabled={isSubmitting}
         >
-          <i className="fa fa-times" aria-hidden="true" />
+          <AppIcon name="times" />
         </button>
 
         <FormLayout title={content.title} onSubmit={actions.onSubmit} className="form--modal">
