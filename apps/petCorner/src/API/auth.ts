@@ -82,12 +82,12 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
     .replace(/\/+$/, "")
     .trim();
   const appPrefix = basePath && basePath !== "/" ? basePath : "";
-  const continueUrl = new URL(`${appPrefix}/`, window.location.origin);
+  const continueUrl = new URL(`${appPrefix}/reset-password`, window.location.origin);
   continueUrl.searchParams.set("source", "password-reset-email");
 
   const actionCodeSettings: ActionCodeSettings = {
     url: continueUrl.toString(),
-    handleCodeInApp: false,
+    handleCodeInApp: true,
   };
 
   await firebaseSendPasswordResetEmail(auth, email, actionCodeSettings);

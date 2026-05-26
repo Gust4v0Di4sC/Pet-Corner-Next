@@ -50,6 +50,7 @@ export default function RoutesApp() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/__/auth/action" element={<ResetPasswordPage />} />
 
         <Route
           path={DASHBOARD_ROUTE}

@@ -34,15 +34,24 @@ function resolveRouterPathFromContinueUrl(continueUrl: string | null): string {
     }
 
     if (appPrefix) {
-      if (!parsedContinueUrl.pathname.startsWith(`${appPrefix}/`) && parsedContinueUrl.pathname !== appPrefix) {
+      if (
+        !parsedContinueUrl.pathname.startsWith(`${appPrefix}/`) &&
+        parsedContinueUrl.pathname !== appPrefix
+      ) {
         return "/";
       }
 
       const relativePath = parsedContinueUrl.pathname.slice(appPrefix.length) || "/";
-      return `${relativePath}${parsedContinueUrl.search}${parsedContinueUrl.hash}`;
+      const appPath = `${relativePath}${parsedContinueUrl.search}${parsedContinueUrl.hash}`;
+      return appPath.startsWith("/reset-password") || appPath.startsWith("/__/auth/action")
+        ? "/"
+        : appPath;
     }
 
-    return `${parsedContinueUrl.pathname}${parsedContinueUrl.search}${parsedContinueUrl.hash}`;
+    const appPath = `${parsedContinueUrl.pathname}${parsedContinueUrl.search}${parsedContinueUrl.hash}`;
+    return appPath.startsWith("/reset-password") || appPath.startsWith("/__/auth/action")
+      ? "/"
+      : appPath;
   } catch {
     return "/";
   }
@@ -53,7 +62,7 @@ function getResetErrorMessage(error: unknown): string {
     switch (error.code) {
       case "auth/invalid-action-code":
       case "auth/expired-action-code":
-        return "O link de redefinição e inválido ou expirou. Solicite um novo e-mail.";
+        return "O link de redefinição é inválido ou expirou. Solicite um novo e-mail.";
       case "auth/user-disabled":
         return "Esta conta foi desativada. Entre em contato com o suporte.";
       case "auth/weak-password":
@@ -223,4 +232,3 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-

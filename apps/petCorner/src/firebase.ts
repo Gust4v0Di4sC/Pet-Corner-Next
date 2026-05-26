@@ -1,5 +1,6 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import {
+  browserLocalPersistence,
   browserPopupRedirectResolver,
   initializeAuth,
   type Auth,
@@ -9,10 +10,6 @@ import {
 import type { Firestore } from "firebase/firestore";
 
 import { getFirebaseRuntimeConfig } from "./config/runtimeConfig";
-import {
-  clearLegacyFirebaseAuthBrowserStorage,
-  createFirebaseAuthCookiePersistence,
-} from "./firebaseAuthCookiePersistence";
 
 let appPromise: Promise<FirebaseApp> | null = null;
 let authPromise: Promise<Auth> | null = null;
@@ -31,11 +28,9 @@ export function getFirebaseApp(): Promise<FirebaseApp> {
 
 export async function getFirebaseAuth(): Promise<Auth> {
   if (!authPromise) {
-    authPromise = getFirebaseApp().then(async (app) => {
-      await clearLegacyFirebaseAuthBrowserStorage();
-
+    authPromise = getFirebaseApp().then((app) => {
       return initializeAuth(app, {
-        persistence: createFirebaseAuthCookiePersistence(),
+        persistence: browserLocalPersistence,
         popupRedirectResolver: browserPopupRedirectResolver,
       });
     });
