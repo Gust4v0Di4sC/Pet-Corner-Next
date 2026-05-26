@@ -115,10 +115,10 @@ export function useAppointments() {
     settings: settingsQuery.data || null,
     isLoading: appointmentsQuery.isLoading || settingsQuery.isLoading,
     appointmentsErrorMessage: appointmentsQuery.error
-      ? mapErrorMessage(appointmentsQuery.error, "Nao foi possivel carregar agendamentos.")
+      ? mapErrorMessage(appointmentsQuery.error, "Não foi possível carregar agendamentos.")
       : null,
     settingsErrorMessage: settingsQuery.error
-      ? mapErrorMessage(settingsQuery.error, "Nao foi possivel carregar configuracoes.")
+      ? mapErrorMessage(settingsQuery.error, "Não foi possível carregar configurações.")
       : null,
     reloadAppointments: appointmentsQuery.refetch,
     isUpdatingStatus: updateStatusMutation.isPending,

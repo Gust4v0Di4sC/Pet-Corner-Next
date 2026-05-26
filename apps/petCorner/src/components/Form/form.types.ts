@@ -56,6 +56,7 @@ export type FormSubmitHandler = NonNullable<ComponentPropsWithoutRef<"form">["on
 
 export type FormLayoutProps = {
   title: string;
+  titleId?: string;
   className?: string;
   onSubmit: FormSubmitHandler;
   children: ReactNode;

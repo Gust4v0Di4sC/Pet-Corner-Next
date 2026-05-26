@@ -52,11 +52,10 @@ export function AppointmentsFilters({
         <input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="cliente, e-mail, servico ou data"
-          aria-label="Buscar por cliente, e-mail, servico ou data"
+          placeholder="cliente, e-mail, serviço ou data"
+          aria-label="Buscar por cliente, e-mail, serviço ou data"
         />
       </label>
     </div>
   );
 }
-

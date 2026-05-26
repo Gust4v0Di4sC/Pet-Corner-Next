@@ -21,7 +21,7 @@ export function AppointmentSettingsPanel({
   onSaveSettings,
 }: AppointmentSettingsPanelProps) {
   return (
-    <article className="appointments__panel appointments__settings">
+    <article id="appointments-settings-panel" className="appointments__panel appointments__settings" role="tabpanel">
       <header className="appointments__panel-header">
         <h3>Disponibilidade semanal</h3>
         <small>{settings.timezone}</small>
@@ -43,7 +43,7 @@ export function AppointmentSettingsPanel({
           />
         </label>
         <label>
-          <span>Antecedencia minima (h)</span>
+          <span>Antecedência mínima (h)</span>
           <input
             type="number"
             min={0}
@@ -112,7 +112,7 @@ export function AppointmentSettingsPanel({
         onClick={onSaveSettings}
         disabled={isSavingSettings}
       >
-        {isSavingSettings ? "Salvando..." : "Salvar configuracao"}
+        {isSavingSettings ? "Salvando..." : "Salvar configuração"}
       </button>
     </article>
   );

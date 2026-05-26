@@ -51,7 +51,7 @@ export default function AgendamentosPage() {
       setMessage(
         error instanceof Error && error.message.trim()
           ? error.message
-          : "Nao foi possivel atualizar o agendamento."
+          : "Não foi possível atualizar o agendamento."
       );
     }
   };
@@ -60,13 +60,13 @@ export default function AgendamentosPage() {
     try {
       await appointmentsState.saveSettings(settingsDraft);
       setIsMessageError(false);
-      setMessage("Configuracao de agendamentos salva.");
+      setMessage("Configuração de agendamentos salva.");
     } catch (error) {
       setIsMessageError(true);
       setMessage(
         error instanceof Error && error.message.trim()
           ? error.message
-          : "Nao foi possivel salvar a configuracao."
+          : "Não foi possível salvar a configuração."
       );
     }
   };
@@ -93,7 +93,7 @@ export default function AgendamentosPage() {
       <Main
         icon="calendar"
         title="Agendamentos"
-        subtitle="Agenda de servicos e configuracao de disponibilidade"
+        subtitle="Agenda de serviços e configuração de disponibilidade"
         fillHeight
         contentClassName="appointments-shell"
       >
@@ -106,13 +106,13 @@ export default function AgendamentosPage() {
           />
 
           {appointmentsState.appointmentsErrorMessage ? (
-            <p className="appointments__error">{appointmentsState.appointmentsErrorMessage}</p>
+            <p role="alert" className="appointments__error">{appointmentsState.appointmentsErrorMessage}</p>
           ) : null}
           {appointmentsState.settingsErrorMessage ? (
-            <p className="appointments__error">{appointmentsState.settingsErrorMessage}</p>
+            <p role="alert" className="appointments__error">{appointmentsState.settingsErrorMessage}</p>
           ) : null}
           {message ? (
-            <p className={isMessageError ? "appointments__error" : "appointments__success"}>
+            <p role={isMessageError ? "alert" : "status"} aria-live="polite" className={isMessageError ? "appointments__error" : "appointments__success"}>
               {message}
             </p>
           ) : null}
@@ -128,7 +128,7 @@ export default function AgendamentosPage() {
                 onSearchChange={appointmentsState.setSearch}
               />
 
-              <div className="appointments__grid">
+              <div id="appointments-agenda-panel" className="appointments__grid" role="tabpanel">
                 <AppointmentsListPanel
                   appointments={appointmentsState.appointments}
                   selectedAppointmentId={appointmentsState.selectedAppointment?.id}

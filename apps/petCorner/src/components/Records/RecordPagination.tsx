@@ -27,7 +27,7 @@ export function RecordPagination({
       </button>
 
       <span className="record-pagination__status">
-        Pagina {currentPage} de {totalPages}
+        Página {currentPage} de {totalPages}
       </span>
 
       <button

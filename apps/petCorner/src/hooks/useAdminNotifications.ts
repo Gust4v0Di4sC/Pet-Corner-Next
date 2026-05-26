@@ -18,7 +18,7 @@ function mapNotificationError(error: unknown): string {
     return error.message;
   }
 
-  return "Nao foi possivel carregar notificacoes agora.";
+  return "Não foi possível carregar notificações agora.";
 }
 
 export function useAdminNotifications() {

@@ -11,17 +11,17 @@ import type {
 export const WEEKDAY_LABELS: Record<string, string> = {
   "0": "Domingo",
   "1": "Segunda",
-  "2": "Terca",
+  "2": "Terça",
   "3": "Quarta",
   "4": "Quinta",
   "5": "Sexta",
-  "6": "Sabado",
+  "6": "Sábado",
 };
 
 const CALENDAR_EMAIL_STATUS_LABELS: Record<string, string> = {
   sent: "E-mail enviado",
-  disabled: "Envio automatico desativado",
-  missing_config: "Configuracao de e-mail pendente",
+  disabled: "Envio automático desativado",
+  missing_config: "Configuração de e-mail pendente",
   missing_email: "Cliente sem e-mail",
   error: "Erro no envio",
 };
@@ -55,7 +55,7 @@ export function getCustomerDisplayName(appointment: {
 }): string {
   const name = appointment.customerName.trim();
   const email = appointment.customerEmail.trim();
-  return name && name.toLowerCase() !== email.toLowerCase() ? name : "Nome nao informado";
+  return name && name.toLowerCase() !== email.toLowerCase() ? name : "Nome não informado";
 }
 
 export function getCustomerListLabel(appointment: {
@@ -66,11 +66,11 @@ export function getCustomerListLabel(appointment: {
   const email = appointment.customerEmail.trim();
   return name && name.toLowerCase() !== email.toLowerCase()
     ? name
-    : email || "Cliente nao identificado";
+    : email || "Cliente não identificado";
 }
 
 export function getCalendarEmailStatusLabel(status: string): string {
-  return CALENDAR_EMAIL_STATUS_LABELS[status] || "Status nao informado";
+  return CALENDAR_EMAIL_STATUS_LABELS[status] || "Status não informado";
 }
 
 export function formatCountLabel(value: number, singular: string, plural: string): string {
@@ -100,4 +100,3 @@ export function countRequestedAppointments(appointments: Appointment[]): number 
 export function getReadableStatusLabel(status: AppointmentStatus): string {
   return getAppointmentStatusLabel(status);
 }
-

@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, FormEventHandler } from "react";
+import { useRef, type ChangeEventHandler, type FormEventHandler } from "react";
 
 import { FormActions } from "../Form/FormActions";
 import { FormFields } from "../Form/FormFields";
@@ -31,11 +31,16 @@ type Props = {
 
 export default function RecordFormModal({ open, content, form, actions }: Props) {
   const isSubmitting = form.isSubmitting ?? false;
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const titleId = "record-form-modal-title";
 
   useModalDismiss({
     open,
     disabled: isSubmitting,
     onClose: actions.onClose,
+    containerRef: modalRef,
+    initialFocusRef: closeButtonRef,
   });
 
   if (!open) {
@@ -47,13 +52,16 @@ export default function RecordFormModal({ open, content, form, actions }: Props)
   return (
     <div className="record-modal-overlay" onClick={closeModal} role="presentation">
       <div
+        ref={modalRef}
         className="record-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={content.title}
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
       >
         <button
+          ref={closeButtonRef}
           type="button"
           className="record-modal__close"
           onClick={actions.onClose}
@@ -63,7 +71,12 @@ export default function RecordFormModal({ open, content, form, actions }: Props)
           <AppIcon name="times" />
         </button>
 
-        <FormLayout title={content.title} onSubmit={actions.onSubmit} className="form--modal">
+        <FormLayout
+          title={content.title}
+          titleId={titleId}
+          onSubmit={actions.onSubmit}
+          className="form--modal"
+        >
           <FormFields
             fields={form.fields}
             data={form.data}

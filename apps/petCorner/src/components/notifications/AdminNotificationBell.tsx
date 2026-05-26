@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAdminNotifications } from "../../hooks/useAdminNotifications";
+import { useDialogFocusManagement } from "../../hooks/accessibility/useDialogFocusManagement";
 import { AppIcon } from "../icons/AppIcon";
 import "./admin-notification-bell.css";
 
@@ -18,8 +19,11 @@ function formatNotificationDate(value: string): string {
 export default function AdminNotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
   const { isLoading, errorMessage, notifications, unreadCount, markAsRead, markAllAsRead } =
     useAdminNotifications();
+
+  const closePanel = useCallback(() => setIsOpen(false), []);
 
   const bellLabel = useMemo(() => {
     if (unreadCount <= 0) {
@@ -28,6 +32,13 @@ export default function AdminNotificationBell() {
 
     return `Notificações (${unreadCount} não lidas)`;
   }, [unreadCount]);
+
+  useDialogFocusManagement({
+    open: isOpen,
+    containerRef: dialogRef,
+    lockBodyScroll: false,
+    onClose: closePanel,
+  });
 
   useEffect(() => {
     if (!isOpen) {
@@ -43,23 +54,15 @@ export default function AdminNotificationBell() {
         return;
       }
 
-      setIsOpen(false);
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
+      closePanel();
     };
 
     window.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("keydown", handleEscape);
 
     return () => {
       window.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("keydown", handleEscape);
     };
-  }, [isOpen]);
+  }, [closePanel, isOpen]);
 
   return (
     <div className="admin-notification" ref={panelRef}>
@@ -78,10 +81,16 @@ export default function AdminNotificationBell() {
       </button>
 
       {isOpen ? (
-        <section className="admin-notification__panel" role="dialog" aria-label="Notificações administrativas">
+        <section
+          ref={dialogRef}
+          className="admin-notification__panel"
+          role="dialog"
+          aria-labelledby="admin-notification-title"
+          tabIndex={-1}
+        >
           <header className="admin-notification__panel-header">
             <div>
-              <h3>Notificações</h3>
+              <h3 id="admin-notification-title">Notificações</h3>
               <p>{unreadCount > 0 ? `${unreadCount} não lida(s)` : "Sem pendências"}</p>
             </div>
             <button
@@ -96,9 +105,9 @@ export default function AdminNotificationBell() {
 
           <div className="admin-notification__panel-body">
             {errorMessage ? (
-              <p className="admin-notification__error">{errorMessage}</p>
+              <p role="alert" className="admin-notification__error">{errorMessage}</p>
             ) : isLoading ? (
-              <div className="admin-notification__loading-list" aria-hidden="true">
+              <div className="admin-notification__loading-list" role="status" aria-label="Carregando notificações">
                 <span />
                 <span />
                 <span />
@@ -118,7 +127,7 @@ export default function AdminNotificationBell() {
                     >
                       <div className="admin-notification__item-header">
                         <h4>{notification.title}</h4>
-                        {!notification.isRead ? <span className="admin-notification__dot" /> : null}
+                        {!notification.isRead ? <span className="admin-notification__dot" aria-hidden="true" /> : null}
                       </div>
                       <p>{notification.message}</p>
                       <div className="admin-notification__item-footer">

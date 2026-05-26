@@ -38,7 +38,7 @@ export function AppointmentDetailPanel({
         <div className="appointments__detail">
           <div className="appointments__summary">
             <article>
-              <span>Servico</span>
+              <span>Serviço</span>
               <strong>{appointment.serviceName}</strong>
             </article>
             <article>
@@ -46,7 +46,7 @@ export function AppointmentDetailPanel({
               <strong>{formatCurrency(appointment.servicePrice)}</strong>
             </article>
             <article>
-              <span>Duracao</span>
+              <span>Duração</span>
               <strong>{appointment.serviceDurationMinutes} min</strong>
             </article>
           </div>
@@ -60,28 +60,28 @@ export function AppointmentDetailPanel({
                   {appointment.customerEmail}
                 </a>
               ) : (
-                <span>E-mail nao informado</span>
+                <span>E-mail não informado</span>
               )}
             </div>
           </section>
 
           <section className="appointments__detail-section">
-            <h4>Horario</h4>
+            <h4>Horário</h4>
             <p>
-              {formatDateTime(appointment.scheduledStartIso)} ate{" "}
+              {formatDateTime(appointment.scheduledStartIso)} até{" "}
               {appointment.scheduledEndTime}
             </p>
           </section>
 
           <section className="appointments__detail-section">
-            <h4>Observacoes</h4>
-            <p>{appointment.notes || "Nenhuma observacao informada."}</p>
+            <h4>Observações</h4>
+            <p>{appointment.notes || "Nenhuma observação informada."}</p>
           </section>
 
           <section className="appointments__detail-section">
             <h4>Google Agenda</h4>
             <p>
-              E-mail automatico:{" "}
+              E-mail automático:{" "}
               <strong>{getCalendarEmailStatusLabel(appointment.calendarEmailStatus)}</strong>
             </p>
             {appointment.googleCalendarAddUrl ? (
@@ -91,7 +91,7 @@ export function AppointmentDetailPanel({
                 </a>
               </p>
             ) : (
-              <p>Link nao gerado.</p>
+              <p>Link não gerado.</p>
             )}
           </section>
 
@@ -135,4 +135,3 @@ export function AppointmentDetailPanel({
     </article>
   );
 }
-
