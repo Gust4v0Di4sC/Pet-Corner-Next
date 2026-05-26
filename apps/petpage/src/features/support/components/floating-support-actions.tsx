@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle, PhoneCall, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDialogFocusManagement } from "@/hooks/use-dialog-focus-management";
 import { useCustomerDeliveryChat } from "@/features/support/hooks/use-customer-delivery-chat";
 
 const QUICK_ACTIONS = [
@@ -28,29 +29,22 @@ export function FloatingSupportActions() {
   const [inputValue, setInputValue] = useState("");
   const { isSending, messages, sendMessage } = useCustomerDeliveryChat();
   const messagesRef = useRef<HTMLDivElement | null>(null);
+  const chatRef = useRef<HTMLElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const closeChat = useCallback(() => setIsChatOpen(false), []);
 
   const shouldHide = useMemo(
     () => pathname === "/" || pathname.startsWith("/app-react"),
     [pathname]
   );
 
-  useEffect(() => {
-    if (!isChatOpen) {
-      return;
-    }
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsChatOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isChatOpen]);
+  useDialogFocusManagement({
+    open: isChatOpen,
+    containerRef: chatRef,
+    initialFocusRef: inputRef,
+    lockBodyScroll: false,
+    onClose: closeChat,
+  });
 
   useEffect(() => {
     if (!isChatOpen) {
@@ -81,17 +75,24 @@ export function FloatingSupportActions() {
   return (
     <>
       {isChatOpen ? (
-        <section className="fixed bottom-24 right-4 z-[170] flex h-[min(620px,calc(100dvh-8rem))] w-[min(420px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-300/70 bg-[#f4f0e6] shadow-[0_26px_58px_-24px_rgba(15,23,42,0.65)] sm:bottom-28 sm:right-6">
+        <section
+          ref={chatRef}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="delivery-chat-title"
+          tabIndex={-1}
+          className="fixed bottom-24 right-4 z-[170] flex h-[min(620px,calc(100dvh-8rem))] w-[min(420px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-300/70 bg-[#f4f0e6] shadow-[0_26px_58px_-24px_rgba(15,23,42,0.65)] sm:bottom-28 sm:right-6"
+        >
           <header className="flex items-center justify-between border-b border-slate-300/80 bg-[#f2f2f3] px-5 py-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Entrega e rastreamento
               </p>
-              <h2 className="text-lg font-semibold text-slate-900">Assistente Pet Corner</h2>
+              <h2 id="delivery-chat-title" className="text-lg font-semibold text-slate-900">Assistente Pet Corner</h2>
             </div>
             <Button
               type="button"
-              onClick={() => setIsChatOpen(false)}
+              onClick={closeChat}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-[#f2f2f3] text-slate-600 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
               aria-label="Fechar chat de entrega"
             >
@@ -99,7 +100,7 @@ export function FloatingSupportActions() {
             </Button>
           </header>
 
-          <div ref={messagesRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          <div ref={messagesRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
             <div className="flex flex-wrap gap-2">
               {QUICK_ACTIONS.map((action) => (
                 <Button
@@ -143,6 +144,7 @@ export function FloatingSupportActions() {
           >
             <div className="flex items-center gap-2">
               <Input
+                ref={inputRef}
                 value={inputValue}
                 onChange={(event) => setInputValue(event.target.value)}
                 placeholder="Pergunte sobre entrega, status ou problema..."

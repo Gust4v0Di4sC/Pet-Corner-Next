@@ -64,13 +64,14 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
           {hasItems ? <span aria-hidden="true">|</span> : null}
           {hasItems ? (
             <span>
-              Pagina {safeCurrentPage} de {totalPages}
+              Página {safeCurrentPage} de {totalPages}
             </span>
           ) : null}
           <span aria-hidden="true">|</span>
           <Button
             type="button"
             onClick={() => void reload()}
+            aria-label="Atualizar carrinho"
             className="inline-flex items-center gap-1 font-semibold text-[#fb8b24] transition hover:text-[#e36414]"
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -81,7 +82,7 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
 
       <CardContent className="space-y-6 pt-6">
         {errorMessage ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errorMessage}
           </div>
         ) : null}
@@ -90,7 +91,7 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
           <CartSkeleton />
         ) : !hasItems ? (
           <div className="space-y-4 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-5 py-8 text-center">
-            <p className="text-base font-medium text-slate-100">Seu carrinho esta vazio.</p>
+            <p className="text-base font-medium text-slate-100">Seu carrinho está vazio.</p>
             <p className="text-sm text-slate-400">Adicione produtos para continuar.</p>
             <Button
               asChild
@@ -176,7 +177,7 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
 
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-700 bg-[#111b2b] px-4 py-3">
               <p className="text-sm text-slate-300">
-                Exibindo {visibleItems.length} item(ns) nesta pagina
+                Exibindo {visibleItems.length} item(ns) nesta página
               </p>
 
               <div className="inline-flex items-center gap-2">
@@ -199,7 +200,7 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
                   disabled={safeCurrentPage >= totalPages}
                   className="h-9 rounded-full border-slate-600 bg-transparent px-4 text-xs font-semibold text-slate-200 hover:border-slate-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Proxima
+                  Próxima
                 </Button>
               </div>
             </div>

@@ -85,7 +85,7 @@ export function CheckoutDeliveryForm({
 
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="delivery-street" className={fieldLabelClassName()}>
-            Endereco
+            Endereço
           </Label>
           <Input
             id="delivery-street"
@@ -93,13 +93,13 @@ export function CheckoutDeliveryForm({
             value={deliveryForm.street}
             onChange={onInputChange}
             className={fieldInputClassName()}
-            placeholder="Rua e referencia"
+            placeholder="Rua e referência"
           />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="delivery-number" className={fieldLabelClassName()}>
-            Numero
+            Número
           </Label>
           <Input
             id="delivery-number"
@@ -177,4 +177,3 @@ export function CheckoutDeliveryForm({
     </form>
   );
 }
-

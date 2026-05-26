@@ -38,21 +38,21 @@ export function CheckoutPaymentForm({
           <p className="text-sm font-semibold text-slate-100">Pagamento</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="inline-flex items-center rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-200">
-              Cartao
+              Cartão
             </span>
             <span className="inline-flex items-center rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-200">
               Pix
             </span>
           </div>
           <p className="mt-3 text-sm text-slate-300">
-            O pagamento sera concluido no ambiente hospedado do Stripe.
+            O pagamento será concluído no ambiente hospedado do Stripe.
           </p>
         </div>
       </div>
 
       <p className="inline-flex items-center gap-2 text-sm text-amber-100/70">
         <Lock className="h-4 w-4" />
-        Pedido criado somente apos confirmacao de pagamento pelo Stripe.
+        Pedido criado somente após confirmação de pagamento pelo Stripe.
       </p>
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
@@ -77,4 +77,3 @@ export function CheckoutPaymentForm({
     </form>
   );
 }
-

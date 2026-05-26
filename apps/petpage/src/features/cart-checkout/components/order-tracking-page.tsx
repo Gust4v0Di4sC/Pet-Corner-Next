@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useCustomerOrderTracking } from "@/features/cart-checkout/hooks/use-customer-order-tracking";
 import { formatPriceBRL } from "@/lib/formatters/price";
 
@@ -55,11 +56,15 @@ export function OrderTrackingPage({ customerId }: OrderTrackingPageProps) {
       <div className="rounded-[2rem] border border-slate-700/90 bg-[#0f1722] p-5 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.95)]">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-[260px] flex-1">
+            <Label htmlFor="order-tracking-search" className="sr-only">
+              Buscar por código PED ou ID do pedido
+            </Label>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
+              id="order-tracking-search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar por codigo PED ou ID do pedido"
+              placeholder="Buscar por código PED ou ID do pedido"
               className="h-11 w-full rounded-full border border-slate-700 bg-slate-900/70 px-10 text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-[#fb8b24] focus:ring-2 focus:ring-[#fb8b24]/30"
             />
           </div>
@@ -84,7 +89,7 @@ export function OrderTrackingPage({ customerId }: OrderTrackingPageProps) {
       </div>
 
       {errorMessage ? (
-        <p className="rounded-2xl border border-red-300/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-100">
+        <p role="alert" className="rounded-2xl border border-red-300/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-100">
           {errorMessage}
         </p>
       ) : null}
@@ -102,7 +107,7 @@ export function OrderTrackingPage({ customerId }: OrderTrackingPageProps) {
         <div className="rounded-[2rem] border border-dashed border-slate-700 bg-[#0f1722] p-8 text-center">
           <p className="text-lg font-medium text-slate-100">Nenhum pedido encontrado.</p>
           <p className="mt-1 text-sm text-slate-400">
-            Tente outro codigo ou volte para produtos para criar um pedido.
+            Tente outro código ou volte para produtos para criar um pedido.
           </p>
           <Button
             asChild

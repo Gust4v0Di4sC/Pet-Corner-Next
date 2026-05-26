@@ -39,7 +39,7 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
               {activeStep === "delivery" ? (
                 <>
                   <Truck className="h-6 w-6 text-[#fb8b24]" />
-                  Endereco de entrega
+                  Endereço de entrega
                 </>
               ) : (
                 <>
@@ -57,13 +57,13 @@ export function CheckoutForm({ customerId, customerName, customerEmail }: Checko
 
           <CardContent className="space-y-5 p-6">
             {errorMessage ? (
-              <p className="rounded-2xl border border-red-300/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-100">
+              <p role="alert" className="rounded-2xl border border-red-300/50 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-100">
                 {errorMessage}
               </p>
             ) : null}
 
             {successMessage ? (
-              <p className="rounded-2xl border border-emerald-300/40 bg-emerald-950/40 px-4 py-3 text-sm font-medium text-emerald-100">
+              <p role="status" aria-live="polite" className="rounded-2xl border border-emerald-300/40 bg-emerald-950/40 px-4 py-3 text-sm font-medium text-emerald-100">
                 {successMessage}
               </p>
             ) : null}

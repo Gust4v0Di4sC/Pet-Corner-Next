@@ -149,12 +149,12 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
       }
 
       setActiveStep("payment");
-      setSuccessMessage("Endereco validado e salvo. Confira o resumo antes de pagar.");
+      setSuccessMessage("Endereço validado e salvo. Confira o resumo antes de pagar.");
     } catch (error) {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel salvar o endereco agora.";
+          : "Não foi possível salvar o endereço agora.";
       setErrorMessage(message);
     } finally {
       setIsSavingDelivery(false);
@@ -167,7 +167,7 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
     setSuccessMessage(null);
 
     if (!hasItems) {
-      setErrorMessage("Seu carrinho esta vazio. Adicione produtos para finalizar.");
+      setErrorMessage("Seu carrinho está vazio. Adicione produtos para finalizar.");
       return;
     }
 
@@ -199,7 +199,7 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "Nao foi possivel iniciar o checkout Stripe.";
+          : "Não foi possível iniciar o checkout Stripe.";
       setErrorMessage(message);
     } finally {
       setIsCreatingStripeSession(false);

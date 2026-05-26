@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LogOut, User, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { useDialogFocusManagement } from "@/hooks/use-dialog-focus-management";
 import { waitForFirebaseUser } from "@/lib/auth/firebase-auth.adapter";
 
 type UserPanelDrawerProps = {
@@ -19,6 +20,8 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState("");
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const displayName = useMemo(() => {
     const normalizedName = name?.trim();
@@ -51,27 +54,12 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeDrawer();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [closeDrawer, isOpen]);
+  useDialogFocusManagement({
+    open: isOpen,
+    containerRef: drawerRef,
+    initialFocusRef: closeButtonRef,
+    onClose: closeDrawer,
+  });
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -99,15 +87,19 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
     <div className="fixed inset-0 z-[120] pointer-events-auto">
       <Button
         type="button"
-        tabIndex={0}
+        tabIndex={-1}
         onClick={closeDrawer}
-        aria-label="Fechar painel"
+        aria-hidden="true"
         className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] transition-opacity duration-200 opacity-100"
       />
 
       <aside
         id="customer-user-panel"
-        aria-label="Painel do perfil"
+        ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="customer-user-panel-title"
+        tabIndex={-1}
         className="absolute right-0 top-0 isolate h-full w-full max-w-[430px] overflow-hidden border-l border-slate-300/70 bg-[#f4f0e6] shadow-[0_25px_60px_-20px_rgba(15,23,42,0.55)] transition-transform duration-300 translate-x-0"
       >
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(251,139,36,0.09),transparent_170px)]" />
@@ -116,10 +108,11 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
         <div className="relative flex h-full flex-col">
           <header className="flex items-center justify-between border-b border-slate-300/80 bg-[#f2f2f3] px-6 py-5">
             <div className="space-y-0.5">
-              <h2 className="text-3xl font-semibold leading-none text-slate-900">Minha conta</h2>
-              <p className="text-sm text-slate-500">Resumo rapido do seu perfil</p>
+              <h2 id="customer-user-panel-title" className="text-3xl font-semibold leading-none text-slate-900">Minha conta</h2>
+              <p className="text-sm text-slate-500">Resumo rápido do seu perfil</p>
             </div>
             <Button
+              ref={closeButtonRef}
               type="button"
               onClick={closeDrawer}
               className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-slate-300 bg-[#f2f2f3] text-slate-500 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
@@ -157,7 +150,7 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
               </p>
               <p className="mt-1 text-lg leading-tight text-slate-600">{displayEmail}</p>
               <p className="mt-4 inline-flex rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-medium text-emerald-700">
-                Sessao ativa
+                Sessão ativa
               </p>
             </div>
 
@@ -167,7 +160,7 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
                 onClick={closeDrawer}
                 className="inline-flex w-full items-center justify-center rounded-full bg-[#fb8b24] px-6 py-3.5 text-xl font-semibold text-white shadow-[0_8px_24px_-12px_rgba(251,139,36,0.9)] transition hover:bg-[#ef7e14]"
               >
-                Ir para pagina de perfil
+                Ir para página de perfil
               </Link>
               <Link
                 href="/rastreamento"

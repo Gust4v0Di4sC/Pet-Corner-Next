@@ -54,7 +54,7 @@ export function CheckoutOrderSummary({
           </div>
         ) : !hasItems ? (
           <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-300">
-            Seu carrinho esta vazio. Volte para produtos para continuar.
+            Seu carrinho está vazio. Volte para produtos para continuar.
           </div>
         ) : (
           <>

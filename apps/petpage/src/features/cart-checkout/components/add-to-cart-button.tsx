@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCartSimple } from "@phosphor-icons/react/dist/ssr";
 import { CheckCircle2, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { useDialogFocusManagement } from "@/hooks/use-dialog-focus-management";
 import { addProductToCart } from "@/features/cart-checkout/services/customer-cart.service";
 import fallbackProduct from "@/assets/fallbackproduct.png";
 
@@ -38,6 +39,16 @@ export function AddToCartButton({
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const closePopup = useCallback(() => setIsPopupOpen(false), []);
+
+  useDialogFocusManagement({
+    open: isPopupOpen,
+    containerRef: popupRef,
+    initialFocusRef: closeButtonRef,
+    onClose: closePopup,
+  });
 
   useEffect(() => {
     if (!isPopupOpen) {
@@ -45,13 +56,13 @@ export function AddToCartButton({
     }
 
     const timeoutId = window.setTimeout(() => {
-      setIsPopupOpen(false);
+      closePopup();
     }, Math.max(100, popupDurationMs));
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [isPopupOpen, popupDurationMs]);
+  }, [closePopup, isPopupOpen, popupDurationMs]);
 
   const handleClick = async () => {
     if (isAdding) {
@@ -87,15 +98,23 @@ export function AddToCartButton({
     isPopupOpen && typeof document !== "undefined"
       ? createPortal(
           <div className="fixed inset-0 z-[200] grid place-items-center bg-slate-950/50 px-4">
-            <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_28px_55px_-28px_rgba(15,23,42,0.65)]">
+            <div
+              ref={popupRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="add-to-cart-popup-title"
+              tabIndex={-1}
+              className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_28px_55px_-28px_rgba(15,23,42,0.65)]"
+            >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="inline-flex items-center gap-2 text-emerald-700">
-                  <CheckCircle2 className="h-5 w-5" />
-                  <p className="text-sm font-semibold">Produto adicionado ao carrinho</p>
+                  <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                  <p id="add-to-cart-popup-title" className="text-sm font-semibold">Produto adicionado ao carrinho</p>
                 </div>
                 <Button
+                  ref={closeButtonRef}
                   type="button"
-                  onClick={() => setIsPopupOpen(false)}
+                  onClick={closePopup}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100"
                   aria-label="Fechar popup"
                 >
@@ -125,7 +144,7 @@ export function AddToCartButton({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsPopupOpen(false)}
+                  onClick={closePopup}
                   className="h-10 rounded-full border-slate-300 px-4 text-sm font-semibold text-slate-700"
                 >
                   Continuar comprando
@@ -133,7 +152,7 @@ export function AddToCartButton({
                 <Button
                   type="button"
                   onClick={() => {
-                    setIsPopupOpen(false);
+                    closePopup();
                     router.push("/cart");
                     router.refresh();
                   }}

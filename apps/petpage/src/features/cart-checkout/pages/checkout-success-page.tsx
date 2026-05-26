@@ -32,7 +32,7 @@ export async function CheckoutSuccessPage() {
                 Pagamento recebido
               </h1>
               <p className="max-w-2xl text-base text-slate-300 md:text-lg">
-                O Stripe confirmou o pagamento. Seu pedido sera criado pelo webhook e aparecera em
+                O Stripe confirmou o pagamento. Seu pedido será criado pelo webhook e aparecerá em
                 Rastreamento assim que o processamento terminar.
               </p>
             </div>
@@ -61,4 +61,3 @@ export async function CheckoutSuccessPage() {
     </PageShell>
   );
 }
-
