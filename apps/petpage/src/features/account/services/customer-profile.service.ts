@@ -212,7 +212,7 @@ export async function saveCustomerDeliveryAddress(
 
   void createCustomerNotification({
     customerId: resolvedCustomerId,
-    title: "Endereco atualizado",
+    title: "Endereço atualizado",
     message: "Seu endereco de entrega foi atualizado com sucesso.",
     category: "profile",
     linkHref: "/profile",

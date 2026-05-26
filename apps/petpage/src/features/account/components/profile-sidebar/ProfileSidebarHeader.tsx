@@ -22,7 +22,7 @@ export function ProfileSidebarHeader({
       </Button>
       {isExpanded ? (
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-          Navegacao
+          Navegação
         </p>
       ) : null}
     </div>

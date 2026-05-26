@@ -89,7 +89,7 @@ function ExpandedUserDetails({
       </p>
       <p className="max-w-full break-all text-sm text-slate-300">{user.email}</p>
       <p className="inline-flex rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs font-medium text-emerald-300">
-        Sessao ativa
+        Sessão ativa
       </p>
       {feedbackItems.map((feedback) => (
         <p

@@ -14,14 +14,14 @@ export function ProfileImageUploader({
   onProfileImageSelected,
 }: ProfileImageUploaderProps) {
   return (
-    <Label className="mt-2 block">
+    <Label className="mt-2 block focus-within:outline-none focus-within:ring-2 focus-within:ring-[#fb8b24]/40">
       <span className="sr-only">Enviar foto de perfil</span>
       <Input
         type="file"
         accept={accept}
         onChange={onProfileImageSelected}
         disabled={isUploading}
-        className="hidden"
+        className="sr-only"
       />
       <span className="inline-flex cursor-pointer rounded-full border border-slate-600 px-2.5 py-1 text-[11px] font-semibold text-slate-200 transition hover:border-[#fb8b24] hover:text-[#fb8b24]">
         {isUploading ? "Enviando..." : "Alterar foto"}

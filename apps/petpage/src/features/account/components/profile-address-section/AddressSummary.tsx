@@ -18,7 +18,7 @@ export function AddressSummary({
     <div className="space-y-2 rounded-2xl border border-slate-700 bg-[#111b2b] p-4 text-lg text-slate-300">
       <AddressSummaryRow label="CEP" value={address?.zipCode} />
       <AddressSummaryRow label="Rua" value={address?.street} />
-      <AddressSummaryRow label="Numero" value={address?.number} />
+      <AddressSummaryRow label="Número" value={address?.number} />
       <AddressSummaryRow label="Bairro" value={address?.district} />
       <AddressSummaryRow
         label="Cidade/UF"

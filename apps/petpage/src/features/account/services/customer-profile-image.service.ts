@@ -130,7 +130,7 @@ function isCustomerProfileImageAsset(payload: unknown): payload is CustomerProfi
 async function getCustomerAuthToken(customerId: string): Promise<string> {
   const normalizedCustomerId = customerId.trim();
   if (!normalizedCustomerId) {
-    throw new Error("Sessao do cliente invalida para upload da foto de perfil.");
+    throw new Error("Sessão do cliente inválida para upload da foto de perfil.");
   }
 
   const firebaseUser = await waitForFirebaseUser();
@@ -139,7 +139,7 @@ async function getCustomerAuthToken(customerId: string): Promise<string> {
   }
 
   if (firebaseUser.uid.trim() !== normalizedCustomerId) {
-    throw new Error("Sessao autenticada nao corresponde ao perfil ativo.");
+    throw new Error("Sessão autenticada não corresponde ao perfil ativo.");
   }
 
   return firebaseUser.getIdToken(true);

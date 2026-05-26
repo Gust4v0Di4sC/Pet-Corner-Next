@@ -17,7 +17,7 @@ export function ProfileOverview() {
           <span className="font-semibold">Email:</span> cliente@example.com
         </p>
         <p>
-          <span className="font-semibold">Status:</span> Sessao autenticada.
+          <span className="font-semibold">Status:</span> Sessão autenticada.
         </p>
       </CardContent>
     </Card>

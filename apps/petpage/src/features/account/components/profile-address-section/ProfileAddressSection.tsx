@@ -11,7 +11,7 @@ export function ProfileAddressSection({
   actions,
 }: ProfileAddressSectionProps) {
   return (
-    <ProfileSectionPanel id="profile-section-address" title="Endereco de entrega">
+    <ProfileSectionPanel id="profile-section-address" title="Endereço de entrega">
       <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <AddressForm
           addressForm={data.addressForm}

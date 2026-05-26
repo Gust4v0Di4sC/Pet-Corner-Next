@@ -42,7 +42,7 @@ export function AddressForm({
       <AddressInput
         id="address-number"
         name="number"
-        label="Numero"
+        label="Número"
         value={addressForm.number}
         onChange={onAddressInputChange}
         placeholder="42"
@@ -77,7 +77,7 @@ export function AddressForm({
         label="Complemento"
         value={addressForm.complement}
         onChange={onAddressInputChange}
-        placeholder="Apartamento, referencia, etc."
+        placeholder="Apartamento, referência, etc."
         className="sm:col-span-2"
       />
 

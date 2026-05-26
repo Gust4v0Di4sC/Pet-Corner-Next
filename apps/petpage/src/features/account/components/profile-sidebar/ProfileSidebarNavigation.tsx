@@ -25,6 +25,8 @@ export function ProfileSidebarNavigation({
             type="button"
             onClick={() => onSectionSelected(item.id)}
             title={item.label}
+            aria-label={item.label}
+            aria-current={isActive ? "page" : undefined}
             className={`flex w-full items-center rounded-xl py-2.5 text-left text-base transition ${
               isExpanded ? "justify-start gap-3 px-3" : "justify-center px-2"
             } ${
@@ -33,7 +35,7 @@ export function ProfileSidebarNavigation({
                 : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
             }`}
           >
-            <Icon className="h-5 w-5 shrink-0" />
+            <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             {isExpanded ? <span className="truncate">{item.label}</span> : null}
           </Button>
         );

@@ -185,7 +185,7 @@ export function useProfileDashboardController({
       setPetForm(INITIAL_PET_FORM);
       setShowPetForm(false);
     } catch {
-      setPetErrorMessage("Nao foi possivel salvar o pet agora. Tente novamente.");
+      setPetErrorMessage("Não foi possível salvar o pet agora. Tente novamente.");
     }
   };
 
@@ -208,7 +208,7 @@ export function useProfileDashboardController({
     if (!parsedInput.success) {
       setIsAddressMessageError(true);
       setAddressMessage(
-        getFirstZodErrorMessage(parsedInput.error, "Nao foi possivel validar os dados do endereco.")
+        getFirstZodErrorMessage(parsedInput.error, "Não foi possível validar os dados do endereço.")
       );
       return;
     }
@@ -217,10 +217,10 @@ export function useProfileDashboardController({
       await saveAddress(parsedInput.data);
       setAddressFormDraft(null);
       setIsAddressMessageError(false);
-      setAddressMessage("Endereco salvo com sucesso.");
+      setAddressMessage("Endereço salvo com sucesso.");
     } catch {
       setIsAddressMessageError(true);
-      setAddressMessage("Nao foi possivel salvar o endereco agora.");
+      setAddressMessage("Não foi possível salvar o endereço agora.");
     }
   };
 
@@ -247,7 +247,7 @@ export function useProfileDashboardController({
       setIsProfileImageMessageError(false);
     } catch {
       setIsProfileImageMessageError(true);
-      setProfileImageMessage("Nao foi possivel atualizar a foto de perfil.");
+      setProfileImageMessage("Não foi possível atualizar a foto de perfil.");
     }
   };
 

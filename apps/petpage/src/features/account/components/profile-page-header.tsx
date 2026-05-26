@@ -31,15 +31,15 @@ export function ProfilePageHeader({
         Meu perfil
       </h1>
       <p className="text-lg text-amber-100/80 md:text-3xl">
-        Acompanhe seus pedidos e gerencie seus pets de estimacao.
+        Acompanhe seus pedidos e gerencie seus pets de estimação.
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs text-amber-100/70">
-          Sessao expira em {toDisplayDate(session.expiresAt)}
+          Sessão expira em {toDisplayDate(session.expiresAt)}
         </span>
       </div>
       {errorMessage ? (
-        <p className="inline-flex rounded-lg bg-red-950/40 px-3 py-2 text-sm font-medium text-red-200">
+        <p role="alert" className="inline-flex rounded-lg bg-red-950/40 px-3 py-2 text-sm font-medium text-red-200">
           {errorMessage}
         </p>
       ) : null}

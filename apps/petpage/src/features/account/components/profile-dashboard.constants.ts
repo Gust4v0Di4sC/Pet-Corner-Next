@@ -11,7 +11,7 @@ export const SECTION_NAV_ITEMS: SectionNavItem[] = [
   { id: "appointments", label: "Agendamentos", icon: CalendarClock },
   { id: "orders", label: "Pedidos", icon: Box },
   { id: "favorites", label: "Favoritos", icon: Heart },
-  { id: "address", label: "Enderecos", icon: MapPin },
+  { id: "address", label: "Endereços", icon: MapPin },
 ];
 
 export const INITIAL_PET_FORM: PetFormState = {

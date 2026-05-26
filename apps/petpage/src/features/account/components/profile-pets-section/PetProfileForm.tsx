@@ -73,7 +73,7 @@ export function PetProfileForm({
       />
 
       {petErrorMessage ? (
-        <p className="rounded-xl bg-red-950/45 px-3 py-2 text-sm font-medium text-red-200 md:col-span-2">
+        <p role="alert" className="rounded-xl bg-red-950/45 px-3 py-2 text-sm font-medium text-red-200 md:col-span-2">
           {petErrorMessage}
         </p>
       ) : null}
