@@ -54,9 +54,11 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
 
   return (
     <div className={`${styles.loginPage} ${styles.loginVisible}`}>
+      <div className={styles.petsLayer} aria-hidden="true" />
+
       <Link href="/" className={`${styles.backLink} ${styles.pageBackLink}`}>
         <ArrowLeft size={16} />
-        <span>Voltar para a landing</span>
+        <span>Voltar</span>
       </Link>
 
       <section className={styles.shell}>
