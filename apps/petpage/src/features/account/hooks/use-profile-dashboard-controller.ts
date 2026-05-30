@@ -1,34 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import {
-  INITIAL_ADDRESS_FORM,
-  INITIAL_PET_FORM,
-} from "@/features/account/components/profile-dashboard.constants";
+import { type ChangeEvent, useMemo, useState } from "react";
 import { useCustomerProfileData } from "@/features/account/hooks/use-customer-profile-data";
 import { useCustomerProfileImageUpload } from "@/features/account/hooks/use-customer-profile-image-upload";
-import type {
-  AddressFormState,
-  PetFormState,
-  ProfileSession,
-  SectionId,
-} from "@/features/account/types/profile-dashboard";
-import {
-  normalizeAddressFormValue,
-  resetPetBreedSelection,
-  toAddressFormState,
-  updatePetFormField,
-} from "@/features/account/utils/profile-dashboard-forms";
-import { MANUAL_BREED_OPTION } from "@/features/account/utils/pet-options";
-import {
-  createPetProfileSchema,
-  customerAddressSchema,
-} from "@/features/account/validation/profile-schemas";
-import { getFirstZodErrorMessage } from "@/lib/validation/input-sanitizers";
+import { useProfileAddressForm } from "@/features/account/hooks/use-profile-address-form";
+import { useProfilePetForm } from "@/features/account/hooks/use-profile-pet-form";
+import { useProfileSidebarState } from "@/features/account/hooks/use-profile-sidebar-state";
+import type { ProfileSession } from "@/features/account/types/profile-dashboard";
 import type { ProfileImageFeedback } from "@/features/account/components/profile-sidebar";
-
-const petProfileSchema = createPetProfileSchema(MANUAL_BREED_OPTION);
 
 type UseProfileDashboardControllerInput = {
   session: ProfileSession;
@@ -38,19 +18,10 @@ export function useProfileDashboardController({
   session,
 }: UseProfileDashboardControllerInput) {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<SectionId>("pets");
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const [showPetForm, setShowPetForm] = useState(false);
-  const [petForm, setPetForm] = useState<PetFormState>(INITIAL_PET_FORM);
-  const [petErrorMessage, setPetErrorMessage] = useState<string | null>(null);
-
-  const [addressFormDraft, setAddressFormDraft] = useState<AddressFormState | null>(null);
-  const [addressMessage, setAddressMessage] = useState<string | null>(null);
-  const [isAddressMessageError, setIsAddressMessageError] = useState(false);
   const [profileImageMessage, setProfileImageMessage] = useState<string | null>(null);
   const [isProfileImageMessageError, setIsProfileImageMessageError] = useState(false);
+  const sidebarState = useProfileSidebarState();
 
   const customerName = useMemo(
     () => session.name?.trim() || "Cliente Pet Corner",
@@ -88,6 +59,19 @@ export function useProfileDashboardController({
     uploadProfileImage,
   } = useCustomerProfileImageUpload();
 
+  const profilePets = useProfilePetForm({
+    loading,
+    pets,
+    isCreatingPet,
+    createPet,
+  });
+
+  const profileAddress = useProfileAddressForm({
+    address,
+    isSavingAddress,
+    saveAddress,
+  });
+
   const profileImageFeedbackItems = useMemo<ProfileImageFeedback[]>(() => {
     const feedbackItems: ProfileImageFeedback[] = [];
 
@@ -107,122 +91,6 @@ export function useProfileDashboardController({
 
     return feedbackItems;
   }, [isProfileImageMessageError, profileImageMessage, profileImageUploadErrorMessage]);
-
-  const addressForm = useMemo<AddressFormState>(() => {
-    if (addressFormDraft) {
-      return addressFormDraft;
-    }
-
-    return toAddressFormState(address, INITIAL_ADDRESS_FORM);
-  }, [address, addressFormDraft]);
-
-  const isPetFormVisible = showPetForm || (!loading && pets.length === 0);
-
-  useEffect(() => {
-    if (!isSidebarExpanded || typeof window === "undefined") {
-      return;
-    }
-
-    if (window.innerWidth >= 1024) {
-      return;
-    }
-
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsSidebarExpanded(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isSidebarExpanded]);
-
-  const scrollToSection = useCallback((section: SectionId) => {
-    setActiveSection(section);
-    const sectionElement = document.getElementById(`profile-section-${section}`);
-    if (sectionElement) {
-      sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setIsSidebarExpanded(false);
-    }
-  }, []);
-
-  const handlePetInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = event.target;
-    setPetForm((currentState) => updatePetFormField(currentState, name, value));
-  };
-
-  const resetBreedSelection = () => {
-    setPetForm(resetPetBreedSelection);
-  };
-
-  const handleCreatePet = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPetErrorMessage(null);
-
-    const parsedInput = petProfileSchema.safeParse(petForm);
-    if (!parsedInput.success) {
-      setPetErrorMessage(
-        getFirstZodErrorMessage(
-          parsedInput.error,
-          "Preencha nome, tipo do animal, raca, idade e peso para registrar o pet."
-        )
-      );
-      return;
-    }
-
-    try {
-      await createPet(parsedInput.data);
-      setPetForm(INITIAL_PET_FORM);
-      setShowPetForm(false);
-    } catch {
-      setPetErrorMessage("Não foi possível salvar o pet agora. Tente novamente.");
-    }
-  };
-
-  const handleAddressInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    const nextValue = normalizeAddressFormValue(name, value);
-
-    setAddressFormDraft((currentState) => ({
-      ...(currentState || addressForm),
-      [name]: nextValue,
-    }));
-  };
-
-  const handleAddressSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setAddressMessage(null);
-    setIsAddressMessageError(false);
-
-    const parsedInput = customerAddressSchema.safeParse(addressForm);
-    if (!parsedInput.success) {
-      setIsAddressMessageError(true);
-      setAddressMessage(
-        getFirstZodErrorMessage(parsedInput.error, "Não foi possível validar os dados do endereço.")
-      );
-      return;
-    }
-
-    try {
-      await saveAddress(parsedInput.data);
-      setAddressFormDraft(null);
-      setIsAddressMessageError(false);
-      setAddressMessage("Endereço salvo com sucesso.");
-    } catch {
-      setIsAddressMessageError(true);
-      setAddressMessage("Não foi possível salvar o endereço agora.");
-    }
-  };
 
   const handleProfileImageSelected = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -274,12 +142,12 @@ export function useProfileDashboardController({
 
   return {
     layout: {
-      isSidebarExpanded,
+      isSidebarExpanded: sidebarState.isSidebarExpanded,
     },
     pageHeader: {
       session,
       errorMessage,
-      onOpenSidebar: () => setIsSidebarExpanded(true),
+      onOpenSidebar: sidebarState.openSidebar,
     },
     profileSidebar: {
       user: {
@@ -288,8 +156,8 @@ export function useProfileDashboardController({
         profileImageUrl,
       },
       sidebar: {
-        isExpanded: isSidebarExpanded,
-        activeSection,
+        isExpanded: sidebarState.isSidebarExpanded,
+        activeSection: sidebarState.activeSection,
         isLoggingOut,
       },
       profileImageUpload: {
@@ -297,9 +165,9 @@ export function useProfileDashboardController({
         feedbackItems: profileImageFeedbackItems,
       },
       actions: {
-        onToggle: () => setIsSidebarExpanded((currentValue) => !currentValue),
-        onClose: () => setIsSidebarExpanded(false),
-        onSectionSelected: scrollToSection,
+        onToggle: sidebarState.toggleSidebar,
+        onClose: sidebarState.closeSidebar,
+        onSectionSelected: sidebarState.selectSection,
         onLogout: () => void handleLogout(),
         onProfileImageSelected: (event: ChangeEvent<HTMLInputElement>) =>
           void handleProfileImageSelected(event),
@@ -309,35 +177,10 @@ export function useProfileDashboardController({
       data: {
         pets,
       },
-      state: {
-        loading,
-        isFormVisible: isPetFormVisible,
-        petForm,
-        petErrorMessage,
-        isCreatingPet,
-      },
-      actions: {
-        onToggleForm: () => setShowPetForm((current) => !current),
-        onPetInputChange: handlePetInputChange,
-        onCreatePet: (event: FormEvent<HTMLFormElement>) => void handleCreatePet(event),
-        onResetBreedSelection: resetBreedSelection,
-      },
+      state: profilePets.state,
+      actions: profilePets.actions,
     },
-    profileAddress: {
-      data: {
-        addressForm,
-        address,
-      },
-      state: {
-        addressMessage,
-        isAddressMessageError,
-        isSavingAddress,
-      },
-      actions: {
-        onAddressInputChange: handleAddressInputChange,
-        onAddressSubmit: (event: FormEvent<HTMLFormElement>) => void handleAddressSubmit(event),
-      },
-    },
+    profileAddress,
     relatedData: {
       loading,
       appointments,
