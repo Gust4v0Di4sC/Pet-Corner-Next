@@ -17,7 +17,9 @@ export function ProfileAppointmentsSection({
   return (
     <ProfileSectionPanel id="profile-section-appointments" title="Agendamentos">
       {loading ? (
-        <p className="text-lg text-slate-300">Carregando agendamentos...</p>
+        <p role="status" aria-live="polite" className="text-lg text-slate-300">
+          Carregando agendamentos...
+        </p>
       ) : appointments.length === 0 ? (
         <ProfileEmptyState>Nenhum agendamento encontrado para esta conta.</ProfileEmptyState>
       ) : (
@@ -37,7 +39,7 @@ function AppointmentCard({ appointment }: { appointment: CustomerAppointment }) 
       <div>
         <p className="text-3xl font-semibold text-slate-100">{appointment.serviceName}</p>
         <p className="text-lg text-slate-400">
-          {toDisplayDateTime(appointment.scheduledStartIso)} ate{" "}
+          {toDisplayDateTime(appointment.scheduledStartIso)} até{" "}
           {appointment.scheduledEndTime || "--"}
         </p>
       </div>

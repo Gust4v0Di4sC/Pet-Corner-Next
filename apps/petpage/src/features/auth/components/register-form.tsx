@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type SubmitEvent, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -33,7 +33,7 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
 
   const loginPath = useMemo(() => `/login?next=${encodeURIComponent(nextPath)}`, [nextPath]);
 
-  const handleEmailRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailRegister = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const parsedInput = customerRegisterSchema.safeParse({
@@ -141,7 +141,11 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
             />
           </div>
 
-          {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+          {errorMessage ? (
+            <p role="alert" className={styles.error}>
+              {errorMessage}
+            </p>
+          ) : null}
 
           <div className={styles.actions}>
             <Button type="submit" className={styles.primary} disabled={isBusy}>
@@ -150,7 +154,7 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
           </div>
 
           <p className={styles.helperRow}>
-            Ja tem conta?{" "}
+            Já tem conta?{" "}
             <Link href={loginPath} className={styles.helperLink}>
               Entrar
             </Link>

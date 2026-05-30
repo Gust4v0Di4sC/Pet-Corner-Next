@@ -43,18 +43,18 @@ function mapErrorMessage(error: unknown): string {
   if (error && typeof error === "object") {
     const code = (error as { code?: unknown }).code;
     if (code === "permission-denied") {
-      return "Sua sessao de autenticacao expirou. Entre novamente para continuar.";
+      return "Sua sessão de autenticação expirou. Entre novamente para continuar.";
     }
   }
 
   if (error instanceof Error && error.message) {
     if (error.message.toLowerCase().includes("missing or insufficient permissions")) {
-      return "Sua sessao de autenticacao expirou. Entre novamente para continuar.";
+      return "Sua sessão de autenticação expirou. Entre novamente para continuar.";
     }
     return error.message;
   }
 
-  return "Nao foi possivel concluir a operacao agora.";
+  return "Não foi possível concluir a operação agora.";
 }
 
 function createEmptyProfileDataBundle(): CustomerProfileDataBundle {

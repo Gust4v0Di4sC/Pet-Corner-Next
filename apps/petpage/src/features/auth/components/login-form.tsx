@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type SubmitEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, PawPrint } from "lucide-react";
@@ -104,7 +104,7 @@ export function LoginForm({ nextPath, shouldShowSplash }: LoginFormProps) {
     [nextPath]
   );
 
-  const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailLogin = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const parsedInput = customerLoginSchema.safeParse({ email, password });
@@ -208,7 +208,11 @@ export function LoginForm({ nextPath, shouldShowSplash }: LoginFormProps) {
             />
           </div>
 
-          {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+          {errorMessage ? (
+            <p role="alert" className={styles.error}>
+              {errorMessage}
+            </p>
+          ) : null}
 
           <div className={styles.actions}>
             <Button type="submit" className={styles.primary} disabled={isBusy}>

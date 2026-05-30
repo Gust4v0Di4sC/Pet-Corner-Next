@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
+import { type ChangeEvent, type SubmitEvent, useMemo, useState } from "react";
 import { saveCustomerDeliveryAddress } from "@/features/account/services/customer-profile.service";
 import { useCustomerCart } from "@/features/cart-checkout/hooks/use-customer-cart";
 import { getCartItemsCount } from "@/features/cart-checkout/services/customer-cart.service";
@@ -115,7 +115,7 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
     }));
   };
 
-  const handleContinueToPayment = async (event: FormEvent<HTMLFormElement>) => {
+  const handleContinueToPayment = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -161,7 +161,7 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
     }
   };
 
-  const handleCreateStripeCheckoutSession = async (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateStripeCheckoutSession = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);

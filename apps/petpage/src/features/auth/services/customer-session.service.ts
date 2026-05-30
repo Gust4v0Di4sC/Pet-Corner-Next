@@ -26,7 +26,7 @@ export async function openCustomerSession(input: OpenSessionInput): Promise<Sess
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao abrir sessao do cliente.");
+    throw new Error("Falha ao abrir sessão do cliente.");
   }
 
   const payload = (await response.json()) as

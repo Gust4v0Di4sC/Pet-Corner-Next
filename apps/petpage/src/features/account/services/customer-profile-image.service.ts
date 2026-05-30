@@ -51,7 +51,7 @@ function getWorkerErrorMessage(payload: unknown, fallback: string): string {
 function sanitizeHttpUrl(value: string): string {
   const normalizedValue = value.trim();
   if (!normalizedValue) {
-    throw new Error("URL de imagem invalida.");
+    throw new Error("URL de imagem inválida.");
   }
 
   let parsedUrl: URL;
@@ -59,7 +59,7 @@ function sanitizeHttpUrl(value: string): string {
   try {
     parsedUrl = new URL(normalizedValue);
   } catch {
-    throw new Error("URL de imagem invalida.");
+    throw new Error("URL de imagem inválida.");
   }
 
   if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
@@ -95,20 +95,20 @@ function resolveWorkerEndpoint(pathname: string): string {
 
 function assertValidProfileImageFile(file: File): void {
   if (!(file instanceof File)) {
-    throw new Error("Selecione um arquivo de imagem valido.");
+    throw new Error("Selecione um arquivo de imagem válido.");
   }
 
   if (file.size <= 0) {
-    throw new Error("A imagem selecionada esta vazia.");
+    throw new Error("A imagem selecionada está vazia.");
   }
 
   if (file.size > MAX_PROFILE_IMAGE_BYTES) {
-    throw new Error("A foto de perfil deve ter no maximo 5 MB.");
+    throw new Error("A foto de perfil deve ter no máximo 5 MB.");
   }
 
   const normalizedMimeType = file.type.trim().toLowerCase();
   if (!ALLOWED_PROFILE_IMAGE_MIME_TYPES.has(normalizedMimeType)) {
-    throw new Error("Formato de imagem invalido. Use JPG, PNG, WEBP, GIF ou AVIF.");
+    throw new Error("Formato de imagem inválido. Use JPG, PNG, WEBP, GIF ou AVIF.");
   }
 }
 
@@ -135,7 +135,7 @@ async function getCustomerAuthToken(customerId: string): Promise<string> {
 
   const firebaseUser = await waitForFirebaseUser();
   if (!firebaseUser?.uid) {
-    throw new Error("Faca login para enviar sua foto de perfil.");
+    throw new Error("Faça login para enviar sua foto de perfil.");
   }
 
   if (firebaseUser.uid.trim() !== normalizedCustomerId) {
@@ -166,7 +166,7 @@ export async function uploadCustomerProfileImage(
     });
   } catch {
     throw new Error(
-      "Nao foi possivel conectar ao Worker de imagens. Verifique a URL publicada no ambiente."
+      "Não foi possível conectar ao Worker de imagens. Verifique a URL publicada no ambiente."
     );
   }
 
@@ -180,12 +180,12 @@ export async function uploadCustomerProfileImage(
 
   if (!response.ok) {
     throw new Error(
-      getWorkerErrorMessage(payload, "Nao foi possivel enviar a foto de perfil para o bucket.")
+      getWorkerErrorMessage(payload, "Não foi possível enviar a foto de perfil para o bucket.")
     );
   }
 
   if (!isCustomerProfileImageAsset(payload)) {
-    throw new Error("O Worker retornou um payload invalido para foto de perfil.");
+    throw new Error("O Worker retornou um payload inválido para foto de perfil.");
   }
 
   return {
@@ -222,7 +222,7 @@ export async function saveCustomerProfileImage(
   void createCustomerNotification({
     customerId: normalizedCustomerId,
     title: "Foto de perfil atualizada",
-    message: "Sua nova foto de perfil ja esta ativa na conta.",
+    message: "Sua nova foto de perfil já está ativa na conta.",
     category: "profile",
     linkHref: "/profile",
   }).catch(() => {

@@ -17,7 +17,7 @@ function mapUploadErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return "Nao foi possivel enviar a foto de perfil agora.";
+  return "Não foi possível enviar a foto de perfil agora.";
 }
 
 export function useCustomerProfileImageUpload() {
@@ -44,4 +44,3 @@ export function useCustomerProfileImageUpload() {
     uploadProfileImage,
   };
 }
-

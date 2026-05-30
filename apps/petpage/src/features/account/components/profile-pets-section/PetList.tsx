@@ -9,7 +9,11 @@ type PetListProps = {
 
 export function PetList({ loading, pets }: PetListProps) {
   if (loading) {
-    return <p className="text-lg text-slate-300">Carregando pets...</p>;
+    return (
+      <p role="status" aria-live="polite" className="text-lg text-slate-300">
+        Carregando pets...
+      </p>
+    );
   }
 
   if (pets.length === 0) {

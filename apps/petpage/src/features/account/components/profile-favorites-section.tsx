@@ -13,7 +13,9 @@ export function ProfileFavoritesSection({
   return (
     <ProfileSectionPanel id="profile-section-favorites" title="Favoritos">
       {loading ? (
-        <p className="text-lg text-slate-300">Carregando favoritos...</p>
+        <p role="status" aria-live="polite" className="text-lg text-slate-300">
+          Carregando favoritos...
+        </p>
       ) : favorites.length === 0 ? (
         <ProfileEmptyState>Nenhum item favorito encontrado para esta conta.</ProfileEmptyState>
       ) : (

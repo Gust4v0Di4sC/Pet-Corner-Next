@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, FormEventHandler } from "react";
+import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { Button } from "@/components/ui/button";
 import { PetAnimalTypeField } from "@/features/account/components/profile-pets-section/PetAnimalTypeField";
 import { PetBreedField } from "@/features/account/components/profile-pets-section/PetBreedField";
@@ -10,7 +10,7 @@ type PetProfileFormProps = {
   petErrorMessage: string | null;
   isCreatingPet: boolean;
   onPetInputChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
-  onCreatePet: FormEventHandler<HTMLFormElement>;
+  onCreatePet: SubmitEventHandler<HTMLFormElement>;
   onResetBreedSelection: () => void;
 };
 
