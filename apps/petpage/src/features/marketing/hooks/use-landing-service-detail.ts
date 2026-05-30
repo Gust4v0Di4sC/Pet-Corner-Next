@@ -17,6 +17,7 @@ function mapErrorMessage(error: unknown): string {
 
 type UseLandingServiceDetailOptions = {
   serviceId: string;
+  initialService?: LandingServiceView | null;
 };
 
 export function useLandingServiceDetail(options: UseLandingServiceDetailOptions) {
@@ -32,6 +33,7 @@ export function useLandingServiceDetail(options: UseLandingServiceDetailOptions)
     queryKey: ["landing", "service-detail", normalizedServiceId],
     queryFn: async () => getLandingServiceById(normalizedServiceId),
     enabled: hasValidServiceId,
+    initialData: options.initialService,
     staleTime: 45_000,
   });
 

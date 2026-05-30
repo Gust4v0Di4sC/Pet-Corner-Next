@@ -17,6 +17,7 @@ import type { LandingServiceView } from "@/features/marketing/services/landing-c
 
 type ServiceDetailPageProps = {
   serviceId: string;
+  initialService?: LandingServiceView | null;
 };
 
 const SERVICE_ICON_MAP: Record<LandingServiceView["iconKey"], LucideIcon> = {
@@ -26,9 +27,10 @@ const SERVICE_ICON_MAP: Record<LandingServiceView["iconKey"], LucideIcon> = {
   hotel: Hotel,
 };
 
-export function ServiceDetailPage({ serviceId }: ServiceDetailPageProps) {
+export function ServiceDetailPage({ serviceId, initialService }: ServiceDetailPageProps) {
   const { isLoading, errorMessage, notFound, service, reload } = useLandingServiceDetail({
     serviceId,
+    initialService,
   });
 
   if (isLoading) {

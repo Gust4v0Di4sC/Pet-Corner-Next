@@ -85,8 +85,12 @@ function ProductCatalogCard({ product }: { product: LandingProductView }) {
   );
 }
 
-export function ProductsCatalogPage() {
-  const { isLoading, errorMessage, products, reload } = useLandingProducts();
+type ProductsCatalogPageProps = {
+  initialProducts?: LandingProductView[];
+};
+
+export function ProductsCatalogPage({ initialProducts }: ProductsCatalogPageProps) {
+  const { isLoading, errorMessage, products, reload } = useLandingProducts(initialProducts);
 
   return (
     <section className="bg-[#f6f2e8] py-16 md:py-20">

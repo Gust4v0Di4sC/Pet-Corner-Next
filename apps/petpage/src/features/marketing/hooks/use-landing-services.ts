@@ -15,7 +15,7 @@ function mapErrorMessage(error: unknown): string {
   return "Não foi possível carregar os serviços agora.";
 }
 
-export function useLandingServices() {
+export function useLandingServices(initialServices?: LandingServiceView[]) {
   const {
     isLoading,
     error,
@@ -24,6 +24,7 @@ export function useLandingServices() {
   } = useQuery({
     queryKey: ["landing", "services"],
     queryFn: async () => listLandingServices(),
+    initialData: initialServices,
     staleTime: 45_000,
   });
 

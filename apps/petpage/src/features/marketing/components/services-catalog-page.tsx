@@ -77,8 +77,12 @@ function ServiceCatalogCard({ service }: { service: LandingServiceView }) {
   );
 }
 
-export function ServicesCatalogPage() {
-  const { isLoading, errorMessage, services, reload } = useLandingServices();
+type ServicesCatalogPageProps = {
+  initialServices?: LandingServiceView[];
+};
+
+export function ServicesCatalogPage({ initialServices }: ServicesCatalogPageProps) {
+  const { isLoading, errorMessage, services, reload } = useLandingServices(initialServices);
 
   return (
     <section className="bg-[#f6f2e8] py-16 md:py-20">

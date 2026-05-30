@@ -5,16 +5,19 @@ import Link from "next/link";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLandingProductDetail } from "@/features/marketing/hooks/use-landing-product-detail";
+import type { LandingProductView } from "@/features/marketing/services/landing-content.service";
 import productFallback from "@/assets/fallbackproduct.png";
 import { AddToCartButton } from "@/features/cart-checkout/components/add-to-cart-button";
 
 type ProductDetailPageProps = {
   productId: string;
+  initialProduct?: LandingProductView | null;
 };
 
-export function ProductDetailPage({ productId }: ProductDetailPageProps) {
+export function ProductDetailPage({ productId, initialProduct }: ProductDetailPageProps) {
   const { isLoading, errorMessage, notFound, product, reload } = useLandingProductDetail({
     productId,
+    initialProduct,
   });
 
   if (isLoading) {

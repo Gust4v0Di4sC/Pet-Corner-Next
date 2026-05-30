@@ -1,12 +1,12 @@
-"use client";
+import "server-only";
 
 import {
-  readLandingProductById,
-  readLandingProducts,
-  readLandingServiceById,
-  readLandingServices,
-  readLandingTestimonials,
-} from "@/features/marketing/services/firebase-landing.adapter";
+  readLandingProductByIdServer,
+  readLandingProductsServer,
+  readLandingServiceByIdServer,
+  readLandingServicesServer,
+  readLandingTestimonialsServer,
+} from "@/features/marketing/services/firebase-landing.server";
 import {
   LANDING_PRODUCTS_LIMIT,
   LANDING_SERVICES_LIMIT,
@@ -16,42 +16,36 @@ import {
   type LandingContentBundle,
   type LandingProductView,
   type LandingServiceView,
-  type LandingTestimonialView,
 } from "@/features/marketing/services/landing-content.mapper";
-
-export type {
-  LandingContentBundle,
-  LandingProductView,
-  LandingServiceView,
-  LandingTestimonialView,
-};
 
 type ListLandingOptions = {
   limitCount?: number;
 };
 
-export async function listLandingProducts(
+export async function listLandingProductsServer(
   options: ListLandingOptions = {}
 ): Promise<LandingProductView[]> {
-  const records = await readLandingProducts({
+  const records = await readLandingProductsServer({
     limitCount: options.limitCount,
   });
 
   return sanitizeProducts(records);
 }
 
-export async function listLandingServices(
+export async function listLandingServicesServer(
   options: ListLandingOptions = {}
 ): Promise<LandingServiceView[]> {
-  const records = await readLandingServices({
+  const records = await readLandingServicesServer({
     limitCount: options.limitCount,
   });
 
   return sanitizeServices(records);
 }
 
-export async function getLandingProductById(productId: string): Promise<LandingProductView | null> {
-  const record = await readLandingProductById(productId);
+export async function getLandingProductByIdServer(
+  productId: string
+): Promise<LandingProductView | null> {
+  const record = await readLandingProductByIdServer(productId);
   if (!record) {
     return null;
   }
@@ -60,8 +54,10 @@ export async function getLandingProductById(productId: string): Promise<LandingP
   return mappedProduct || null;
 }
 
-export async function getLandingServiceById(serviceId: string): Promise<LandingServiceView | null> {
-  const record = await readLandingServiceById(serviceId);
+export async function getLandingServiceByIdServer(
+  serviceId: string
+): Promise<LandingServiceView | null> {
+  const record = await readLandingServiceByIdServer(serviceId);
   if (!record) {
     return null;
   }
@@ -70,11 +66,11 @@ export async function getLandingServiceById(serviceId: string): Promise<LandingS
   return mappedService || null;
 }
 
-export async function getLandingContentBundle(): Promise<LandingContentBundle> {
+export async function getLandingContentBundleServer(): Promise<LandingContentBundle> {
   const [productsResult, servicesResult, testimonialsResult] = await Promise.allSettled([
-    readLandingProducts({ limitCount: LANDING_PRODUCTS_LIMIT }),
-    readLandingServices({ limitCount: LANDING_SERVICES_LIMIT }),
-    readLandingTestimonials(),
+    readLandingProductsServer({ limitCount: LANDING_PRODUCTS_LIMIT }),
+    readLandingServicesServer({ limitCount: LANDING_SERVICES_LIMIT }),
+    readLandingTestimonialsServer(),
   ]);
 
   return {

@@ -17,6 +17,7 @@ function mapErrorMessage(error: unknown): string {
 
 type UseLandingProductDetailOptions = {
   productId: string;
+  initialProduct?: LandingProductView | null;
 };
 
 export function useLandingProductDetail(options: UseLandingProductDetailOptions) {
@@ -32,6 +33,7 @@ export function useLandingProductDetail(options: UseLandingProductDetailOptions)
     queryKey: ["landing", "product-detail", normalizedProductId],
     queryFn: async () => getLandingProductById(normalizedProductId),
     enabled: hasValidProductId,
+    initialData: options.initialProduct,
     staleTime: 45_000,
   });
 

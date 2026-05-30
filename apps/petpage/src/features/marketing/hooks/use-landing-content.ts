@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getLandingContentBundle,
+  type LandingContentBundle,
   type LandingProductView,
   type LandingServiceView,
   type LandingTestimonialView,
@@ -23,7 +24,7 @@ function mapErrorMessage(error: unknown): string {
   return "Nao foi possivel carregar os dados da landing.";
 }
 
-export function useLandingContent() {
+export function useLandingContent(initialContent?: LandingContentBundle) {
   const {
     isLoading,
     error,
@@ -32,6 +33,7 @@ export function useLandingContent() {
   } = useQuery({
     queryKey: ["landing", "content-bundle"],
     queryFn: getLandingContentBundle,
+    initialData: initialContent,
     staleTime: 45_000,
   });
 
