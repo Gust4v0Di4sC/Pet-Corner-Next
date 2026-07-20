@@ -34,7 +34,7 @@ export function FloatingSupportActions() {
   const closeChat = useCallback(() => setIsChatOpen(false), []);
 
   const shouldHide = useMemo(
-    () => pathname === "/" || pathname.startsWith("/app-react"),
+    () => pathname.startsWith("/app-react"),
     [pathname]
   );
 
