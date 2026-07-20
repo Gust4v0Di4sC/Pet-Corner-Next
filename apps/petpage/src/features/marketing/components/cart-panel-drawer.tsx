@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { ShoppingCartSimple } from "@phosphor-icons/react/dist/ssr";
-import { RefreshCw, X } from "lucide-react";
+import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import fallbackProduct from "@/assets/fallbackproduct.png";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ type CartPanelDrawerProps = {
 
 export function CartPanelDrawer({ customerId }: CartPanelDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { isLoading, errorMessage, cart, reload } = useCustomerCart({
+  const { isLoading, errorMessage, cart } = useCustomerCart({
     customerId,
   });
 
@@ -38,12 +38,12 @@ export function CartPanelDrawer({ customerId }: CartPanelDrawerProps) {
 
   const drawerPanel = (
     <div className="pointer-events-auto fixed inset-0 z-[120]">
-      <Button
+      <button
         type="button"
         tabIndex={-1}
         onClick={closeDrawer}
         aria-hidden="true"
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] transition-opacity duration-200 opacity-100"
+        className="absolute inset-0 cursor-default bg-transparent p-0"
       />
 
       <aside
@@ -81,15 +81,6 @@ export function CartPanelDrawer({ customerId }: CartPanelDrawerProps) {
                 {errorMessage}
               </div>
             ) : null}
-
-            <Button
-              type="button"
-              onClick={() => void reload()}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[#fb8b24] transition hover:text-[#e36414]"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Atualizar
-            </Button>
 
             {isLoading ? (
               <div className="space-y-3">

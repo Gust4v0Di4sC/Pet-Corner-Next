@@ -27,7 +27,7 @@ function formatDate(value: string): string {
 
 export function OrderTrackingPage({ customerId }: OrderTrackingPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const { isLoading, errorMessage, orders, reload } = useCustomerOrderTracking({
+  const { isLoading, errorMessage, orders } = useCustomerOrderTracking({
     customerId,
   });
 
@@ -68,14 +68,6 @@ export function OrderTrackingPage({ customerId }: OrderTrackingPageProps) {
               className="h-11 w-full rounded-full border border-slate-700 bg-slate-900/70 px-10 text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-[#fb8b24] focus:ring-2 focus:ring-[#fb8b24]/30"
             />
           </div>
-
-          <Button
-            type="button"
-            onClick={() => void reload()}
-            className="h-11 rounded-full bg-[#fb8b24] px-5 text-sm font-semibold text-white hover:bg-[#ef7e14]"
-          >
-            Atualizar
-          </Button>
 
           <a
             href="https://wa.me/5567999898999?text=Ola%2C%20preciso%20de%20ajuda%20com%20a%20entrega%20do%20meu%20pedido."

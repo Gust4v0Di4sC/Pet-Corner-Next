@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Minus, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +33,7 @@ function CartSkeleton() {
 }
 
 export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
-  const { isLoading, isMutating, errorMessage, cart, reload, updateQuantity, removeItem, clearAll } =
+  const { isLoading, isMutating, errorMessage, cart, updateQuantity, removeItem, clearAll } =
     useCustomerCart({
       customerId,
     });
@@ -67,16 +67,6 @@ export function CartSummary({ customerId, isAuthenticated }: CartSummaryProps) {
               Página {safeCurrentPage} de {totalPages}
             </span>
           ) : null}
-          <span aria-hidden="true">|</span>
-          <Button
-            type="button"
-            onClick={() => void reload()}
-            aria-label="Atualizar carrinho"
-            className="inline-flex items-center gap-1 font-semibold text-[#fb8b24] transition hover:text-[#e36414]"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Atualizar
-          </Button>
         </div>
       </CardHeader>
 
