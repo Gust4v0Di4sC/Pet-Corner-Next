@@ -85,12 +85,12 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
 
   const drawerPanel = (
     <div className="fixed inset-0 z-[120] pointer-events-auto">
-      <Button
+      <button
         type="button"
         tabIndex={-1}
         onClick={closeDrawer}
         aria-hidden="true"
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] transition-opacity duration-200 opacity-100"
+        className="absolute inset-0 cursor-default bg-transparent p-0"
       />
 
       <aside
@@ -196,9 +196,9 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
         aria-expanded={isOpen}
         aria-controls="customer-user-panel"
         aria-label="Abrir painel do perfil"
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
+        className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-600 bg-[#273446] p-0 text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
       >
-        <span className="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full">
+        <span className="relative inline-flex h-full w-full items-center justify-center overflow-hidden rounded-full">
           {profileImageUrl ? (
             <Image
               src={profileImageUrl}
@@ -206,7 +206,7 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
               fill
               sizes="40px"
               unoptimized={/^https?:\/\//i.test(profileImageUrl)}
-              className="object-cover"
+              className="object-cover object-center"
             />
           ) : (
             <User className="h-5 w-5" />
