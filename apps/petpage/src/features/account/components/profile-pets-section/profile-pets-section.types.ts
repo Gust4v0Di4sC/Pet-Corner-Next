@@ -16,6 +16,7 @@ export type ProfilePetsSectionState = {
 
 export type ProfilePetsSectionActions = {
   onToggleForm: () => void;
+  onFormOpenChange: (open: boolean) => void;
   onPetInputChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
   onCreatePet: SubmitEventHandler<HTMLFormElement>;
   onResetBreedSelection: () => void;

@@ -25,6 +25,7 @@ export function useProfileAddressForm({
   isSavingAddress,
   saveAddress,
 }: UseProfileAddressFormInput) {
+  const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [addressFormDraft, setAddressFormDraft] = useState<AddressFormState | null>(null);
   const [addressMessage, setAddressMessage] = useState<string | null>(null);
   const [isAddressMessageError, setIsAddressMessageError] = useState(false);
@@ -68,6 +69,7 @@ export function useProfileAddressForm({
       await saveAddress(parsedInput.data);
       setAddressFormDraft(null);
       setIsAddressMessageError(false);
+      setIsAddressFormOpen(false);
       setAddressMessage("Endereço salvo com sucesso.");
     } catch {
       setIsAddressMessageError(true);
@@ -81,11 +83,14 @@ export function useProfileAddressForm({
       address,
     },
     state: {
+      isAddressFormOpen,
       addressMessage,
       isAddressMessageError,
       isSavingAddress,
     },
     actions: {
+      onToggleAddressForm: () => setIsAddressFormOpen((currentValue) => !currentValue),
+      onAddressFormOpenChange: setIsAddressFormOpen,
       onAddressInputChange: handleAddressInputChange,
       onAddressSubmit: (event: SubmitEvent<HTMLFormElement>) => void handleAddressSubmit(event),
     },

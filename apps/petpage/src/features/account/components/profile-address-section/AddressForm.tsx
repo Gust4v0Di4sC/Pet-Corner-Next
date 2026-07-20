@@ -6,6 +6,7 @@ import type { AddressFormState } from "@/features/account/types/profile-dashboar
 type AddressFormProps = {
   addressForm: AddressFormState;
   isSavingAddress: boolean;
+  className?: string;
   onAddressInputChange: ChangeEventHandler<HTMLInputElement>;
   onAddressSubmit: SubmitEventHandler<HTMLFormElement>;
 };
@@ -13,12 +14,16 @@ type AddressFormProps = {
 export function AddressForm({
   addressForm,
   isSavingAddress,
+  className,
   onAddressInputChange,
   onAddressSubmit,
 }: AddressFormProps) {
   return (
     <form
-      className="grid gap-3 rounded-2xl border border-slate-700 bg-[#111b2b] p-4 sm:grid-cols-2"
+      className={
+        className ||
+        "grid gap-3 rounded-2xl border border-slate-700 bg-[#111b2b] p-4 sm:grid-cols-2"
+      }
       onSubmit={onAddressSubmit}
     >
       <AddressInput

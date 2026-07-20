@@ -8,12 +8,15 @@ export type ProfileAddressSectionData = {
 };
 
 export type ProfileAddressSectionState = {
+  isAddressFormOpen: boolean;
   addressMessage: string | null;
   isAddressMessageError: boolean;
   isSavingAddress: boolean;
 };
 
 export type ProfileAddressSectionActions = {
+  onToggleAddressForm: () => void;
+  onAddressFormOpenChange: (open: boolean) => void;
   onAddressInputChange: ChangeEventHandler<HTMLInputElement>;
   onAddressSubmit: SubmitEventHandler<HTMLFormElement>;
 };

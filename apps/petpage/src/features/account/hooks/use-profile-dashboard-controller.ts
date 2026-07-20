@@ -61,7 +61,6 @@ export function useProfileDashboardController({
 
   const profilePets = useProfilePetForm({
     loading,
-    pets,
     isCreatingPet,
     createPet,
   });

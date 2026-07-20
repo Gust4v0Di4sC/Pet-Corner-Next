@@ -2,7 +2,6 @@
 
 import { type ChangeEvent, type SubmitEvent, useState } from "react";
 import { INITIAL_PET_FORM } from "@/features/account/components/profile-dashboard.constants";
-import type { CustomerPet } from "@/features/account/services/customer-profile.service";
 import type { PetFormState } from "@/features/account/types/profile-dashboard";
 import {
   resetPetBreedSelection,
@@ -19,22 +18,18 @@ const petProfileSchema = createPetProfileSchema(MANUAL_BREED_OPTION);
 
 type UseProfilePetFormInput = {
   loading: boolean;
-  pets: CustomerPet[];
   isCreatingPet: boolean;
   createPet: (input: CustomerPetProfileInput) => Promise<unknown>;
 };
 
 export function useProfilePetForm({
   loading,
-  pets,
   isCreatingPet,
   createPet,
 }: UseProfilePetFormInput) {
-  const [showPetForm, setShowPetForm] = useState(false);
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const [petForm, setPetForm] = useState<PetFormState>(INITIAL_PET_FORM);
   const [petErrorMessage, setPetErrorMessage] = useState<string | null>(null);
-
-  const isPetFormVisible = showPetForm || (!loading && pets.length === 0);
 
   const handlePetInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -63,7 +58,7 @@ export function useProfilePetForm({
     try {
       await createPet(parsedInput.data);
       setPetForm(INITIAL_PET_FORM);
-      setShowPetForm(false);
+      setIsPetModalOpen(false);
     } catch {
       setPetErrorMessage("Não foi possível salvar o pet agora. Tente novamente.");
     }
@@ -72,13 +67,14 @@ export function useProfilePetForm({
   return {
     state: {
       loading,
-      isFormVisible: isPetFormVisible,
+      isFormVisible: isPetModalOpen,
       petForm,
       petErrorMessage,
       isCreatingPet,
     },
     actions: {
-      onToggleForm: () => setShowPetForm((current) => !current),
+      onToggleForm: () => setIsPetModalOpen((current) => !current),
+      onFormOpenChange: setIsPetModalOpen,
       onPetInputChange: handlePetInputChange,
       onCreatePet: (event: SubmitEvent<HTMLFormElement>) => void handleCreatePet(event),
       onResetBreedSelection: resetBreedSelection,
