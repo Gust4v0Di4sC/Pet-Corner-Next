@@ -1,3 +1,4 @@
+import { AppIcon } from "../../components/icons/AppIcon";
 import type { AppointmentSettings } from "../../types/appointment";
 import { WEEKDAY_LABELS } from "./agendamentos.utils";
 
@@ -112,6 +113,10 @@ export function AppointmentSettingsPanel({
         onClick={onSaveSettings}
         disabled={isSavingSettings}
       >
+        <AppIcon
+          name={isSavingSettings ? "spinner" : "circle-check"}
+          spin={isSavingSettings}
+        />
         {isSavingSettings ? "Salvando..." : "Salvar configuração"}
       </button>
     </article>
