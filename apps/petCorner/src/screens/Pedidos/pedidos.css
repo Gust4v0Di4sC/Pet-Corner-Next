@@ -72,7 +72,6 @@
   box-shadow: 0 0 0 3px rgba(251, 139, 36, 0.2);
 }
 
-.orders-ops__refresh-button,
 .orders-ops__status-actions button,
 .orders-ops__issue-form button {
   display: inline-flex;
@@ -89,14 +88,12 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-.orders-ops__refresh-button:hover:not(:disabled),
 .orders-ops__status-actions button:hover:not(:disabled),
 .orders-ops__issue-form button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 14px 28px rgba(227, 100, 20, 0.24);
 }
 
-.orders-ops__refresh-button:disabled,
 .orders-ops__status-actions button:disabled,
 .orders-ops__issue-form button:disabled {
   opacity: 0.72;
@@ -216,15 +213,51 @@
   gap: 0.2rem;
 }
 
-.orders-ops__order-meta span {
+.orders-ops__status-badge {
   display: inline-flex;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(251, 139, 36, 0.14);
-  color: #b45d0b;
+  border: 1px solid transparent;
   padding: 0.2rem 0.52rem;
   font-size: 0.72rem;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+.orders-ops__status-badge--pedido_recebido {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.orders-ops__status-badge--em_preparacao {
+  border-color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.orders-ops__status-badge--em_transporte {
+  border-color: #bfdbfe;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.orders-ops__status-badge--entregue {
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.orders-ops__status-badge--problema_entrega {
+  border-color: #fecaca;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.orders-ops__status-badge--cancelado {
+  border-color: #d1d5db;
+  background: #f3f4f6;
+  color: #374151;
 }
 
 .orders-ops__order-meta small {
@@ -347,6 +380,50 @@
   gap: 0.75rem;
 }
 
+.orders-ops__issues-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  color: #1a2f3a;
+  cursor: pointer;
+  list-style: none;
+}
+
+.orders-ops__issues-summary::-webkit-details-marker {
+  display: none;
+}
+
+.orders-ops__issues-summary span {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.orders-ops__issues-summary small {
+  color: #6f7a83;
+  font-size: 0.78rem;
+}
+
+.orders-ops__issues-summary::after {
+  content: "Abrir";
+  border-radius: 999px;
+  background: rgba(251, 139, 36, 0.14);
+  color: #b45d0b;
+  padding: 0.24rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.orders-ops__panel--issues[open] .orders-ops__issues-summary::after {
+  content: "Fechar";
+}
+
+.orders-ops__issues-content {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
 .orders-ops__issue-list {
   display: grid;
   gap: 0.7rem;
@@ -456,8 +533,4 @@
     min-width: 0;
   }
 
-  .orders-ops__refresh-button {
-    width: 100%;
-  }
 }
-
