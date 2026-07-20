@@ -229,16 +229,18 @@ export function Services({ items }: ServicesProps) {
 
                         <div className="relative z-20 mt-auto flex items-center justify-between border-t border-slate-300/80 pt-4 text-xs font-medium text-slate-500">
                           <span>{service.duration}</span>
-                          <a
-                            href={`https://wa.me/5567999898999?text=Ola%2C%20quero%20agendar%20${encodeURIComponent(service.title)}`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <Link
+                            href={
+                              service.id
+                                ? `/agendamentos?serviceId=${encodeURIComponent(service.id)}`
+                                : "/agendamentos"
+                            }
                             suppressHydrationWarning
                             className="inline-flex items-center gap-1 rounded-full bg-[#fb8b24] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#ef7e14]"
                           >
                             Agendar
                             <ArrowRight className="h-3.5 w-3.5" />
-                          </a>
+                          </Link>
                         </div>
                       </CardContent>
                     </Card>
