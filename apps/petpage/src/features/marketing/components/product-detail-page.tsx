@@ -14,6 +14,9 @@ type ProductDetailPageProps = {
   initialProduct?: LandingProductView | null;
 };
 
+const BACK_BUTTON_CLASS_NAME =
+  "inline-flex h-11 items-center gap-2 rounded-full bg-[#fb8b24] px-5 text-sm font-semibold text-white transition hover:bg-[#ef7e14]";
+
 export function ProductDetailPage({ productId, initialProduct }: ProductDetailPageProps) {
   const { isLoading, errorMessage, notFound, product, reload } = useLandingProductDetail({
     productId,
@@ -37,7 +40,7 @@ export function ProductDetailPage({ productId, initialProduct }: ProductDetailPa
           <Link
             href="/produtos"
             suppressHydrationWarning
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-[#fb8b24]"
+            className={BACK_BUTTON_CLASS_NAME}
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar para produtos
@@ -65,7 +68,7 @@ export function ProductDetailPage({ productId, initialProduct }: ProductDetailPa
           <Link
             href="/produtos"
             suppressHydrationWarning
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-[#fb8b24]"
+            className={BACK_BUTTON_CLASS_NAME}
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar para produtos
@@ -89,7 +92,7 @@ export function ProductDetailPage({ productId, initialProduct }: ProductDetailPa
         <Link
           href="/produtos"
           suppressHydrationWarning
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-[#fb8b24]"
+          className={BACK_BUTTON_CLASS_NAME}
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para produtos
