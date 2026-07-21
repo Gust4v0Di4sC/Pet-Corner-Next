@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "postinstall": "npm rebuild sharp --platform=linux --arch=x64",
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node scripts/next-with-userland-punycode.cjs dev",
+    "build": "node scripts/next-with-userland-punycode.cjs build",
+    "start": "node scripts/next-with-userland-punycode.cjs start",
     "lint": "eslint ."
   },
   "dependencies": {

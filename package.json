@@ -24,6 +24,7 @@
     "dev:vite": "npm run dev --workspace=petcorner"
   },
   "dependencies": {
+    "punycode": "^2.3.1",
     "zustand": "^5.0.9"
   }
 }
