@@ -7,6 +7,7 @@ import {
   updateDeliveryIssueStatus,
   updateOrderStatus,
 } from "../services/orderTrackingService";
+import { getUserErrorMessage } from "../utils/userErrorMessage";
 
 type OrderStatusFilter = OrderStatus | "all";
 type DeliveryIssueStatusFilter = DeliveryIssueStatus | "all";
@@ -17,23 +18,10 @@ const ORDER_OPERATIONS_QUERY_KEYS = {
 };
 
 function mapErrorMessage(error: unknown, fallback: string): string {
-  if (error && typeof error === "object") {
-    const code = (error as { code?: unknown }).code;
-
-    if (code === "permission-denied") {
-      return "Sem permissao para acessar os dados de pedidos.";
-    }
-  }
-
-  if (error instanceof Error && error.message.trim()) {
-    if (error.message.toLowerCase().includes("insufficient permissions")) {
-      return "Sem permissao para acessar os dados de pedidos.";
-    }
-
-    return error.message;
-  }
-
-  return fallback;
+  return getUserErrorMessage(error, fallback, {
+    permissionMessage:
+      "Voce nao tem permissao para acessar os dados de pedidos. Entre com uma conta autorizada.",
+  });
 }
 
 function normalizeSearch(value: string): string {
@@ -186,4 +174,3 @@ export function useOrderOperations() {
       }),
   };
 }
-

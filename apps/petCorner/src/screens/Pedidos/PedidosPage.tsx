@@ -10,6 +10,7 @@ import {
   getOrderStatusLabel,
 } from "../../services/orderTrackingService";
 import type { DeliveryIssueStatus, OrderStatus } from "../../types/orderTracking";
+import { getUserErrorMessage } from "../../utils/userErrorMessage";
 import "./pedidos.css";
 
 const ORDER_STATUS_OPTIONS: OrderStatus[] = [
@@ -110,9 +111,10 @@ export default function PedidosPage() {
       toast.success("Status do pedido atualizado com sucesso.");
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Nao foi possivel atualizar o status do pedido."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel atualizar o status do pedido agora. Tente novamente."
+        )
       );
     }
   };
@@ -140,9 +142,10 @@ export default function PedidosPage() {
       toast.success("Issue de entrega atualizada.");
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Nao foi possivel atualizar a issue de entrega."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel atualizar o problema de entrega agora. Tente novamente."
+        )
       );
     }
   };

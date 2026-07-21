@@ -4,6 +4,7 @@ import type { FileUploadHandler, FormField, FormInputChangeHandler } from "./for
 import { FormFieldFrame } from "./FormFieldFrame";
 import { createSyntheticInputChange } from "./form.utils";
 import { AppIcon } from "../icons/AppIcon";
+import { getUserErrorMessage } from "../../utils/userErrorMessage";
 
 type Props = {
   field: FormField;
@@ -35,7 +36,7 @@ export function FileUploadField({
     }
 
     if (!onFileUpload) {
-      setUploadError("Upload indisponivel no momento.");
+      setUploadError("O envio de imagem nao esta disponivel nesta tela.");
       event.target.value = "";
       return;
     }
@@ -54,9 +55,7 @@ export function FileUploadField({
       onChange(createSyntheticInputChange(field.name, uploadedImageUrl));
     } catch (error) {
       setUploadError(
-        error instanceof Error && error.message
-          ? error.message
-          : "Não foi possível enviar a imagem."
+        getUserErrorMessage(error, "Nao foi possivel enviar a imagem agora. Tente novamente.")
       );
     } finally {
       setIsUploading(false);

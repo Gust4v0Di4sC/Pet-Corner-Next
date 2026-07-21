@@ -5,20 +5,13 @@ import {
   subscribeAdminNotifications,
   type AdminNotification,
 } from "../services/adminNotificationService";
+import { getUserErrorMessage } from "../utils/userErrorMessage";
 
 function mapNotificationError(error: unknown): string {
-  if (error && typeof error === "object") {
-    const code = (error as { code?: unknown }).code;
-    if (code === "permission-denied") {
-      return "Sem permissao para carregar notificacoes administrativas.";
-    }
-  }
-
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return "Não foi possível carregar notificações agora.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar notificacoes agora.", {
+    permissionMessage:
+      "Voce nao tem permissao para ver estas notificacoes. Entre com uma conta autorizada.",
+  });
 }
 
 export function useAdminNotifications() {
