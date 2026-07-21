@@ -9,6 +9,7 @@ import {
   type LandingServiceView,
   type LandingTestimonialView,
 } from "@/features/marketing/services/landing-content.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type LandingContentState = {
   products: LandingProductView[];
@@ -17,11 +18,7 @@ type LandingContentState = {
 };
 
 function mapErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Nao foi possivel carregar os dados da landing.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar as informacoes da pagina agora.");
 }
 
 export function useLandingContent(initialContent?: LandingContentBundle) {

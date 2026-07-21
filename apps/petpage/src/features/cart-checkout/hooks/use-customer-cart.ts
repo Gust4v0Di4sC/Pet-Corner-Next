@@ -11,27 +11,17 @@ import {
   type CartOperationResult,
   type CartPersistenceMode,
 } from "@/features/cart-checkout/services/customer-cart.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type UseCustomerCartOptions = {
   customerId?: string;
 };
 
 function mapErrorMessage(error: unknown): string {
-  if (error && typeof error === "object") {
-    const code = (error as { code?: unknown }).code;
-    if (code === "permission-denied") {
-      return "Sua conta nao tem permissao para acessar o carrinho agora.";
-    }
-  }
-
-  if (error instanceof Error && error.message) {
-    if (error.message.toLowerCase().includes("missing or insufficient permissions")) {
-      return "Sua conta nao tem permissao para acessar o carrinho agora.";
-    }
-    return error.message;
-  }
-
-  return "Nao foi possivel carregar o carrinho agora.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar o carrinho agora.", {
+    permissionMessage:
+      "Sua sessao expirou. Entre novamente para acessar o carrinho.",
+  });
 }
 
 function createEmptyCart(customerId?: string): Cart {

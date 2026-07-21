@@ -6,13 +6,10 @@ import {
   listLandingProducts,
   type LandingProductView,
 } from "@/features/marketing/services/landing-content.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 function mapErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Nao foi possivel carregar os produtos agora.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar os produtos agora.");
 }
 
 export function useLandingProducts(initialProducts?: LandingProductView[]) {

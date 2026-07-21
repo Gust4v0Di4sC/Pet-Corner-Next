@@ -6,6 +6,7 @@ import {
   saveCustomerProfileImage,
   type CustomerProfileImageAsset,
 } from "@/features/account/services/customer-profile-image.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type UploadCustomerProfileImageInput = {
   customerId: string;
@@ -13,11 +14,10 @@ type UploadCustomerProfileImageInput = {
 };
 
 function mapUploadErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return "Não foi possível enviar a foto de perfil agora.";
+  return getUserErrorMessage(
+    error,
+    "Nao foi possivel enviar a foto de perfil agora. Tente novamente."
+  );
 }
 
 export function useCustomerProfileImageUpload() {

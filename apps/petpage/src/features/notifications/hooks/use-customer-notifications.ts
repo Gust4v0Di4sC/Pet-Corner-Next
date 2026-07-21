@@ -9,24 +9,16 @@ import {
   subscribeCustomerNotifications,
   type CustomerNotification,
 } from "@/features/notifications/services/customer-notification.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type UseCustomerNotificationsOptions = {
   customerId?: string;
 };
 
 function mapSubscriptionError(error: unknown): string {
-  if (error && typeof error === "object") {
-    const code = (error as { code?: unknown }).code;
-    if (code === "permission-denied") {
-      return "Sem permissao para carregar notificacoes desta conta.";
-    }
-  }
-
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return "Nao foi possivel carregar suas notificacoes agora.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar suas notificacoes agora.", {
+    permissionMessage: "Sua sessao expirou. Entre novamente para ver suas notificacoes.",
+  });
 }
 
 type NotificationMutationContext = {

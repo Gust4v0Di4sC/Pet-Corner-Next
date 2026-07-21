@@ -14,6 +14,7 @@ import {
   registerCustomerPet,
   saveCustomerDeliveryAddress,
 } from "@/features/account/services/customer-profile.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type UseCustomerProfileDataOptions = {
   customerId: string;
@@ -40,21 +41,9 @@ type SaveAddressInput = {
 };
 
 function mapErrorMessage(error: unknown): string {
-  if (error && typeof error === "object") {
-    const code = (error as { code?: unknown }).code;
-    if (code === "permission-denied") {
-      return "Sua sessão de autenticação expirou. Entre novamente para continuar.";
-    }
-  }
-
-  if (error instanceof Error && error.message) {
-    if (error.message.toLowerCase().includes("missing or insufficient permissions")) {
-      return "Sua sessão de autenticação expirou. Entre novamente para continuar.";
-    }
-    return error.message;
-  }
-
-  return "Não foi possível concluir a operação agora.";
+  return getUserErrorMessage(error, "Nao foi possivel concluir a operacao agora.", {
+    permissionMessage: "Sua sessao expirou. Entre novamente para continuar.",
+  });
 }
 
 function createEmptyProfileDataBundle(): CustomerProfileDataBundle {

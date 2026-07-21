@@ -1,6 +1,7 @@
 "use client";
 
 import { FirebaseError } from "firebase/app";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 export function mapCustomerAuthError(error: unknown, context: "login" | "register"): string {
   if (error instanceof FirebaseError) {
@@ -41,7 +42,12 @@ export function mapCustomerAuthError(error: unknown, context: "login" | "registe
   }
 
   if (error instanceof Error && error.message) {
-    return error.message;
+    return getUserErrorMessage(
+      error,
+      context === "register"
+        ? "Nao foi possivel concluir o cadastro agora. Tente novamente."
+        : "Nao foi possivel concluir o login agora. Tente novamente."
+    );
   }
 
   return context === "register"

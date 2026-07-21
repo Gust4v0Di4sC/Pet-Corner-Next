@@ -6,13 +6,10 @@ import {
   getLandingProductById,
   type LandingProductView,
 } from "@/features/marketing/services/landing-content.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 function mapErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Nao foi possivel carregar os detalhes do produto.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar os detalhes do produto agora.");
 }
 
 type UseLandingProductDetailOptions = {

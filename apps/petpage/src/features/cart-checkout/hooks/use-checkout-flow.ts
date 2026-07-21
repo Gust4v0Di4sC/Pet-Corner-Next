@@ -12,6 +12,7 @@ import {
   getFirstZodErrorMessage,
   normalizeStateCode,
 } from "@/lib/validation/input-sanitizers";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 export type CheckoutStep = "delivery" | "payment";
 
@@ -151,11 +152,12 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
       setActiveStep("payment");
       setSuccessMessage("Endereço validado e salvo. Confira o resumo antes de pagar.");
     } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Não foi possível salvar o endereço agora.";
-      setErrorMessage(message);
+      setErrorMessage(
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel salvar o endereco agora. Tente novamente."
+        )
+      );
     } finally {
       setIsSavingDelivery(false);
     }
@@ -196,11 +198,12 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
       setSuccessMessage("Redirecionando para o Stripe Checkout.");
       window.location.assign(checkoutUrl);
     } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Não foi possível iniciar o checkout Stripe.";
-      setErrorMessage(message);
+      setErrorMessage(
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel iniciar o pagamento agora. Tente novamente."
+        )
+      );
     } finally {
       setIsCreatingStripeSession(false);
     }

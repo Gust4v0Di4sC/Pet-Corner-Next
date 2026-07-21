@@ -4,27 +4,17 @@ import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CustomerOrderTrackingView } from "@/features/cart-checkout/types/order-tracking";
 import { listCustomerTrackingOrders } from "@/features/cart-checkout/services/customer-order-tracking.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type UseCustomerOrderTrackingOptions = {
   customerId?: string;
 };
 
 function mapErrorMessage(error: unknown): string {
-  if (error && typeof error === "object") {
-    const code = (error as { code?: unknown }).code;
-    if (code === "permission-denied") {
-      return "Sua conta nao tem permissao para visualizar os pedidos agora.";
-    }
-  }
-
-  if (error instanceof Error && error.message.trim()) {
-    if (error.message.toLowerCase().includes("missing or insufficient permissions")) {
-      return "Sua conta nao tem permissao para visualizar os pedidos agora.";
-    }
-    return error.message;
-  }
-
-  return "Nao foi possivel carregar os pedidos agora.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar seus pedidos agora.", {
+    permissionMessage:
+      "Sua sessao expirou. Entre novamente para visualizar seus pedidos.",
+  });
 }
 
 export function useCustomerOrderTracking(options: UseCustomerOrderTrackingOptions = {}) {
@@ -59,4 +49,3 @@ export function useCustomerOrderTracking(options: UseCustomerOrderTrackingOption
     reload,
   };
 }
-

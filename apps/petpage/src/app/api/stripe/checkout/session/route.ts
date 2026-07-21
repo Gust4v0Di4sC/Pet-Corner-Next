@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { checkoutDeliveryStepSchema } from "@/features/cart-checkout/validation/checkout-schemas";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
 import { getFirstZodErrorMessage } from "@/lib/validation/input-sanitizers";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 import {
   DEFAULT_CHECKOUT_SHIPPING_IN_CENTS,
   loadServerCustomerCart,
@@ -19,11 +20,10 @@ function jsonError(message: string, status: number) {
 }
 
 function toSafeServerErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Nao foi possivel iniciar o checkout Stripe.";
+  return getUserErrorMessage(
+    error,
+    "Nao foi possivel iniciar o pagamento agora. Tente novamente."
+  );
 }
 
 function isPixPaymentMethodUnavailable(error: unknown): boolean {
@@ -201,7 +201,7 @@ export async function POST(request: Request) {
     }
 
     if (!checkoutSession.url) {
-      return jsonError("Stripe nao retornou uma URL de checkout.", 502);
+      return jsonError("Nao foi possivel abrir a tela de pagamento agora.", 502);
     }
 
     await saveStripePendingCheckout({
