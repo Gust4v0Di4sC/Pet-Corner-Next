@@ -26,5 +26,13 @@
   "dependencies": {
     "punycode": "^2.3.1",
     "zustand": "^5.0.9"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "^8.5.22",
+      "sharp": "^0.35.3"
+    },
+    "postcss": "^8.5.22",
+    "sharp": "^0.35.3"
   }
 }
