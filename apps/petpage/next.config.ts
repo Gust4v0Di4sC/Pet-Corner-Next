@@ -150,6 +150,15 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: "/:favicon(favicon.ico|favicon.svg|icon.svg|icon.png|icon0.svg|icon1.png|apple-icon.png|apple-touch-icon.png|manifest.json)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+        ],
+      },
+      {
         source: "/app-react/:path*",
         headers: [
           {

@@ -166,7 +166,14 @@ export function LoginForm({ nextPath, shouldShowSplash }: LoginFormProps) {
         <form className={styles.form} onSubmit={handleEmailLogin}>
           <header className={styles.header}>
             <div className={styles.logoWrap}>
-              <Image src={logoImg} alt="PetCorner" width={150} height={40} />
+              <Image
+                src={logoImg}
+                alt="PetCorner"
+                width={150}
+                height={40}
+                preload
+                loading="eager"
+              />
             </div>
             <span className={styles.badge}>Acesso do Cliente</span>
             <p className={styles.subtitle}>

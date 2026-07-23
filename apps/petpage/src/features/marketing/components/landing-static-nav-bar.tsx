@@ -24,8 +24,18 @@ export function LandingStaticNavBar() {
               alt="PetCorner"
               width={128}
               height={34}
-              className="h-8 w-auto"
-              priority
+              className="hidden h-8 w-auto md:block"
+              preload
+              loading="eager"
+            />
+            <Image
+              src="/petCornerversion2.svg"
+              alt="PetCorner"
+              width={127}
+              height={157}
+              className="block h-14 w-auto md:hidden"
+              preload
+              loading="eager"
             />
           </Link>
 

@@ -19,14 +19,18 @@ aside.logo {
     background: transparent;
 }
 
-aside.logo img{
+.logo__image{
     width: 100%;
     max-width: 72px;
     object-fit: contain;
 }
 
+.logo__image--mobile {
+    display: none;
+}
+
 @media (max-width: 844px){
-    aside.logo img{
+    .logo__image{
         max-width: 64px;
     }
 }
@@ -36,7 +40,16 @@ aside.logo img{
         padding: 0.5rem;
     }
 
-    aside.logo img{
+    .logo__image{
         max-width: 88px;
+    }
+
+    .logo__image--desktop {
+        display: none;
+    }
+
+    .logo__image--mobile {
+        display: block;
+        max-height: 76px;
     }
 }

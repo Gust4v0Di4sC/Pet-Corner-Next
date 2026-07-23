@@ -65,7 +65,14 @@ export function RegisterForm({ nextPath }: RegisterFormProps) {
         <form className={styles.form} onSubmit={handleEmailRegister}>
           <header className={styles.header}>
             <div className={styles.logoWrap}>
-              <Image src={logoImg} alt="PetCorner" width={150} height={40} />
+              <Image
+                src={logoImg}
+                alt="PetCorner"
+                width={150}
+                height={40}
+                preload
+                loading="eager"
+              />
             </div>
             <span className={styles.badge}>Cadastro do Cliente</span>
             <p className={styles.subtitle}>

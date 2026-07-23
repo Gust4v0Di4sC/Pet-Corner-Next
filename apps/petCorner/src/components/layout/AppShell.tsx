@@ -20,7 +20,7 @@ export default function AppShell({
 }: Props) {
   return (
     <div className={className}>
-      <Logo src={logoSrc} />
+      <Logo src={logoSrc} mobileSrc="/petCornerversion2.svg" />
       <Nav />
       {children}
       <ChatAssistant placement={chatFabPlacement} />

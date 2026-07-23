@@ -4,14 +4,18 @@ import { DASHBOARD_ROUTE } from '../Dashboard/dashboard.domain';
 
 type LogoProps = {
   src: string;
+  mobileSrc?: string;
   alt?: string;
 };
 
-function Logo({ src, alt = "Logo" }: LogoProps) {
+function Logo({ src, mobileSrc, alt = "Logo" }: LogoProps) {
   return (
     <aside className="logo">
       <Link to={DASHBOARD_ROUTE} className="logo">
-        <img src={src} alt={alt} />
+        <img className="logo__image logo__image--desktop" src={src} alt={alt} />
+        {mobileSrc ? (
+          <img className="logo__image logo__image--mobile" src={mobileSrc} alt={alt} />
+        ) : null}
       </Link>
     </aside>
   );
