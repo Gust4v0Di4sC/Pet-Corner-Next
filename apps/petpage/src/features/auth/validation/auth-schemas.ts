@@ -8,6 +8,13 @@ const emailFieldSchema = z
   .email("Informe um email valido.");
 
 const passwordFieldSchema = z.string().min(1, "Informe a senha para continuar.");
+const strongPasswordSchema = z
+  .string()
+  .min(12, "A senha precisa ter pelo menos 12 caracteres.")
+  .regex(/[a-z]/, "A senha precisa ter pelo menos uma letra minuscula.")
+  .regex(/[A-Z]/, "A senha precisa ter pelo menos uma letra maiuscula.")
+  .regex(/\d/, "A senha precisa ter pelo menos um numero.")
+  .regex(/[^A-Za-z0-9]/, "A senha precisa ter pelo menos um simbolo.");
 
 export const customerLoginSchema = z
   .object({
@@ -27,7 +34,7 @@ export const customerRegisterSchema = z
       .min(1, "Informe seu nome completo.")
       .transform((value) => collapseWhitespace(value)),
     email: emailFieldSchema,
-    password: z.string().min(6, "A senha precisa ter pelo menos 6 caracteres."),
+    password: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Confirme sua senha."),
   })
   .refine((input) => input.password === input.confirmPassword, {

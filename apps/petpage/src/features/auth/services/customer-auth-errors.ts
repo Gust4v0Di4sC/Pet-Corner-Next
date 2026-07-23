@@ -17,7 +17,7 @@ export function mapCustomerAuthError(error: unknown, context: "login" | "registe
       case "auth/email-already-in-use":
         return "Este email já está em uso.";
       case "auth/weak-password":
-        return "A senha precisa ter pelo menos 6 caracteres.";
+        return "A senha precisa ter pelo menos 12 caracteres, com maiuscula, minuscula, numero e simbolo.";
       case "auth/account-exists-with-different-credential":
         return "Já existe uma conta com outro método para este email.";
       case "auth/popup-blocked":
