@@ -200,19 +200,36 @@ function getAllowedOrigins(env) {
     .filter(Boolean);
 }
 
+function isProductionWorker(env) {
+  return String(env.ENVIRONMENT ?? env.NODE_ENV ?? env.WORKER_ENV ?? "").toLowerCase() === "production";
+}
+
 function resolveRequestOrigin(request, env) {
   const requestOrigin = request.headers.get("Origin");
   const allowedOrigins = getAllowedOrigins(env);
+  const isProduction = isProductionWorker(env);
 
   if (!requestOrigin) {
-    return allowedOrigins[0] ?? "*";
+    return allowedOrigins[0] ?? (isProduction ? "" : "*");
   }
 
-  if (!allowedOrigins.length || allowedOrigins.includes("*")) {
+  if (!allowedOrigins.length) {
+    return isProduction ? "" : "*";
+  }
+
+  if (allowedOrigins.includes("*")) {
+    return isProduction ? "" : "*";
+  }
+
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  if (!isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(requestOrigin)) {
     return "*";
   }
 
-  return allowedOrigins.includes(requestOrigin) ? requestOrigin : "";
+  return "";
 }
 
 function createCorsHeaders(request, env) {
