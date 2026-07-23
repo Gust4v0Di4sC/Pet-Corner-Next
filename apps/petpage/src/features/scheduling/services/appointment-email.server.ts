@@ -2,6 +2,7 @@ import "server-only";
 
 import nodemailer from "nodemailer";
 import { buildGoogleCalendarAddUrl } from "@/features/scheduling/utils/calendar-links";
+import { escapeHtml } from "@/lib/security/html";
 
 type AppointmentEmailInput = {
   customerEmail: string;
@@ -47,8 +48,14 @@ function formatDateTime(value: string): string {
 }
 
 export async function sendAppointmentCalendarEmail(
-  input: AppointmentEmailInput
+  rawInput: AppointmentEmailInput
 ): Promise<"sent" | "disabled" | "missing_config" | "missing_email"> {
+  const input = {
+    ...rawInput,
+    customerName: escapeHtml(rawInput.customerName || "cliente"),
+    serviceName: escapeHtml(rawInput.serviceName),
+  };
+
   const normalizedEmail = input.customerEmail.trim();
   if (!normalizedEmail) {
     return "missing_email";

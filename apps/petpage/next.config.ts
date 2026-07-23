@@ -1,5 +1,95 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+const workerUrlEnvNames = [
+  "NEXT_PUBLIC_CLOUDFLARE_WORKER_URL",
+  "NEXT_PUBLIC_COSMOS_SYNC_URL",
+  "NEXT_PUBLIC_CHAT_WORKER_URL",
+] as const;
+
+function readWorkerOrigins(): string[] {
+  return workerUrlEnvNames
+    .map((name) => process.env[name]?.trim())
+    .filter((value): value is string => Boolean(value))
+    .map((value) => {
+      try {
+        return new URL(value).origin;
+      } catch {
+        return "";
+      }
+    })
+    .filter(Boolean);
+}
+
+function buildContentSecurityPolicy(): string {
+  const connectSrc = [
+    "'self'",
+    "https://*.googleapis.com",
+    "https://*.firebaseio.com",
+    "https://*.firebaseapp.com",
+    "https://identitytoolkit.googleapis.com",
+    "https://securetoken.googleapis.com",
+    "https://firestore.googleapis.com",
+    "https://api.stripe.com",
+    "https://*.stripe.com",
+    ...readWorkerOrigins(),
+  ];
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.gstatic.com https://www.google.com https://apis.google.com https://www.googletagmanager.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    `connect-src ${Array.from(new Set(connectSrc)).join(" ")}`,
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.google.com https://www.recaptcha.net https://*.firebaseapp.com https://accounts.google.com",
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+    "media-src 'self' blob:",
+    isProduction ? "upgrade-insecure-requests" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
+
+function buildSecurityHeaders() {
+  const headers = [
+    {
+      key: "Content-Security-Policy",
+      value: buildContentSecurityPolicy(),
+    },
+    {
+      key: "X-Content-Type-Options",
+      value: "nosniff",
+    },
+    {
+      key: "X-Frame-Options",
+      value: "DENY",
+    },
+    {
+      key: "Referrer-Policy",
+      value: "strict-origin-when-cross-origin",
+    },
+    {
+      key: "Permissions-Policy",
+      value: "camera=(), microphone=(), geolocation=(), payment=(self)",
+    },
+  ];
+
+  if (isProduction) {
+    headers.push({
+      key: "Strict-Transport-Security",
+      value: "max-age=31536000; includeSubDomains; preload",
+    });
+  }
+
+  return headers;
+}
+
 const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: [
@@ -25,7 +115,13 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    const securityHeaders = buildSecurityHeaders();
+
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
       {
         source: "/app-react/assets/:path*",
         headers: [
