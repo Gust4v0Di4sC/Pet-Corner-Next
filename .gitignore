@@ -3,5 +3,7 @@ apps/petpage/public/app-react/
 firebase-debug.log
 apps/.playwright-mcp/
 apps/petpage-*.log
+.env.docker
+.env.docker.local
 **/AGENTS.md
 **/agents.md
