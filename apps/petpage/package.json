@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "npm rebuild sharp --platform=linux --arch=x64",
     "dev": "node scripts/next-with-userland-punycode.cjs dev",
-    "build": "node scripts/next-with-userland-punycode.cjs build",
+    "build": "node scripts/next-with-userland-punycode.cjs build --webpack",
     "start": "node scripts/next-with-userland-punycode.cjs start",
     "lint": "eslint ."
   },
@@ -20,7 +20,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.5.2",
     "firebase": "^12.1.0",
-    "firebase-admin": "^14.2.0",
+    "firebase-admin": "^13.6.0",
     "lucide-react": "^0.476.0",
     "next": "^16.3.0-preview.8",
     "nodemailer": "^9.0.3",

@@ -10,3 +10,7 @@ apps/petpage-*.log
 
 .vercel
 .env*
+.playwright-mcp/
+app-react-*.log
+app-react-*.md
+app-react-*.png

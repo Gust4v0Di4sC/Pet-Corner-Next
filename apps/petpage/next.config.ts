@@ -32,6 +32,8 @@ function buildContentSecurityPolicy(): string {
     "https://firestore.googleapis.com",
     "https://api.stripe.com",
     "https://*.stripe.com",
+    "https://cdn.jsdelivr.net",
+    "https://unpkg.com",
     ...readWorkerOrigins(),
   ];
 
@@ -42,9 +44,9 @@ function buildContentSecurityPolicy(): string {
     "frame-ancestors 'none'",
     "form-action 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.gstatic.com https://www.google.com https://apis.google.com https://www.googletagmanager.com",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     `connect-src ${Array.from(new Set(connectSrc)).join(" ")}`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.google.com https://www.recaptcha.net https://*.firebaseapp.com https://accounts.google.com",
     "worker-src 'self' blob:",
