@@ -77,6 +77,10 @@ function buildSecurityHeaders() {
       value: "strict-origin-when-cross-origin",
     },
     {
+      key: "Cross-Origin-Opener-Policy",
+      value: "same-origin-allow-popups",
+    },
+    {
       key: "Permissions-Policy",
       value: "camera=(), microphone=(), geolocation=(), payment=(self)",
     },
