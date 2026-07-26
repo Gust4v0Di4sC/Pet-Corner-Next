@@ -7,3 +7,6 @@ apps/petpage-*.log
 .env.docker.local
 **/AGENTS.md
 **/agents.md
+
+.vercel
+.env*
