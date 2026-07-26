@@ -30,6 +30,10 @@ const IMAGE_EXTENSION_BY_MIME = {
 };
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(Object.values(IMAGE_MIME_BY_EXTENSION));
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://pet-corner-next-nine.vercel.app",
+  "https://pet-corner-next-gust4v0di4scs-projects.vercel.app",
+];
 
 const COMMON_PET_SEARCHES = [
   { query: "racao caes", category: "Alimento para Caes" },
@@ -194,10 +198,12 @@ function getProductImageConfig(env) {
 }
 
 function getAllowedOrigins(env) {
-  return String(env.ALLOWED_ORIGINS ?? "")
+  const configuredOrigins = String(env.ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
+  return Array.from(new Set([...configuredOrigins, ...DEFAULT_ALLOWED_ORIGINS]));
 }
 
 function isProductionWorker(env) {
