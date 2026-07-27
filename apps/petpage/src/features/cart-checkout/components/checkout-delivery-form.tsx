@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ChangeEventHandler, FormEventHandler } from "react";
+import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ type CheckoutDeliveryFormProps = {
   disabled: boolean;
   isSavingDelivery: boolean;
   onInputChange: ChangeEventHandler<HTMLInputElement>;
-  onSubmit: FormEventHandler<HTMLFormElement>;
+  onSubmit: SubmitEventHandler<HTMLFormElement>;
 };
 
 export function CheckoutDeliveryForm({

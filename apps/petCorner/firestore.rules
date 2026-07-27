@@ -37,14 +37,171 @@ service cloud.firestore {
       return isAuthenticated() && resource.data.customerId == request.auth.uid;
     }
 
+    function hasOnlyFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function optionalString(field, maxSize) {
+      return !(field in request.resource.data)
+        || (request.resource.data[field] is string && request.resource.data[field].size() <= maxSize);
+    }
+
+    function requiredString(field, maxSize) {
+      return request.resource.data[field] is string
+        && request.resource.data[field].size() > 0
+        && request.resource.data[field].size() <= maxSize;
+    }
+
+    function validClientMirror(clientId) {
+      return isOwner(clientId)
+        && request.resource.data.ownerCustomerId == clientId
+        && hasOnlyFields([
+          "ownerCustomerId", "name", "email", "phone", "address", "age",
+          "source", "updatedAt", "updatedAtIso", "profileImageUrl",
+          "zipCode", "street", "number", "district", "city", "state", "complement"
+        ])
+        && optionalString("name", 120)
+        && optionalString("email", 254)
+        && optionalString("address", 500)
+        && optionalString("source", 40)
+        && optionalString("updatedAtIso", 40)
+        && optionalString("profileImageUrl", 1000);
+    }
+
+    function validDogOwnerWrite() {
+      return isAuthenticated()
+        && request.resource.data.ownerCustomerId == request.auth.uid
+        && hasOnlyFields([
+          "ownerCustomerId", "name", "animalType", "species", "breed", "age",
+          "weight", "source", "createdAt", "updatedAt", "createdAtIso",
+          "updatedAtIso", "migratedAt"
+        ])
+        && requiredString("name", 120)
+        && requiredString("animalType", 80)
+        && optionalString("species", 80)
+        && requiredString("breed", 120)
+        && request.resource.data.age is number
+        && request.resource.data.age >= 0
+        && request.resource.data.age <= 99
+        && request.resource.data.weight is number
+        && request.resource.data.weight >= 0
+        && request.resource.data.weight <= 999.9;
+    }
+
+    function validCustomerProfile(customerId) {
+      return isOwner(customerId)
+        && request.resource.data.customerId == customerId
+        && hasOnlyFields([
+          "customerId", "email", "name", "provider", "profileImageUrl",
+          "createdAt", "updatedAt", "createdAtIso", "updatedAtIso", "source"
+        ])
+        && optionalString("email", 254)
+        && optionalString("name", 120)
+        && optionalString("provider", 40)
+        && optionalString("profileImageUrl", 1000)
+        && optionalString("createdAtIso", 40)
+        && optionalString("updatedAtIso", 40)
+        && optionalString("source", 80);
+    }
+
+    function validCustomerCart(customerId) {
+      return isOwner(customerId)
+        && request.resource.data.customerId == customerId
+        && hasOnlyFields(["customerId", "items", "subtotalInCents", "updatedAt", "updatedAtIso"])
+        && request.resource.data.items is list
+        && request.resource.data.items.size() <= 50
+        && request.resource.data.subtotalInCents is number
+        && request.resource.data.subtotalInCents >= 0
+        && optionalString("updatedAtIso", 40);
+    }
+
+    function validCustomerPet(customerId) {
+      return isOwner(customerId)
+        && request.resource.data.customerId == customerId
+        && hasOnlyFields([
+          "customerId", "name", "animalType", "species", "breed", "age",
+          "weight", "createdAt", "updatedAt", "createdAtIso", "updatedAtIso",
+          "migratedAt"
+        ])
+        && requiredString("name", 120)
+        && requiredString("animalType", 80)
+        && optionalString("species", 80)
+        && requiredString("breed", 120)
+        && request.resource.data.age is number
+        && request.resource.data.age >= 0
+        && request.resource.data.age <= 99
+        && request.resource.data.weight is number
+        && request.resource.data.weight >= 0
+        && request.resource.data.weight <= 999.9;
+    }
+
+    function validCustomerFavorite(customerId) {
+      return isOwner(customerId)
+        && request.resource.data.customerId == customerId
+        && hasOnlyFields([
+          "customerId", "name", "category", "price", "priceLabel",
+          "createdAt", "updatedAt", "createdAtIso", "updatedAtIso"
+        ])
+        && requiredString("name", 160)
+        && optionalString("category", 120)
+        && optionalString("priceLabel", 40);
+    }
+
+    function validCustomerAddress(customerId) {
+      return isOwner(customerId)
+        && request.resource.data.customerId == customerId
+        && hasOnlyFields([
+          "customerId", "zipCode", "street", "number", "district", "city",
+          "state", "complement", "updatedAt", "updatedAtIso", "source"
+        ])
+        && requiredString("zipCode", 12)
+        && requiredString("street", 160)
+        && requiredString("number", 40)
+        && requiredString("district", 120)
+        && requiredString("city", 120)
+        && requiredString("state", 2)
+        && optionalString("complement", 160)
+        && optionalString("updatedAtIso", 40)
+        && optionalString("source", 80);
+    }
+
+    function validCustomerNotificationCreate(customerId) {
+      return isOwner(customerId)
+        && request.resource.data.customerId == customerId
+        && request.resource.data.isRead == false
+        && hasOnlyFields([
+          "customerId", "title", "message", "category", "linkHref",
+          "isRead", "createdAt", "createdAtIso"
+        ])
+        && requiredString("title", 140)
+        && requiredString("message", 420)
+        && optionalString("category", 40)
+        && optionalString("linkHref", 300)
+        && optionalString("createdAtIso", 40);
+    }
+
+    function validCustomerNotificationUpdate(customerId) {
+      return isOwner(customerId)
+        && resource.data.customerId == customerId
+        && request.resource.data.customerId == customerId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "isRead", "readAt", "updatedAt", "updatedAtIso"
+        ])
+        && request.resource.data.isRead is bool
+        && optionalString("updatedAtIso", 40);
+    }
+
     match /clientes/{clientId} {
-      allow read, create, update, delete: if isAdmin() || isOwner(clientId);
+      allow read: if isAdmin() || isOwner(clientId);
+      allow create, update: if isAdmin() || validClientMirror(clientId);
+      allow delete: if isAdmin();
     }
 
     match /dogs/{dogId} {
       allow read: if isAdmin() || (request.auth != null && resource.data.ownerCustomerId == request.auth.uid);
-      allow create: if isAdmin() || (request.auth != null && request.resource.data.ownerCustomerId == request.auth.uid);
-      allow update, delete: if isAdmin() || (request.auth != null && resource.data.ownerCustomerId == request.auth.uid);
+      allow create: if isAdmin() || validDogOwnerWrite();
+      allow update: if isAdmin() || (resource.data.ownerCustomerId == request.auth.uid && validDogOwnerWrite());
+      allow delete: if isAdmin() || (request.auth != null && resource.data.ownerCustomerId == request.auth.uid);
     }
 
     match /prods/{document=**} {
@@ -93,7 +250,9 @@ service cloud.firestore {
     }
 
     match /customers/{customerId} {
-      allow read, create, update: if isAdmin() || isOwner(customerId);
+      allow read: if isAdmin() || isOwner(customerId);
+      allow create: if isAdmin() || validCustomerProfile(customerId);
+      allow update: if isAdmin() || (resource.data.customerId == customerId && validCustomerProfile(customerId));
       allow delete: if isAdmin();
     }
 
@@ -103,25 +262,35 @@ service cloud.firestore {
     }
 
     match /customers/{customerId}/carts/{cartId} {
-      allow read, create, update, delete: if isAdmin() || isOwner(customerId);
+      allow read: if isAdmin() || isOwner(customerId);
+      allow create, update: if isAdmin() || validCustomerCart(customerId);
+      allow delete: if isAdmin() || isOwner(customerId);
     }
 
     match /customers/{customerId}/pets/{petId} {
-      allow read, create, update, delete: if isAdmin() || isOwner(customerId);
+      allow read: if isAdmin() || isOwner(customerId);
+      allow create: if isAdmin() || validCustomerPet(customerId);
+      allow update: if isAdmin() || (resource.data.customerId == customerId && validCustomerPet(customerId));
+      allow delete: if isAdmin() || isOwner(customerId);
     }
 
     match /customers/{customerId}/favorites/{favoriteId} {
-      allow read, create, update, delete: if isAdmin() || isOwner(customerId);
+      allow read: if isAdmin() || isOwner(customerId);
+      allow create, update: if isAdmin() || validCustomerFavorite(customerId);
+      allow delete: if isAdmin() || isOwner(customerId);
     }
 
     match /customers/{customerId}/addresses/{addressId} {
-      allow read, create, update, delete: if isAdmin() || isOwner(customerId);
+      allow read: if isAdmin() || isOwner(customerId);
+      allow create: if isAdmin() || validCustomerAddress(customerId);
+      allow update: if isAdmin() || (resource.data.customerId == customerId && validCustomerAddress(customerId));
+      allow delete: if isAdmin() || isOwner(customerId);
     }
 
     match /customers/{customerId}/notifications/{notificationId} {
       allow read: if isAdmin() || isOwner(customerId);
-      allow create: if isAdmin() || isOwner(customerId);
-      allow update: if isAdmin() || isOwner(customerId);
+      allow create: if isAdmin() || validCustomerNotificationCreate(customerId);
+      allow update: if isAdmin() || validCustomerNotificationUpdate(customerId);
       allow delete: if isAdmin();
     }
 

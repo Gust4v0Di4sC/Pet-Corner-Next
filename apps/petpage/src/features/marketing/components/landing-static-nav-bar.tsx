@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { User, Wrench } from "@phosphor-icons/react/dist/ssr";
+import { Wrench } from "@phosphor-icons/react/dist/ssr";
 import logoImg from "@/assets/Logo-Home.svg";
 import { LandingNavCartButton } from "@/features/marketing/components/landing-nav-cart-button";
+import { LandingNavUserButton } from "@/features/marketing/components/landing-nav-user-button";
 
 const menuLinks = [
   { href: "/#inicio", label: "Inicio" },
@@ -23,8 +24,18 @@ export function LandingStaticNavBar() {
               alt="PetCorner"
               width={128}
               height={34}
-              className="h-8 w-auto"
-              priority
+              className="hidden h-8 w-auto md:block"
+              preload
+              loading="eager"
+            />
+            <Image
+              src="/petCornerversion2.svg"
+              alt="PetCorner"
+              width={127}
+              height={157}
+              className="block h-14 w-auto md:hidden"
+              preload
+              loading="eager"
             />
           </Link>
 
@@ -42,13 +53,7 @@ export function LandingStaticNavBar() {
           </ul>
 
           <div className="flex items-center gap-2">
-            <Link
-              href="/profile"
-              aria-label="Perfil do cliente"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-600 bg-[#273446] text-slate-100 transition hover:border-[#fb8b24] hover:text-[#fb8b24]"
-            >
-              <User className="h-5 w-5" />
-            </Link>
+            <LandingNavUserButton />
 
             <Link
               href="/app-react"

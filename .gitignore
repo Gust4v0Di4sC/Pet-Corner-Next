@@ -11,3 +11,10 @@ app-react-current-snapshot.md
 app-react-current.png
 **/AGENTS.md
 **/agents.md
+
+.vercel
+.env*
+.playwright-mcp/
+app-react-*.log
+app-react-*.md
+app-react-*.png

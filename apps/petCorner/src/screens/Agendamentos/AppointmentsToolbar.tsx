@@ -24,6 +24,7 @@ export function AppointmentsToolbar({
           className={activeTab === "agenda" ? "is-active" : ""}
           onClick={() => onTabChange("agenda")}
         >
+          <AppIcon name="calendar" />
           Agenda
         </button>
         <button
@@ -34,6 +35,7 @@ export function AppointmentsToolbar({
           className={activeTab === "settings" ? "is-active" : ""}
           onClick={() => onTabChange("settings")}
         >
+          <AppIcon name="pencil" />
           Configuração
         </button>
       </div>

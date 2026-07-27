@@ -8,6 +8,7 @@ import {
 
 import { useToast } from "../../hooks/useToast";
 import { queryChat, type ChatQueryResult } from "../../services/chatService";
+import { getUserErrorMessage } from "../../utils/userErrorMessage";
 import { AppIcon } from "../icons/AppIcon";
 import "./chat-assistant.css";
 
@@ -113,10 +114,10 @@ export default function ChatAssistant({ placement = "default" }: Props) {
 
       setMessages((current) => [...current, toAssistantMessage(response)]);
     } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Não foi possível consultar o chat agora.";
+      const message = getUserErrorMessage(
+        error,
+        "Nao consegui responder agora. Tente novamente em alguns instantes."
+      );
 
       setMessages((current) => [
         ...current,

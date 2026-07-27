@@ -31,7 +31,7 @@ export function PetBreedField({
         htmlFor={isManualBreed ? "pet-breed" : "pet-breedSelection"}
         className={darkLabelClassName}
       >
-        Raca
+        Raça
       </Label>
 
       {isManualBreed ? (
@@ -42,14 +42,14 @@ export function PetBreedField({
             value={petForm.breed}
             onChange={onInputChange}
             className={darkInputClassName}
-            placeholder="Digite a raca manualmente"
+            placeholder="Digite a raça manualmente"
           />
           <Button
             type="button"
             onClick={onResetBreedSelection}
             className="text-xs font-semibold text-[#fb8b24] transition hover:text-[#ef7e14]"
           >
-            Voltar para lista de racas
+            Voltar para lista de raças
           </Button>
         </div>
       ) : (
@@ -61,7 +61,7 @@ export function PetBreedField({
           className={darkInputClassName}
           disabled={!petForm.animalType}
         >
-          <option value="">Selecione a raca mais comum</option>
+          <option value="">Selecione a raça mais comum</option>
           {getBreedOptionsForAnimalType(petForm.animalType).map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

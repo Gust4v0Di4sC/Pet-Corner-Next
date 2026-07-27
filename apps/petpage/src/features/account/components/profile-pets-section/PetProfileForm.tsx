@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, FormEventHandler } from "react";
+import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { Button } from "@/components/ui/button";
 import { PetAnimalTypeField } from "@/features/account/components/profile-pets-section/PetAnimalTypeField";
 import { PetBreedField } from "@/features/account/components/profile-pets-section/PetBreedField";
@@ -9,8 +9,9 @@ type PetProfileFormProps = {
   petForm: PetFormState;
   petErrorMessage: string | null;
   isCreatingPet: boolean;
+  className?: string;
   onPetInputChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
-  onCreatePet: FormEventHandler<HTMLFormElement>;
+  onCreatePet: SubmitEventHandler<HTMLFormElement>;
   onResetBreedSelection: () => void;
 };
 
@@ -18,6 +19,7 @@ export function PetProfileForm({
   petForm,
   petErrorMessage,
   isCreatingPet,
+  className,
   onPetInputChange,
   onCreatePet,
   onResetBreedSelection,
@@ -32,7 +34,10 @@ export function PetProfileForm({
 
   return (
     <form
-      className="mt-5 grid gap-3 rounded-2xl border border-slate-700 bg-slate-900/65 p-4 md:grid-cols-2"
+      className={
+        className ||
+        "mt-5 grid gap-3 rounded-2xl border border-slate-700 bg-slate-900/65 p-4 md:grid-cols-2"
+      }
       onSubmit={onCreatePet}
     >
       <PetFormField

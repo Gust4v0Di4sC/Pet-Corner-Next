@@ -5,16 +5,22 @@ import Link from "next/link";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLandingProductDetail } from "@/features/marketing/hooks/use-landing-product-detail";
+import type { LandingProductView } from "@/features/marketing/services/landing-content.service";
 import productFallback from "@/assets/fallbackproduct.png";
 import { AddToCartButton } from "@/features/cart-checkout/components/add-to-cart-button";
 
 type ProductDetailPageProps = {
   productId: string;
+  initialProduct?: LandingProductView | null;
 };
 
-export function ProductDetailPage({ productId }: ProductDetailPageProps) {
+const BACK_BUTTON_CLASS_NAME =
+  "inline-flex h-11 items-center gap-2 rounded-full bg-[#fb8b24] px-5 text-sm font-semibold text-white transition hover:bg-[#ef7e14]";
+
+export function ProductDetailPage({ productId, initialProduct }: ProductDetailPageProps) {
   const { isLoading, errorMessage, notFound, product, reload } = useLandingProductDetail({
     productId,
+    initialProduct,
   });
 
   if (isLoading) {
@@ -34,7 +40,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
           <Link
             href="/produtos"
             suppressHydrationWarning
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-[#fb8b24]"
+            className={BACK_BUTTON_CLASS_NAME}
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar para produtos
@@ -62,7 +68,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
           <Link
             href="/produtos"
             suppressHydrationWarning
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-[#fb8b24]"
+            className={BACK_BUTTON_CLASS_NAME}
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar para produtos
@@ -86,7 +92,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
         <Link
           href="/produtos"
           suppressHydrationWarning
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-[#fb8b24]"
+          className={BACK_BUTTON_CLASS_NAME}
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para produtos

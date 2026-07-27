@@ -6,17 +6,15 @@ import {
   getLandingServiceById,
   type LandingServiceView,
 } from "@/features/marketing/services/landing-content.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 function mapErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Nao foi possivel carregar os detalhes do servico.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar os detalhes do servico agora.");
 }
 
 type UseLandingServiceDetailOptions = {
   serviceId: string;
+  initialService?: LandingServiceView | null;
 };
 
 export function useLandingServiceDetail(options: UseLandingServiceDetailOptions) {
@@ -32,6 +30,7 @@ export function useLandingServiceDetail(options: UseLandingServiceDetailOptions)
     queryKey: ["landing", "service-detail", normalizedServiceId],
     queryFn: async () => getLandingServiceById(normalizedServiceId),
     enabled: hasValidServiceId,
+    initialData: options.initialService,
     staleTime: 45_000,
   });
 

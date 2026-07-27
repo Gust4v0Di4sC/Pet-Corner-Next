@@ -3,7 +3,7 @@
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarDays, CheckCircle2, Clock, RefreshCw } from "lucide-react";
-import { type FormEvent, useEffect } from "react";
+import { type SubmitEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -46,7 +46,7 @@ export function AppointmentScheduler({
 
   const selectedService = services.find((service) => service.id === scheduler.serviceId);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       await scheduler.submit();

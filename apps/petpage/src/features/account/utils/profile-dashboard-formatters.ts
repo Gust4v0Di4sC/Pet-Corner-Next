@@ -26,6 +26,6 @@ export function toDisplayPetWeight(weight: number): string {
 export function getAppointmentStatusLabel(status: string): string {
   if (status === "confirmed") return "Confirmado";
   if (status === "canceled") return "Cancelado";
-  if (status === "completed") return "Concluido";
+  if (status === "completed") return "Concluído";
   return "Solicitado";
 }

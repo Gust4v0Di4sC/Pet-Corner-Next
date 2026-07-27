@@ -8,17 +8,17 @@ import {
 } from "@/features/scheduling/services/customer-appointment.service";
 import type { AppointmentSlot } from "@/features/scheduling/types/appointment";
 import { dateToDateKey } from "@/features/scheduling/utils/appointment-time";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type UseAppointmentSchedulerOptions = {
   initialServiceId: string;
 };
 
 function mapErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return fallback;
+  return getUserErrorMessage(error, fallback, {
+    permissionMessage:
+      "Sua sessao expirou. Entre novamente para consultar ou criar agendamentos.",
+  });
 }
 
 export function useAppointmentScheduler(options: UseAppointmentSchedulerOptions) {

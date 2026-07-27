@@ -14,7 +14,7 @@ const FloatingSupportActions = dynamic(
 export function FloatingSupportActionsLoader() {
   const pathname = usePathname();
 
-  if (pathname === "/" || pathname.startsWith("/app-react")) {
+  if (pathname.startsWith("/app-react")) {
     return null;
   }
 

@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 import { useClient } from "../../hooks/useClient";
 import { useDog } from "../../hooks/useDog";
 import { useProducts } from "../../hooks/useProducts";
+import { listAdminOrders } from "../../services/orderTrackingService";
 import AppLoader from "../Templates/AppLoader";
 import { getDashboardDomainMeta, getDashboardDomainRoute } from "./dashboard.domain";
 import DashboardChartCard from "./DashboardChartCard";
@@ -16,14 +18,19 @@ export default function Dashboard() {
   const { items: clients, isLoading: clientsLoading } = useClient("clientes");
   const { items: dogs, isLoading: dogsLoading } = useDog();
   const { items: products, isLoading: productsLoading } = useProducts();
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["dashboard", "orders"],
+    queryFn: async () => listAdminOrders({ maxResults: 300 }),
+  });
 
   const summaryCards = getSummaryCards(clients, dogs, products);
-  const chartSections = getChartSections(clients, dogs, products);
+  const chartSections = getChartSections(clients, dogs, products, orders);
   const isInitialLoading =
-    (clientsLoading || dogsLoading || productsLoading) &&
+    (clientsLoading || dogsLoading || productsLoading || ordersLoading) &&
     !clients.length &&
     !dogs.length &&
-    !products.length;
+    !products.length &&
+    !orders.length;
 
   return (
     <section className="dashboard-view">

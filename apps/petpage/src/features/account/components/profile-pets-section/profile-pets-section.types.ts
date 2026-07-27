@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, FormEventHandler } from "react";
+import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import type { CustomerPet } from "@/features/account/services/customer-profile.service";
 import type { PetFormState } from "@/features/account/types/profile-dashboard";
 
@@ -16,8 +16,9 @@ export type ProfilePetsSectionState = {
 
 export type ProfilePetsSectionActions = {
   onToggleForm: () => void;
+  onFormOpenChange: (open: boolean) => void;
   onPetInputChange: ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
-  onCreatePet: FormEventHandler<HTMLFormElement>;
+  onCreatePet: SubmitEventHandler<HTMLFormElement>;
   onResetBreedSelection: () => void;
 };
 

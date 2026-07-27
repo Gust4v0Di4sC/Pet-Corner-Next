@@ -6,6 +6,7 @@ import {
   queryCustomerDeliveryChat,
   type CustomerDeliveryChatResponse,
 } from "@/features/support/services/customer-delivery-chat.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 type ChatRole = "user" | "assistant";
 
@@ -68,10 +69,10 @@ export function useCustomerDeliveryChat() {
       ]);
     },
     onError: (error) => {
-      const message =
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Nao foi possivel consultar o assistente de entrega.";
+      const message = getUserErrorMessage(
+        error,
+        "Nao consegui responder agora. Tente novamente em alguns instantes."
+      );
 
       setMessages((currentMessages) => [
         ...currentMessages,

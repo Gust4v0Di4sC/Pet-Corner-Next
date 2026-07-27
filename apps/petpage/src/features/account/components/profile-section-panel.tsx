@@ -13,14 +13,21 @@ export function ProfileSectionPanel({
   children,
   headerAction,
 }: ProfileSectionPanelProps) {
+  const titleId = `${id}-title`;
+
   return (
     <section
       id={id}
+      aria-labelledby={title ? titleId : undefined}
       className="scroll-mt-24 rounded-[2rem] border border-slate-700/90 bg-[#0f1722] p-6 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.95)]"
     >
       {title || headerAction ? (
         <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          {title ? <h2 className="text-4xl font-semibold text-slate-100">{title}</h2> : null}
+          {title ? (
+            <h2 id={titleId} className="text-4xl font-semibold text-slate-100">
+              {title}
+            </h2>
+          ) : null}
           {headerAction}
         </header>
       ) : null}

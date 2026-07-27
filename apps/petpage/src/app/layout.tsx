@@ -82,10 +82,18 @@ export const metadata: Metadata = {
     images: ["/app-react/logo512.png"],
   },
   icons: {
-    icon: "/favicon.svg",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/favicon.ico?v=petcorner-20260721", sizes: "any" },
+      { url: "/icon.svg?v=petcorner-20260721", type: "image/svg+xml" },
+      { url: "/icon.png?v=petcorner-20260721", type: "image/png" },
+    ],
+    shortcut: ["/favicon.ico?v=petcorner-20260721"],
+    apple: [{ url: "/apple-icon.png?v=petcorner-20260721", type: "image/png" }],
   },
-  manifest: "/site.webmanifest",
+  manifest: "/manifest.json",
+  other: {
+    "apple-mobile-web-app-title": "PetCorner",
+  },
 };
 
 export default function RootLayout({

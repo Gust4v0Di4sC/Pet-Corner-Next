@@ -66,7 +66,7 @@ function getResetErrorMessage(error: unknown): string {
       case "auth/user-disabled":
         return "Esta conta foi desativada. Entre em contato com o suporte.";
       case "auth/weak-password":
-        return "Escolha uma senha mais forte (mínimo de 6 caracteres).";
+        return "Escolha uma senha com ao menos 12 caracteres, maiuscula, minuscula, numero e simbolo.";
       default:
         return "Não foi possível concluir a redefinição agora. Tente novamente.";
     }

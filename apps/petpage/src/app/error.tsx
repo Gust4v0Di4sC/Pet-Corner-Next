@@ -14,7 +14,9 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       <p className="text-sm text-slate-600">
         Nao foi possivel renderizar esta pagina agora. Tente novamente.
       </p>
-      <p className="text-xs text-slate-500">{error.digest ? `Ref: ${error.digest}` : error.message}</p>
+      {error.digest ? (
+        <p className="text-xs text-slate-500">Codigo de suporte: {error.digest}</p>
+      ) : null}
       <Button
         type="button"
         onClick={() => reset()}

@@ -44,7 +44,7 @@ async function completeAuthFlow(
   const normalizedName = identity.displayName || fallbackName;
 
   if (!normalizedEmail) {
-    throw new Error("Nao foi possivel identificar o email da conta.");
+    throw new Error("Não foi possível identificar o email da conta.");
   }
 
   await syncCustomerProfile(identity, normalizedName);

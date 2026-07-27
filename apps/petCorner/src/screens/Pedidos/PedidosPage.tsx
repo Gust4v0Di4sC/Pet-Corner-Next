@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import logoimg from "../../assets/Logo.svg";
-import { AppIcon } from "../../components/icons/AppIcon";
 import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
 import { useOrderOperations } from "../../hooks/useOrderOperations";
@@ -11,6 +10,7 @@ import {
   getOrderStatusLabel,
 } from "../../services/orderTrackingService";
 import type { DeliveryIssueStatus, OrderStatus } from "../../types/orderTracking";
+import { getUserErrorMessage } from "../../utils/userErrorMessage";
 import "./pedidos.css";
 
 const ORDER_STATUS_OPTIONS: OrderStatus[] = [
@@ -61,7 +61,6 @@ function issueStatusOptionLabel(status: DeliveryIssueStatus | "all"): string {
 export default function PedidosPage() {
   const toast = useToast();
   const {
-    isLoading,
     orders,
     deliveryIssues,
     selectedOrder,
@@ -74,8 +73,6 @@ export default function PedidosPage() {
     setOrderSearch,
     issueSearch,
     setIssueSearch,
-    reloadOrders,
-    reloadDeliveryIssues,
     ordersErrorMessage,
     deliveryIssuesErrorMessage,
     isUpdatingOrderStatus,
@@ -103,10 +100,6 @@ export default function PedidosPage() {
     [deliveryIssues]
   );
 
-  const handleRefresh = async () => {
-    await Promise.all([reloadOrders(), reloadDeliveryIssues()]);
-  };
-
   const handleApplyOrderStatus = async () => {
     if (!selectedOrder) {
       toast.warning("Selecione um pedido para atualizar.");
@@ -118,9 +111,10 @@ export default function PedidosPage() {
       toast.success("Status do pedido atualizado com sucesso.");
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Nao foi possivel atualizar o status do pedido."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel atualizar o status do pedido agora. Tente novamente."
+        )
       );
     }
   };
@@ -148,9 +142,10 @@ export default function PedidosPage() {
       toast.success("Issue de entrega atualizada.");
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Nao foi possivel atualizar a issue de entrega."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel atualizar o problema de entrega agora. Tente novamente."
+        )
       );
     }
   };
@@ -193,16 +188,6 @@ export default function PedidosPage() {
                 />
               </label>
             </div>
-
-            <button
-              type="button"
-              className="orders-ops__refresh-button"
-              onClick={() => void handleRefresh()}
-              disabled={isLoading}
-            >
-              <AppIcon name={isLoading ? "spinner" : "rotate-right"} spin={isLoading} />
-              Atualizar
-            </button>
           </header>
 
           {ordersErrorMessage ? (
@@ -237,7 +222,9 @@ export default function PedidosPage() {
                           <p>{order.customerId}</p>
                         </div>
                         <div className="orders-ops__order-meta">
-                          <span>{getOrderStatusLabel(order.status)}</span>
+                          <span className={`orders-ops__status-badge orders-ops__status-badge--${order.status}`}>
+                            {getOrderStatusLabel(order.status)}
+                          </span>
                           <small>{formatDate(order.updatedAtIso)}</small>
                         </div>
                       </button>
@@ -347,101 +334,103 @@ export default function PedidosPage() {
             </article>
           </div>
 
-          <article className="orders-ops__panel orders-ops__panel--issues">
-            <header className="orders-ops__panel-header">
-              <h3>Problemas de entrega</h3>
+          <details className="orders-ops__panel orders-ops__panel--issues">
+            <summary className="orders-ops__issues-summary">
+              <span>Problemas de entrega</span>
               <small>{activeIssueCount} pendente(s)</small>
-            </header>
+            </summary>
 
-            <div className="orders-ops__filters orders-ops__filters--issues">
-              <label className="orders-ops__field">
-                <span>Status da issue</span>
-                <select
-                  value={deliveryIssueStatusFilter}
-                  onChange={(event) =>
-                    setDeliveryIssueStatusFilter(event.target.value as DeliveryIssueStatus | "all")
-                  }
-                >
-                  {DELIVERY_ISSUE_STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {issueStatusOptionLabel(status)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <div className="orders-ops__issues-content">
+              <div className="orders-ops__filters orders-ops__filters--issues">
+                <label className="orders-ops__field">
+                  <span>Status da issue</span>
+                  <select
+                    value={deliveryIssueStatusFilter}
+                    onChange={(event) =>
+                      setDeliveryIssueStatusFilter(event.target.value as DeliveryIssueStatus | "all")
+                    }
+                  >
+                    {DELIVERY_ISSUE_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {issueStatusOptionLabel(status)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <label className="orders-ops__field orders-ops__field--search">
-                <span>Busca de issue</span>
-                <input
-                  value={issueSearch}
-                  onChange={(event) => setIssueSearch(event.target.value)}
-                  placeholder="ticket, PED, cliente ou mensagem"
-                />
-              </label>
-            </div>
+                <label className="orders-ops__field orders-ops__field--search">
+                  <span>Busca de issue</span>
+                  <input
+                    value={issueSearch}
+                    onChange={(event) => setIssueSearch(event.target.value)}
+                    placeholder="ticket, PED, cliente ou mensagem"
+                  />
+                </label>
+              </div>
 
-            {!deliveryIssues.length ? (
-              <p className="orders-ops__empty">Nenhum problema de entrega para os filtros atuais.</p>
-            ) : (
-              <ul className="orders-ops__issue-list">
-                {deliveryIssues.map((issue) => {
-                  const issueNextStatus = issueStatusDrafts[issue.id] ?? issue.status;
-                  const issueNotes = issueNotesDrafts[issue.id] ?? issue.triageNotes ?? "";
+              {!deliveryIssues.length ? (
+                <p className="orders-ops__empty">Nenhum problema de entrega para os filtros atuais.</p>
+              ) : (
+                <ul className="orders-ops__issue-list">
+                  {deliveryIssues.map((issue) => {
+                    const issueNextStatus = issueStatusDrafts[issue.id] ?? issue.status;
+                    const issueNotes = issueNotesDrafts[issue.id] ?? issue.triageNotes ?? "";
 
-                  return (
-                    <li key={issue.id} className="orders-ops__issue-card">
-                      <div className="orders-ops__issue-card-header">
-                        <div>
-                          <strong>{issue.orderCode || issue.id}</strong>
-                          <p>Cliente {issue.customerId}</p>
+                    return (
+                      <li key={issue.id} className="orders-ops__issue-card">
+                        <div className="orders-ops__issue-card-header">
+                          <div>
+                            <strong>{issue.orderCode || issue.id}</strong>
+                            <p>Cliente {issue.customerId}</p>
+                          </div>
+                          <span>{getDeliveryIssueStatusLabel(issue.status)}</span>
                         </div>
-                        <span>{getDeliveryIssueStatusLabel(issue.status)}</span>
-                      </div>
 
-                      <p className="orders-ops__issue-message">{issue.message}</p>
-                      <p className="orders-ops__issue-meta">
-                        Severidade: {issue.severity} | Criado em {formatDate(issue.createdAtIso)}
-                      </p>
+                        <p className="orders-ops__issue-message">{issue.message}</p>
+                        <p className="orders-ops__issue-meta">
+                          Severidade: {issue.severity} | Criado em {formatDate(issue.createdAtIso)}
+                        </p>
 
-                      <div className="orders-ops__issue-form">
-                        <select
-                          value={issueNextStatus}
-                          onChange={(event) =>
-                            handleIssueStatusChange(
-                              issue.id,
-                              event.target.value as DeliveryIssueStatus
-                            )
-                          }
-                        >
-                          {DELIVERY_ISSUE_STATUS_OPTIONS.filter((status) => status !== "all").map(
-                            (status) => (
-                              <option key={status} value={status}>
-                                {getDeliveryIssueStatusLabel(status)}
-                              </option>
-                            )
-                          )}
-                        </select>
+                        <div className="orders-ops__issue-form">
+                          <select
+                            value={issueNextStatus}
+                            onChange={(event) =>
+                              handleIssueStatusChange(
+                                issue.id,
+                                event.target.value as DeliveryIssueStatus
+                              )
+                            }
+                          >
+                            {DELIVERY_ISSUE_STATUS_OPTIONS.filter((status) => status !== "all").map(
+                              (status) => (
+                                <option key={status} value={status}>
+                                  {getDeliveryIssueStatusLabel(status)}
+                                </option>
+                              )
+                            )}
+                          </select>
 
-                        <input
-                          value={issueNotes}
-                          onChange={(event) => handleIssueNotesChange(issue.id, event.target.value)}
-                          placeholder="Observacao de triagem (opcional)"
-                        />
+                          <input
+                            value={issueNotes}
+                            onChange={(event) => handleIssueNotesChange(issue.id, event.target.value)}
+                            placeholder="Observacao de triagem (opcional)"
+                          />
 
-                        <button
-                          type="button"
-                          onClick={() => void handleApplyIssueStatus(issue.id, issue.status)}
-                          disabled={isUpdatingDeliveryIssueStatus}
-                        >
-                          {isUpdatingDeliveryIssueStatus ? "Salvando..." : "Atualizar issue"}
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </article>
+                          <button
+                            type="button"
+                            onClick={() => void handleApplyIssueStatus(issue.id, issue.status)}
+                            disabled={isUpdatingDeliveryIssueStatus}
+                          >
+                            {isUpdatingDeliveryIssueStatus ? "Salvando..." : "Atualizar issue"}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </details>
         </section>
       </Main>
     </AppShell>

@@ -1,4 +1,6 @@
 // This route captures /app-react/* and serves the legacy SPA shell.
+export const dynamic = "force-dynamic";
+
 export default function ReactApp() {
   return (
     <div
@@ -23,8 +25,4 @@ export default function ReactApp() {
       />
     </div>
   );
-}
-
-export async function generateStaticParams() {
-  return [];
 }

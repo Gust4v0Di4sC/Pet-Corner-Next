@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, FormEventHandler } from "react";
+import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import type { CustomerDeliveryAddress } from "@/features/account/services/customer-profile.service";
 import type { AddressFormState } from "@/features/account/types/profile-dashboard";
 
@@ -8,14 +8,17 @@ export type ProfileAddressSectionData = {
 };
 
 export type ProfileAddressSectionState = {
+  isAddressFormOpen: boolean;
   addressMessage: string | null;
   isAddressMessageError: boolean;
   isSavingAddress: boolean;
 };
 
 export type ProfileAddressSectionActions = {
+  onToggleAddressForm: () => void;
+  onAddressFormOpenChange: (open: boolean) => void;
   onAddressInputChange: ChangeEventHandler<HTMLInputElement>;
-  onAddressSubmit: FormEventHandler<HTMLFormElement>;
+  onAddressSubmit: SubmitEventHandler<HTMLFormElement>;
 };
 
 export type ProfileAddressSectionProps = {

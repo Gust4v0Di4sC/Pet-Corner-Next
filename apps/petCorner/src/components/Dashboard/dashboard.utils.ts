@@ -1,5 +1,6 @@
 import type { Client } from "../../types/client";
 import type { Dog } from "../../types/dog";
+import type { AdminOrderTrackingRecord } from "../../types/orderTracking";
 import type { Product } from "../../types/product";
 import type {
   DashboardChartData,
@@ -109,6 +110,31 @@ function getInventoryChart(products: Product[]): DashboardChartData[] {
     }));
 }
 
+function getCanceledOrdersChart(orders: AdminOrderTrackingRecord[]): DashboardChartData[] {
+  if (!orders.length) {
+    return [];
+  }
+
+  const canceledOrders = orders.filter((order) => order.status === "cancelado").length;
+  const remainingOrders = orders.length - canceledOrders;
+  const canceledRate = (canceledOrders / orders.length) * 100;
+
+  return [
+    {
+      label: "Cancelados",
+      value: canceledOrders,
+      helper: `${formatDecimal(canceledRate, "%")} dos pedidos recentes`,
+      accent: "#DC2626",
+    },
+    {
+      label: "Demais pedidos",
+      value: remainingOrders,
+      helper: `${formatNumber(remainingOrders)} sem cancelamento`,
+      accent: "#1A2F3A",
+    },
+  ];
+}
+
 export function getSummaryCards(
   clients: Client[],
   dogs: Dog[],
@@ -149,7 +175,15 @@ export function getSummaryCards(
   ];
 }
 
-export function getChartSections(clients: Client[], dogs: Dog[], products: Product[]) {
+export function getChartSections(
+  clients: Client[],
+  dogs: Dog[],
+  products: Product[],
+  orders: AdminOrderTrackingRecord[] = []
+) {
+  const canceledOrders = orders.filter((order) => order.status === "cancelado").length;
+  const canceledRate = orders.length ? (canceledOrders / orders.length) * 100 : 0;
+
   return [
     {
       title: "Volume por recursos",
@@ -171,6 +205,13 @@ export function getChartSections(clients: Client[], dogs: Dog[], products: Produ
       kind: "bar",
       data: getInventoryChart(products),
       emptyMessage: "Sem produtos cadastrados para comparar estoque.",
+    },
+    {
+      title: "Media de pedidos cancelados",
+      subtitle: `Cancelamentos representam ${formatDecimal(canceledRate, "%")} dos pedidos recentes`,
+      kind: "donut",
+      data: getCanceledOrdersChart(orders),
+      emptyMessage: "Sem pedidos suficientes para calcular cancelamentos.",
     },
   ] satisfies DashboardChartSection[];
 }

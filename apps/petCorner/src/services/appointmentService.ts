@@ -273,14 +273,32 @@ export async function updateAppointmentStatus(input: {
   appointment: Appointment;
   nextStatus: AppointmentStatus;
 }): Promise<void> {
-  if (input.appointment.status === "canceled" && input.nextStatus !== "canceled") {
-    throw new Error("Agendamentos cancelados liberam o horário e não podem ser reativados.");
-  }
-
   const db = await getFirestoreDB();
   const nowIso = new Date().toISOString();
   const batch = writeBatch(db);
   const appointmentRef = doc(db, APPOINTMENTS_COLLECTION, input.appointment.id);
+  const shouldRestoreLocks =
+    input.appointment.status === "canceled" && input.nextStatus !== "canceled";
+
+  if (shouldRestoreLocks && input.appointment.lockIds.length) {
+    const lockSnapshots = await Promise.all(
+      input.appointment.lockIds.map((lockId) =>
+        getDoc(doc(db, APPOINTMENT_LOCKS_COLLECTION, lockId))
+      )
+    );
+    const hasConflictingLock = lockSnapshots.some((snapshot) => {
+      if (!snapshot.exists()) {
+        return false;
+      }
+
+      const payload = snapshot.data();
+      return toStringValue(payload.appointmentId).trim() !== input.appointment.id;
+    });
+
+    if (hasConflictingLock) {
+      throw new Error("Este horário já foi reservado por outro agendamento.");
+    }
+  }
 
   batch.set(
     appointmentRef,
@@ -295,6 +313,29 @@ export async function updateAppointmentStatus(input: {
   if (input.nextStatus === "canceled") {
     input.appointment.lockIds.forEach((lockId) => {
       batch.delete(doc(db, APPOINTMENT_LOCKS_COLLECTION, lockId));
+    });
+  } else if (shouldRestoreLocks) {
+    input.appointment.lockIds.forEach((lockId) => {
+      const compactSlotTime = lockId.split("_").pop() || "";
+      const slotStartTime =
+        compactSlotTime.length === 4
+          ? `${compactSlotTime.slice(0, 2)}:${compactSlotTime.slice(2)}`
+          : input.appointment.scheduledStartTime;
+
+      batch.set(
+        doc(db, APPOINTMENT_LOCKS_COLLECTION, lockId),
+        {
+          appointmentId: input.appointment.id,
+          customerId: input.appointment.customerId,
+          serviceId: input.appointment.serviceId,
+          scheduledDateKey: input.appointment.scheduledDateKey,
+          slotStartTime,
+          status: "active",
+          updatedAt: serverTimestamp(),
+          updatedAtIso: nowIso,
+        },
+        { merge: true }
+      );
     });
   }
 

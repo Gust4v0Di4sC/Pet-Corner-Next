@@ -1,4 +1,4 @@
-import type { ChangeEventHandler, FormEventHandler } from "react";
+import type { ChangeEventHandler, SubmitEventHandler } from "react";
 import { Button } from "@/components/ui/button";
 import { AddressInput } from "@/features/account/components/profile-address-section/AddressInput";
 import type { AddressFormState } from "@/features/account/types/profile-dashboard";
@@ -6,19 +6,24 @@ import type { AddressFormState } from "@/features/account/types/profile-dashboar
 type AddressFormProps = {
   addressForm: AddressFormState;
   isSavingAddress: boolean;
+  className?: string;
   onAddressInputChange: ChangeEventHandler<HTMLInputElement>;
-  onAddressSubmit: FormEventHandler<HTMLFormElement>;
+  onAddressSubmit: SubmitEventHandler<HTMLFormElement>;
 };
 
 export function AddressForm({
   addressForm,
   isSavingAddress,
+  className,
   onAddressInputChange,
   onAddressSubmit,
 }: AddressFormProps) {
   return (
     <form
-      className="grid gap-3 rounded-2xl border border-slate-700 bg-[#111b2b] p-4 sm:grid-cols-2"
+      className={
+        className ||
+        "grid gap-3 rounded-2xl border border-slate-700 bg-[#111b2b] p-4 sm:grid-cols-2"
+      }
       onSubmit={onAddressSubmit}
     >
       <AddressInput
@@ -87,7 +92,7 @@ export function AddressForm({
           disabled={isSavingAddress}
           className="h-10 w-full rounded-full bg-[#fb8b24] text-base font-semibold text-white hover:bg-[#ef7e14] disabled:opacity-60"
         >
-          {isSavingAddress ? "Salvando endereco..." : "Salvar endereco"}
+          {isSavingAddress ? "Salvando endereço..." : "Salvar endereço"}
         </Button>
       </div>
     </form>

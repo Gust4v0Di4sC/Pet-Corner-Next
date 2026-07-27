@@ -4,6 +4,7 @@ import AppShell from "../../components/layout/AppShell";
 import Main from "../../components/Templates/Main";
 import { useAppointments } from "../../hooks/useAppointments";
 import type { AppointmentSettings, AppointmentStatus } from "../../types/appointment";
+import { getUserErrorMessage } from "../../utils/userErrorMessage";
 import { AppointmentDetailPanel } from "./AppointmentDetailPanel";
 import { AppointmentsFilters } from "./AppointmentsFilters";
 import { AppointmentsListPanel } from "./AppointmentsListPanel";
@@ -49,9 +50,10 @@ export default function AgendamentosPage() {
     } catch (error) {
       setIsMessageError(true);
       setMessage(
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Não foi possível atualizar o agendamento."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel atualizar o agendamento agora. Tente novamente."
+        )
       );
     }
   };
@@ -64,9 +66,10 @@ export default function AgendamentosPage() {
     } catch (error) {
       setIsMessageError(true);
       setMessage(
-        error instanceof Error && error.message.trim()
-          ? error.message
-          : "Não foi possível salvar a configuração."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel salvar a configuracao agora. Tente novamente."
+        )
       );
     }
   };

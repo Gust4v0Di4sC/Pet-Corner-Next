@@ -27,7 +27,7 @@ export function createPetProfileSchema(manualBreedOption: string) {
         .min(1, "Informe a idade.")
         .transform((value) => Number.parseInt(digitsOnly(value), 10))
         .refine((value) => Number.isInteger(value), {
-          message: "Informe uma idade valida.",
+          message: "Informe uma idade válida.",
         })
         .refine((value) => value > 0, {
           message: "A idade deve ser maior que zero.",
@@ -41,10 +41,10 @@ export function createPetProfileSchema(manualBreedOption: string) {
         .min(1, "Informe o peso.")
         .transform((value) => parseLocaleDecimal(value))
         .refine((value) => Number.isFinite(value), {
-          message: "Informe um peso valido.",
+          message: "Informe um peso válido.",
         })
         .refine((value) => value >= 0, {
-          message: "O peso nao pode ser negativo.",
+          message: "O peso não pode ser negativo.",
         })
         .refine((value) => value <= 999.9, {
           message: "O peso deve ser menor ou igual a 999,9 kg.",
@@ -57,7 +57,7 @@ export function createPetProfileSchema(manualBreedOption: string) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["breed"],
-            message: "Informe a raca do pet.",
+            message: "Informe a raça do pet.",
           });
         }
         return;
@@ -67,7 +67,7 @@ export function createPetProfileSchema(manualBreedOption: string) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["breedSelection"],
-          message: "Selecione a raca do pet.",
+          message: "Selecione a raça do pet.",
         });
       }
     })
@@ -96,10 +96,10 @@ export const customerAddressSchema = z
       .min(1, "Informe o CEP.")
       .transform((value) => normalizeZipCode(value))
       .refine((value) => value.length === 9, {
-        message: "Informe um CEP valido.",
+        message: "Informe um CEP válido.",
       }),
     street: requiredText("Informe a rua."),
-    number: requiredText("Informe o numero."),
+    number: requiredText("Informe o número."),
     district: requiredText("Informe o bairro."),
     city: requiredText("Informe a cidade."),
     state: z

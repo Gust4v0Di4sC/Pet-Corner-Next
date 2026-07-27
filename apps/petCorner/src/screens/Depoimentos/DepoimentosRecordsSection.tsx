@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
 import { RecordBackButton } from "../../components/Records/RecordBackButton";
-import { RecordCreateButton } from "../../components/Records/RecordCreateButton";
 import RecordDeleteModal from "../../components/Records/RecordDeleteModal";
 import RecordFormModal from "../../components/Records/RecordFormModal";
 import RecordList from "../../components/Records/RecordList";
@@ -83,11 +82,6 @@ export function DepoimentosRecordsSection({
         className="record-panel--page"
         onEditRecord={formController.openEdit}
         onDeleteRecord={deleteController.open}
-      />
-
-      <RecordCreateButton
-        ariaLabel="Adicionar novo depoimento"
-        onClick={formController.openCreate}
       />
 
       <RecordFormModal

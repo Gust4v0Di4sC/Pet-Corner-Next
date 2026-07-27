@@ -30,6 +30,10 @@ const IMAGE_EXTENSION_BY_MIME = {
 };
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(Object.values(IMAGE_MIME_BY_EXTENSION));
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://pet-corner-next-nine.vercel.app",
+  "https://pet-corner-next-gust4v0di4scs-projects.vercel.app",
+];
 
 const COMMON_PET_SEARCHES = [
   { query: "racao caes", category: "Alimento para Caes" },
@@ -194,25 +198,44 @@ function getProductImageConfig(env) {
 }
 
 function getAllowedOrigins(env) {
-  return String(env.ALLOWED_ORIGINS ?? "")
+  const configuredOrigins = String(env.ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
+  return Array.from(new Set([...configuredOrigins, ...DEFAULT_ALLOWED_ORIGINS]));
+}
+
+function isProductionWorker(env) {
+  return String(env.ENVIRONMENT ?? env.NODE_ENV ?? env.WORKER_ENV ?? "").toLowerCase() === "production";
 }
 
 function resolveRequestOrigin(request, env) {
   const requestOrigin = request.headers.get("Origin");
   const allowedOrigins = getAllowedOrigins(env);
+  const isProduction = isProductionWorker(env);
 
   if (!requestOrigin) {
-    return allowedOrigins[0] ?? "*";
+    return allowedOrigins[0] ?? (isProduction ? "" : "*");
   }
 
-  if (!allowedOrigins.length || allowedOrigins.includes("*")) {
+  if (!allowedOrigins.length) {
+    return isProduction ? "" : "*";
+  }
+
+  if (allowedOrigins.includes("*")) {
+    return isProduction ? "" : "*";
+  }
+
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  if (!isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(requestOrigin)) {
     return "*";
   }
 
-  return allowedOrigins.includes(requestOrigin) ? requestOrigin : "";
+  return "";
 }
 
 function createCorsHeaders(request, env) {

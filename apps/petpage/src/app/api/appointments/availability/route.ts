@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAppointmentAvailability } from "@/features/scheduling/services/firebase-appointments.server";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -13,10 +14,10 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error:
-          error instanceof Error && error.message.trim()
-            ? error.message
-            : "Não foi possível carregar os horários.",
+        error: getUserErrorMessage(
+          error,
+          "Nao foi possivel carregar os horarios agora. Tente novamente."
+        ),
       },
       { status: 400 }
     );

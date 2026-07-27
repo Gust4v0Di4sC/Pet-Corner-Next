@@ -11,7 +11,9 @@ export function ProfileOrdersSection({ loading, orders }: ProfileOrdersSectionPr
   return (
     <ProfileSectionPanel id="profile-section-orders" title="Pedidos recentes">
       {loading ? (
-        <p className="text-lg text-slate-300">Carregando pedidos...</p>
+        <p role="status" aria-live="polite" className="text-lg text-slate-300">
+          Carregando pedidos...
+        </p>
       ) : orders.length === 0 ? (
         <ProfileEmptyState>Nenhum pedido encontrado para esta conta.</ProfileEmptyState>
       ) : (

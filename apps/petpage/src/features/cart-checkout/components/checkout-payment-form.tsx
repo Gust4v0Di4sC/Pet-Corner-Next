@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEventHandler } from "react";
+import type { SubmitEventHandler } from "react";
 import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DeliveryFormState } from "@/features/cart-checkout/hooks/use-checkout-flow";
@@ -10,7 +10,7 @@ type CheckoutPaymentFormProps = {
   disabled: boolean;
   isCreatingStripeSession: boolean;
   onBackToDelivery: () => void;
-  onSubmit: FormEventHandler<HTMLFormElement>;
+  onSubmit: SubmitEventHandler<HTMLFormElement>;
 };
 
 export function CheckoutPaymentForm({

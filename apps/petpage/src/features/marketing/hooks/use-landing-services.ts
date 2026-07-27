@@ -6,16 +6,13 @@ import {
   listLandingServices,
   type LandingServiceView,
 } from "@/features/marketing/services/landing-content.service";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 function mapErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Não foi possível carregar os serviços agora.";
+  return getUserErrorMessage(error, "Nao foi possivel carregar os servicos agora.");
 }
 
-export function useLandingServices() {
+export function useLandingServices(initialServices?: LandingServiceView[]) {
   const {
     isLoading,
     error,
@@ -24,6 +21,7 @@ export function useLandingServices() {
   } = useQuery({
     queryKey: ["landing", "services"],
     queryFn: async () => listLandingServices(),
+    initialData: initialServices,
     staleTime: 45_000,
   });
 

@@ -2,40 +2,13 @@
 
 import { collection, doc, getDoc, getDocs, getFirestore, limit, query } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/auth/firebase-auth.adapter";
+import type {
+  LandingProductRecord,
+  LandingServiceRecord,
+  LandingTestimonialRecord,
+} from "@/features/marketing/services/landing-content.mapper";
 
 type FirestoreRecord = Record<string, unknown>;
-
-type LandingProductRecord = {
-  id: string;
-  name: string;
-  price: number;
-  code: string;
-  quantity: number;
-  imageUrl: string;
-  category: string;
-  description: string;
-  badge: string;
-  isActive: boolean;
-};
-
-type LandingServiceRecord = {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  durationMinutes: number;
-  price: number;
-  isActive: boolean;
-};
-
-type LandingTestimonialRecord = {
-  id: string;
-  author: string;
-  role: string;
-  content: string;
-  rating: number;
-  isActive: boolean;
-};
 
 function getDb() {
   return getFirestore(getFirebaseApp());

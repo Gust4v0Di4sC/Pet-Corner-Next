@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAppointment } from "@/features/scheduling/services/firebase-appointments.server";
+import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
 
 function readBearerToken(request: Request): string {
   const authorizationHeader = request.headers.get("authorization") || "";
@@ -29,10 +30,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, appointment }, { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error && error.message.trim()
-        ? error.message
-        : "Não foi possível criar o agendamento.";
+    const message = getUserErrorMessage(
+      error,
+      "Nao foi possivel criar o agendamento agora. Tente novamente.",
+      {
+        permissionMessage: "Sua sessao expirou. Entre novamente para criar o agendamento.",
+      }
+    );
     const status = message.toLowerCase().includes("sessao") ? 401 : 400;
 
     return NextResponse.json({ ok: false, error: message }, { status });

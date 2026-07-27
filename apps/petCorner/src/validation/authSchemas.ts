@@ -12,6 +12,13 @@ const emailSchema = z
   .min(1, "Informe um email para continuar.")
   .email("Informe um email valido.")
   .transform((value) => normalizeEmail(value));
+const strongPasswordSchema = z
+  .string()
+  .min(12, "A nova senha deve ter no minimo 12 caracteres.")
+  .regex(/[a-z]/, "A nova senha deve ter ao menos uma letra minuscula.")
+  .regex(/[A-Z]/, "A nova senha deve ter ao menos uma letra maiuscula.")
+  .regex(/\d/, "A nova senha deve ter ao menos um numero.")
+  .regex(/[^A-Za-z0-9]/, "A nova senha deve ter ao menos um simbolo.");
 
 export const adminRecoveryEmailSchema = z.object({
   email: emailSchema,
@@ -41,7 +48,7 @@ export const adminSmsCodeSchema = z.object({
 
 export const adminResetPasswordSchema = z
   .object({
-    newPassword: z.string().min(6, "A nova senha deve ter no minimo 6 caracteres."),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Confirme a nova senha."),
   })
   .refine((input) => input.newPassword === input.confirmPassword, {

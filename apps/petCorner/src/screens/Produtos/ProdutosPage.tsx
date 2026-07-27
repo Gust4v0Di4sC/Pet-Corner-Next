@@ -18,6 +18,7 @@ import {
 } from "../../services/productImageService";
 import type { Product } from "../../types/product";
 import { normalizeCatalogCode } from "../../utils/product/productCatalog.util";
+import { getUserErrorMessage } from "../../utils/userErrorMessage";
 import {
   buildProductCatalogMap,
   productNumberFormatter,
@@ -221,9 +222,10 @@ export default function ProdutosPage() {
       );
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message
-          ? error.message
-          : "Nao foi possivel sincronizar o catalogo via Cosmos agora."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel sincronizar o catalogo agora. Tente novamente."
+        )
       );
     }
   };
@@ -249,9 +251,10 @@ export default function ProdutosPage() {
       );
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message
-          ? error.message
-          : "Nao foi possivel limpar as importacoes agora."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel limpar as importacoes agora. Tente novamente."
+        )
       );
     }
   };
@@ -270,9 +273,10 @@ export default function ProdutosPage() {
       );
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message
-          ? error.message
-          : "Nao foi possivel importar o catalogo agora."
+        getUserErrorMessage(
+          error,
+          "Nao foi possivel importar o catalogo agora. Confira o arquivo e tente novamente."
+        )
       );
     } finally {
       event.target.value = "";

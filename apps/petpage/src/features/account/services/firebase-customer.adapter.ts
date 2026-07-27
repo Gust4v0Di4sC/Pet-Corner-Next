@@ -47,7 +47,7 @@ function normalizeHttpImageUrl(value: string): string {
   const normalizedValue = value.trim();
 
   if (!normalizedValue) {
-    throw new Error("Informe uma URL valida para a foto de perfil.");
+    throw new Error("Informe uma URL válida para a foto de perfil.");
   }
 
   let parsedUrl: URL;
@@ -55,7 +55,7 @@ function normalizeHttpImageUrl(value: string): string {
   try {
     parsedUrl = new URL(normalizedValue);
   } catch {
-    throw new Error("A URL da foto de perfil e invalida.");
+    throw new Error("A URL da foto de perfil é inválida.");
   }
 
   if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {

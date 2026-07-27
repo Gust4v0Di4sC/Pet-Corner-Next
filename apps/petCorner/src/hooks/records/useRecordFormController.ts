@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import type { RecordFormConfig, RecordFormData } from "../../components/Records/record.types";
+import { getUserErrorMessage } from "../../utils/userErrorMessage";
 import { useToast } from "../useToast";
 
 type InputAsyncEffect = (params: {
@@ -173,9 +174,7 @@ export function useRecordFormController<TRecord extends { id?: string }, TPayloa
       setData({ ...config.initialValues });
     } catch (error) {
       toast.warning(
-        error instanceof Error && error.message
-          ? error.message
-          : "Não foi possível salvar o registro agora."
+        getUserErrorMessage(error, "Nao foi possivel salvar o registro agora. Tente novamente.")
       );
     } finally {
       setIsSubmitting(false);

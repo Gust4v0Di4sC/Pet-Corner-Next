@@ -12,17 +12,13 @@ import {
   saveAppointmentSettings,
   updateAppointmentStatus,
 } from "../services/appointmentService";
+import { getUserErrorMessage } from "../utils/userErrorMessage";
 
 function mapErrorMessage(error: unknown, fallback: string): string {
-  if (error && typeof error === "object" && (error as { code?: unknown }).code === "permission-denied") {
-    return "Sem permissao para acessar agendamentos.";
-  }
-
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return fallback;
+  return getUserErrorMessage(error, fallback, {
+    permissionMessage:
+      "Voce nao tem permissao para acessar os agendamentos. Entre com uma conta autorizada.",
+  });
 }
 
 export function useAppointments() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SubmitEvent } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle, PhoneCall, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ export function FloatingSupportActions() {
   const closeChat = useCallback(() => setIsChatOpen(false), []);
 
   const shouldHide = useMemo(
-    () => pathname === "/" || pathname.startsWith("/app-react"),
+    () => pathname.startsWith("/app-react"),
     [pathname]
   );
 
@@ -61,7 +61,7 @@ export function FloatingSupportActions() {
     return null;
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextMessage = inputValue.trim();
     if (!nextMessage || isSending) {
