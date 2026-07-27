@@ -3,5 +3,11 @@ apps/petpage/public/app-react/
 firebase-debug.log
 apps/.playwright-mcp/
 apps/petpage-*.log
+.env.local
+.playwright-mcp/
+.vercel/
+app-react-*.log
+app-react-current-snapshot.md
+app-react-current.png
 **/AGENTS.md
 **/agents.md
