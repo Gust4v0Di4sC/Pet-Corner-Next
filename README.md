@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/favicon.svg" alt="Logo Pet Corner" width="120" />
+</p>
+
 # PetCornerNext
 
 Monorepo do ecossistema PetCorner, com duas aplicacoes principais:
@@ -302,11 +306,8 @@ npm run build --workspace=petcorner
 npm run build --workspace=petpage
 ```
 
-## Logo e telas
+## Imagens do sistema
 
-<p align="center">
-  <img src="./assets/favicon.svg" alt="Logo Pet Corner" width="120" />
-</p>
 
 ### Vitrine Next.js
 
