@@ -302,6 +302,32 @@ npm run build --workspace=petcorner
 npm run build --workspace=petpage
 ```
 
+## Logo e telas
+
+<p align="center">
+  <img src="./assets/favicon.svg" alt="Logo Pet Corner" width="120" />
+</p>
+
+### Vitrine Next.js
+
+![Vitrine Pet Corner](./assets/screenshots/home.png)
+
+### Catalogo de produtos
+
+![Catalogo de produtos](./assets/screenshots/produtos.png)
+
+### Servicos
+
+![Tela de servicos](./assets/screenshots/servicos.png)
+
+### Login do cliente
+
+![Login do cliente](./assets/screenshots/cliente-login.png)
+
+### Acesso administrativo
+
+![Acesso administrativo](./assets/screenshots/admin-login.png)
+
 ## Licenca
 
 O `package.json` raiz declara licenca ISC. O app `petpage` tambem possui arquivo `LICENSE`.
