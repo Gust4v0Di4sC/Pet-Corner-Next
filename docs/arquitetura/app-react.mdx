@@ -1,0 +1,33 @@
+---
+title: "Integracao /app-react"
+description: "Como a SPA administrativa e publicada dentro do app Next.js."
+---
+
+# Integracao `/app-react`
+
+O painel administrativo React/Vite e entregue dentro do app Next.js para que o deploy principal tambem sirva o admin.
+
+## Fluxo de build
+
+1. O workspace `petcorner` executa `npm run build`.
+2. O Vite builda a SPA usando base `/app-react/`.
+3. O bundle gerado vai para `apps/petpage/public/app-react`.
+4. O workspace `petpage` executa `npm run build`.
+5. O deploy Next.js publica a rota `/app-react/*`.
+
+## Rota catch-all
+
+`apps/petpage/src/app/app-react/[[...slug]]/page.tsx` renderiza um `iframe` apontando para:
+
+```txt
+/app-react/index.html
+```
+
+Isso isola o roteamento da SPA do App Router do Next.js.
+
+## Implicacoes
+
+- Mudancas no admin precisam de novo build do `petCorner`.
+- O bundle admin precisa existir em `public/app-react` antes do build/deploy do `petpage`.
+- Em desenvolvimento, o admin pode rodar separado via `npm run dev:vite`.
+- Em producao, a URL publica do admin fica abaixo do mesmo dominio do `petpage`.

@@ -1,0 +1,66 @@
+---
+title: "Monorepo"
+description: "Estrutura de pastas, workspaces e artefatos principais."
+---
+
+# Monorepo
+
+## Estrutura principal
+
+```txt
+apps/
+  petpage/      App Next.js publico, area do cliente e APIs
+  petCorner/    SPA administrativa React/Vite
+assets/         Imagens e screenshots usadas em documentacao e README
+```
+
+## Workspaces
+
+O `package.json` da raiz declara dois workspaces:
+
+```json
+{
+  "workspaces": ["apps/petCorner", "apps/petpage"]
+}
+```
+
+Scripts da raiz:
+
+| Comando | Descricao |
+| --- | --- |
+| `npm install` | Instala dependencias da raiz e workspaces. |
+| `npm run dev:next` | Inicia o `petpage`. |
+| `npm run dev:vite` | Inicia o `petCorner`. |
+| `npm run build` | Builda o admin Vite e depois o app Next.js. |
+
+## Pastas do `petpage`
+
+```txt
+src/app          Rotas, layouts, route handlers e guardas
+src/features     Modulos por dominio
+src/components   Componentes globais e primitives de UI
+src/lib          Auth, Firebase, Stripe, validacao e utilitarios
+src/providers    Providers globais
+src/styles       CSS global
+```
+
+## Pastas do `petCorner`
+
+```txt
+src/screens      Telas administrativas
+src/components   Layout, form, records, dashboard, chat e UI compartilhada
+src/services     Acesso ao Firebase, Workers e operacoes de dominio
+src/hooks        Hooks de dados e mutacoes
+src/types        Tipos de entidades
+src/validation   Schemas Zod e sanitizacao
+```
+
+## Artefato integrado
+
+O build da SPA admin usa base `/app-react/` e entrega os arquivos finais em:
+
+```txt
+apps/petpage/public/app-react
+```
+
+O Next.js entao serve esse bundle pela rota `/app-react/*`.

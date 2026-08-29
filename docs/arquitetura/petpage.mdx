@@ -1,0 +1,57 @@
+---
+title: "petpage"
+description: "Arquitetura do app publico e area do cliente em Next.js."
+---
+
+# `petpage`
+
+`petpage` usa Next.js App Router com composicao route-first. Os arquivos de rota ficam pequenos e delegam a renderizacao para componentes em `src/features`.
+
+## Rotas publicas
+
+| Rota | Finalidade |
+| --- | --- |
+| `/` | Landing page com hero, produtos, servicos, marcas, sobre e depoimentos. |
+| `/produtos` | Catalogo publico completo. |
+| `/produtos/[id]` | Detalhe de produto e compra. |
+| `/servicos` | Catalogo publico de servicos. |
+| `/servicos/[id]` | Detalhe de servico e link para agendar. |
+| `/agendamentos` | Agenda online de servicos. |
+| `/login` | Login do cliente. |
+| `/register` | Cadastro do cliente. |
+
+## Rotas protegidas
+
+`src/proxy.ts` protege:
+
+- `/profile`
+- `/checkout`
+- `/rastreamento`
+
+Quando o cookie de sessao do cliente nao existe, o proxy redireciona para `/login?next=<rota>`.
+
+## API routes
+
+| Rota | Metodo esperado | Finalidade |
+| --- | --- | --- |
+| `/api/auth/session` | `GET`, `POST` | Le e abre sessao do cliente via ID token Firebase. |
+| `/api/auth/logout` | `POST` | Encerra sessao do cliente. |
+| `/api/appointments` | `POST` | Cria solicitacao de agendamento. |
+| `/api/appointments/availability` | `GET` | Consulta slots disponiveis. |
+| `/api/stripe/checkout/session` | `POST` | Cria sessao Stripe Checkout. |
+| `/api/stripe/webhook` | `POST` | Processa eventos Stripe e gera pedidos. |
+
+## Padrao de feature modules
+
+Cada dominio em `src/features` agrupa paginas, componentes, hooks, services, repositories, use cases, validacoes e tipos conforme necessario.
+
+Dominios atuais:
+
+- `account`
+- `auth`
+- `cart-checkout`
+- `catalog`
+- `marketing`
+- `notifications`
+- `scheduling`
+- `support`

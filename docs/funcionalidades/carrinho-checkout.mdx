@@ -1,0 +1,55 @@
+---
+title: "Carrinho e checkout"
+description: "Carrinho de visitante, carrinho autenticado e processamento Stripe."
+---
+
+# Carrinho e checkout
+
+## Carrinho
+
+O carrinho funciona para visitantes e clientes autenticados.
+
+- Visitante: estado local no browser.
+- Cliente autenticado: Firestore em `customers/{customerId}/carts/active`.
+
+Ao fazer login, o carrinho de visitante e sincronizado para o carrinho do cliente.
+
+## Estrutura do item
+
+Cada item normalizado contem:
+
+- `productId`
+- `title`
+- `category`
+- `imageUrl`
+- `quantity`
+- `unitPriceInCents`
+
+## Checkout
+
+O checkout exige sessao de cliente. O fluxo server-side:
+
+1. Le o carrinho ativo do cliente ou itens enviados pelo client.
+2. Revalida produtos em `prods`.
+3. Calcula subtotal e frete padrao.
+4. Cria sessao Stripe Checkout.
+5. Salva `stripePendingCheckouts/{checkoutSessionId}`.
+
+## Webhook Stripe
+
+O webhook confirma pagamentos e cria:
+
+```txt
+stripeCheckoutSessions/{sessionId}
+orders/{orderId}
+customers/{customerId}/orders/{orderId}
+```
+
+Quando o carrinho ativo ainda corresponde ao checkout pendente, ele e limpo.
+
+## Notificacoes de pedido
+
+Apos pedido criado, o sistema tenta publicar:
+
+- notificacao para `customers/{customerId}/notifications`
+- notificacao admin em `adminNotifications`

@@ -1,0 +1,65 @@
+---
+title: "Catalogo"
+description: "Produtos, servicos e conteudo da landing."
+---
+
+# Catalogo
+
+## Produtos
+
+Produtos publicos sao lidos da colecao Firestore `prods`.
+
+Campos usados pela landing:
+
+| Campo | Tipo | Uso |
+| --- | --- | --- |
+| `name` | string | Nome exibido no card e detalhe. |
+| `price` | number | Preco base em BRL. |
+| `code` | string | Codigo/SKU do produto. |
+| `quantity` | number | Estoque exibido e usado como indicativo de disponibilidade. |
+| `imageUrl` | string | Imagem publica ou fallback. |
+| `category` | string | Categoria do card. |
+| `description` | string | Texto publico do produto. |
+| `badge` | string | Selo do card. |
+| `isActive` | boolean | Produtos `false` nao aparecem. |
+
+Rotas:
+
+- `/produtos`
+- `/produtos/[id]`
+
+## Servicos
+
+Servicos publicos sao lidos da colecao `services`.
+
+Campos principais:
+
+| Campo | Tipo | Uso |
+| --- | --- | --- |
+| `name` | string | Nome publico. |
+| `category` | string | Categoria e escolha do icone. |
+| `description` | string | Descricao publica. |
+| `durationMinutes` | number | Duracao exibida e usada no agendamento. |
+| `price` | number | Valor base em BRL. |
+| `isActive` | boolean | Servicos `false` nao aparecem nem podem ser agendados. |
+
+Rotas:
+
+- `/servicos`
+- `/servicos/[id]`
+
+## Depoimentos
+
+Depoimentos sao lidos da colecao `testimonials`.
+
+Campos principais:
+
+- `author`
+- `role`
+- `content`
+- `rating`
+- `isActive`
+
+## Fallbacks
+
+A landing usa sanitizacao defensiva para evitar quebrar renderizacao quando documentos antigos nao possuem todos os campos. Textos vazios recebem fallback; imagens invalidas usam imagem local de fallback.

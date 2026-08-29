@@ -1,0 +1,63 @@
+---
+title: "Stack"
+description: "Tecnologias, bibliotecas e responsabilidades por app."
+---
+
+# Stack
+
+## Base do monorepo
+
+- Gerenciador: `npm` com workspaces.
+- Linguagem principal: TypeScript.
+- UI runtime: React 19.
+- Banco e auth: Firebase Auth, Firestore e Firebase Admin SDK.
+- Deploy principal: Vercel para o app Next.js.
+- Integracoes auxiliares: Stripe, SMTP/Nodemailer e Cloudflare Workers.
+
+## `petpage`
+
+`petpage` e o app principal em Next.js App Router. Ele concentra rotas publicas, area autenticada do cliente e API routes.
+
+Principais dependencias:
+
+- `next` 16 preview
+- `react` e `react-dom`
+- `firebase` e `firebase-admin`
+- `stripe`
+- `@tanstack/react-query`
+- `zod`
+- `tailwindcss`, `tailwind-merge`, `class-variance-authority`
+- `radix-ui`, `@radix-ui/react-slot`
+- `lucide-react`, `@phosphor-icons/react`
+- `nodemailer`
+
+## `petCorner`
+
+`petCorner` e a SPA administrativa React/Vite. Ela pode rodar isolada em desenvolvimento e tambem e embarcada no `petpage` em `/app-react`.
+
+Principais dependencias:
+
+- `vite`
+- `react` e `react-dom`
+- `react-router-dom`
+- `firebase`
+- `@tanstack/react-query`
+- `@mui/material` e `@mui/x-charts`
+- `react-hook-form`
+- `zod`
+- `axios`
+- `zustand`
+- `lucide-react`
+- `react-datepicker`
+- `react-imask`
+- `@lottiefiles/dotlottie-react`
+
+## Responsabilidades por camada
+
+| Camada | Responsabilidade |
+| --- | --- |
+| Next server | Sessao do cliente, Firebase Admin, Stripe, agendamentos e leitura server-side da landing. |
+| Next client | Vitrine, login/cadastro, perfil, carrinho, notificacoes e suporte ao cliente. |
+| Vite admin | Operacao interna, CRUDs, dashboard, pedidos, disponibilidade e notificacoes administrativas. |
+| Firestore | Fonte de dados operacional para produtos, servicos, clientes, pets, carrinhos, pedidos e notificacoes. |
+| Workers | Upload/sincronizacao de catalogo, chat e outros servicos auxiliares. |

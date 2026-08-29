@@ -1,0 +1,52 @@
+---
+title: "Firestore"
+description: "Colecoes, subcolecoes e responsabilidades de dados."
+---
+
+# Firestore
+
+## Colecoes principais
+
+| Colecao | Responsabilidade |
+| --- | --- |
+| `prods` | Produtos da loja e painel admin. |
+| `services` | Servicos publicos e agendaveis. |
+| `testimonials` | Depoimentos exibidos na landing. |
+| `customers` | Perfil e subcolecoes do cliente. |
+| `clientes` | Espelho administrativo de clientes. |
+| `dogs` | Espelho administrativo de pets/animais. |
+| `orders` | Pedidos globais para admin e rastreamento. |
+| `deliveryIssues` | Ocorrencias de entrega. |
+| `adminNotifications` | Notificacoes administrativas. |
+| `appointmentSettings` | Configuracao de agenda. |
+| `appointmentLocks` | Locks de horarios agendados. |
+| `appointments` | Solicitacoes de agendamento. |
+| `productCatalog` | Catalogo importado/sincronizado para autopreenchimento. |
+| `stripePendingCheckouts` | Checkouts criados e aguardando webhook. |
+| `stripeCheckoutSessions` | Sessoes Stripe ja processadas. |
+
+## Subcolecoes de cliente
+
+```txt
+customers/{customerId}/carts/active
+customers/{customerId}/orders/{orderId}
+customers/{customerId}/pets/{petId}
+customers/{customerId}/favorites/{favoriteId}
+customers/{customerId}/addresses/delivery
+customers/{customerId}/notifications/{notificationId}
+```
+
+## Espelhos administrativos
+
+Alguns dados criados no app cliente sao espelhados para facilitar a operacao no painel:
+
+- perfil e endereco do cliente em `clientes`
+- pets do cliente em `dogs`
+
+## Escrita atomica
+
+Fluxos sensiveis usam transacao ou batch:
+
+- agendamentos criam locks e documento principal em uma transacao
+- status de pedido atualiza `orders`, subcolecao do cliente e notificacao por batch
+- webhook Stripe evita duplicidade verificando `stripeCheckoutSessions/{sessionId}`

@@ -1,0 +1,80 @@
+---
+title: "Troubleshooting"
+description: "Falhas comuns e pontos de diagnostico."
+---
+
+# Troubleshooting
+
+## Landing sem produtos ou servicos
+
+Verifique:
+
+- documentos em `prods` e `services`
+- campo `isActive` diferente de `false`
+- `name` preenchido
+- Firebase public config correta
+- credenciais Admin SDK corretas quando a leitura for server-side
+
+## Login de cliente falha
+
+Verifique:
+
+- providers habilitados no Firebase Auth
+- dominio autorizado no Firebase
+- variaveis `NEXT_PUBLIC_FIREBASE_*`
+- resposta de `/api/auth/session`
+- `CUSTOMER_SESSION_SECRET`
+
+## Rota protegida redireciona para login
+
+O proxy exige o cookie `pc_customer_session`. Se o cookie nao existe ou nao foi gravado, revisar `/api/auth/session` e a configuracao de ambiente server-side.
+
+## Admin nega acesso
+
+O usuario precisa ter custom claim:
+
+```txt
+admin: true
+```
+
+Sem essa claim, o painel chama logout e mostra acesso restrito.
+
+## Checkout nao cria pedido
+
+Verifique:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- webhook apontando para `/api/stripe/webhook`
+- documento em `stripePendingCheckouts`
+- valor total esperado versus `amount_total`
+- moeda `brl`
+
+## Agendamento sem horarios
+
+Verifique:
+
+- `appointmentSettings/default`
+- `services/{serviceId}.durationMinutes`
+- `services/{serviceId}.isActive`
+- locks em `appointmentLocks`
+- janela `minAdvanceHours` e `maxDaysAhead`
+
+## Worker indisponivel
+
+Verifique as URLs:
+
+- `NEXT_PUBLIC_CLOUDFLARE_WORKER_URL`
+- `NEXT_PUBLIC_COSMOS_SYNC_URL`
+- `NEXT_PUBLIC_CHAT_WORKER_URL`
+- `VITE_COSMOS_SYNC_URL`
+- `VITE_CHAT_WORKER_URL`
+
+## Documentacao Mintlify nao valida
+
+Verifique:
+
+- `docs/docs.json` contem `name`, `theme`, `colors.primary` e `navigation`
+- todas as paginas listadas em `navigation.groups[].pages` existem
+- links internos usam caminhos existentes
+- comandos Mintlify sao executados dentro da pasta `docs`

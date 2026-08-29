@@ -1,0 +1,54 @@
+---
+title: "Agendamentos e notificacoes"
+description: "Agenda online, disponibilidade, locks e notificacoes."
+---
+
+# Agendamentos e notificacoes
+
+## Agenda online
+
+A rota `/agendamentos` permite que clientes escolham servico, data, horario e observacoes.
+
+O servidor valida:
+
+- ID token Firebase do cliente.
+- existencia e atividade do servico.
+- data no formato esperado.
+- janela minima e maxima de antecedencia.
+- horario dentro da disponibilidade semanal.
+- conflito com locks existentes.
+
+## Colecoes
+
+```txt
+appointmentSettings/default
+appointmentLocks/{dateKey}_{startTime}
+appointments/{appointmentId}
+services/{serviceId}
+adminNotifications/{notificationId}
+```
+
+## Disponibilidade
+
+`appointmentSettings/default` controla:
+
+- timezone
+- intervalo de slots
+- antecedencia minima
+- dias maximos no futuro
+- disponibilidade semanal
+
+Se o documento nao existir, o codigo usa configuracoes padrao.
+
+## Locks
+
+Para impedir dois agendamentos no mesmo horario, a criacao escreve locks em transacao. Servicos mais longos reservam multiplos slots.
+
+## Notificacoes
+
+O app possui:
+
+- notificacoes do cliente em `customers/{customerId}/notifications`
+- notificacoes administrativas em `adminNotifications`
+
+Pedidos, agendamentos e ocorrencias de entrega podem gerar notificacoes.

@@ -1,0 +1,45 @@
+---
+title: "Admin"
+description: "Funcionalidades do painel administrativo."
+---
+
+# Admin
+
+O painel admin e acessado em `/app-react` quando publicado junto ao `petpage`, ou pela porta Vite em desenvolvimento.
+
+## Acesso
+
+O usuario precisa autenticar via Firebase Auth e possuir custom claim:
+
+```txt
+admin: true
+```
+
+Sem a claim, a sessao e encerrada.
+
+## Modulos
+
+| Modulo | Rota | Dados principais |
+| --- | --- | --- |
+| Dashboard | `/dashboard` | Visao operacional. |
+| Clientes | `/clientes` | `clientes`, espelhos de `customers`. |
+| Animais | `/caes` | `dogs`, espelhos de pets do cliente. |
+| Produtos | `/prods` | `prods`, `productCatalog`. |
+| Servicos | `/servicos` | `services`. |
+| Agendamentos | `/agendamentos` | `appointments`, `appointmentLocks`, `appointmentSettings`. |
+| Depoimentos | `/depoimentos` | `testimonials`. |
+| Pedidos | `/pedidos` | `orders`, `deliveryIssues`. |
+
+## Records
+
+CRUDs de entidades usam a base `components/Records`, com:
+
+- botao de criacao
+- lista paginada
+- modal de formulario
+- modal de exclusao
+- controllers de formulario e delete
+
+## Catalogo e imagens
+
+Produtos podem ser criados manualmente, importados via catalogo ou sincronizados via Worker. Imagens podem ser enviadas ou importadas por URL usando Worker configurado.

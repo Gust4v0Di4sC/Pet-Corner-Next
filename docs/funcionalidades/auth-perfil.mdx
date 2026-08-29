@@ -1,0 +1,53 @@
+---
+title: "Auth e perfil"
+description: "Autenticacao de cliente, sessao server-side e area de perfil."
+---
+
+# Auth e perfil
+
+## Autenticacao do cliente
+
+Clientes entram por:
+
+- Email e senha.
+- Google.
+- Microsoft.
+
+O client usa Firebase Auth em `src/lib/auth/firebase-auth.adapter.ts`. Apos autenticar, o fluxo envia o ID token para `/api/auth/session`.
+
+## Sessao server-side
+
+`/api/auth/session` valida o ID token com Firebase Admin, abre uma sessao estrutural e grava o cookie:
+
+```txt
+pc_customer_session
+```
+
+Esse cookie e lido no servidor para liberar rotas protegidas e identificar o cliente.
+
+## Perfil
+
+O perfil le e grava dados na colecao `customers` e subcolecoes:
+
+```txt
+customers/{customerId}
+customers/{customerId}/pets
+customers/{customerId}/orders
+customers/{customerId}/favorites
+customers/{customerId}/addresses/delivery
+```
+
+Tambem existem espelhos administrativos:
+
+- `clientes/{customerId}`
+- `dogs/{customerId}_{petId}`
+
+## Rotas protegidas
+
+O proxy protege:
+
+- `/profile`
+- `/checkout`
+- `/rastreamento`
+
+Sem cookie, o usuario e redirecionado para `/login` com o parametro `next`.

@@ -1,0 +1,57 @@
+---
+title: "Deploy e validacao"
+description: "Build, deploy Vercel, smoke tests e validacao da documentacao."
+---
+
+# Deploy e validacao
+
+## Deploy do app
+
+Configuracao esperada na Vercel:
+
+| Campo | Valor |
+| --- | --- |
+| Root Directory | `apps/petpage` |
+| Build Command | `npm run build` |
+| Output Directory | `.next` |
+
+Quando o pipeline precisa incluir o admin em `/app-react`, execute o build da raiz ou garanta que `petCorner` foi buildado antes do `petpage`.
+
+## Build local
+
+```bash
+npm run build
+```
+
+## Lint
+
+```bash
+npm run lint --workspace=petpage
+npm run lint --workspace=petcorner
+```
+
+## Smoke test recomendado
+
+Validar em producao ou preview:
+
+- `/` carrega sem erro.
+- `/produtos` exibe produtos ativos.
+- `/produtos/[id]` abre detalhe e adiciona ao carrinho.
+- `/cart` exibe item.
+- login de cliente redireciona para `next`.
+- `/checkout` mostra resumo.
+- `/servicos` exibe servicos ativos.
+- `/servicos/[id]` abre detalhe e aponta para agendamento.
+- `/app-react` carrega o admin.
+
+## Documentacao Mintlify
+
+A partir de `docs`:
+
+```bash
+npx mint validate
+npx mint broken-links
+npx mint dev --no-open
+```
+
+`docs.json` deve ficar na raiz da pasta de documentacao, como exigido pelo Mintlify.

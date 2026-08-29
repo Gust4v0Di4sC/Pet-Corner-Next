@@ -1,0 +1,91 @@
+---
+title: "Ambiente"
+description: "Variaveis de ambiente necessarias para desenvolvimento e producao."
+---
+
+# Ambiente
+
+Nunca versionar valores reais de tokens, chaves privadas, senhas ou secrets. Esta pagina documenta apenas os nomes das variaveis.
+
+## `apps/petpage/.env.local`
+
+Firebase public config:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+```
+
+Firebase Admin usado em rotas server-side:
+
+```env
+FIREBASE_ADMIN_PROJECT_ID=
+FIREBASE_ADMIN_CLIENT_EMAIL=
+FIREBASE_ADMIN_PRIVATE_KEY=
+```
+
+Sessao do cliente:
+
+```env
+CUSTOMER_SESSION_SECRET=
+```
+
+Stripe:
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+Email de agendamentos:
+
+```env
+APPOINTMENT_EMAIL_ENABLED=false
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+```
+
+Workers opcionais:
+
+```env
+NEXT_PUBLIC_CLOUDFLARE_WORKER_URL=
+NEXT_PUBLIC_COSMOS_SYNC_URL=
+NEXT_PUBLIC_CHAT_WORKER_URL=
+```
+
+## `apps/petCorner/.env`
+
+Firebase public config para Vite:
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_MEASUREMENT_ID=
+```
+
+Workers usados pelo painel admin:
+
+```env
+VITE_COSMOS_SYNC_URL=
+VITE_CHAT_WORKER_URL=
+VITE_PETPAGE_API_BASE_URL=
+```
+
+## Cuidados
+
+- `NEXT_PUBLIC_*` e `VITE_*` ficam expostos no browser.
+- `FIREBASE_ADMIN_PRIVATE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, SMTP e `CUSTOMER_SESSION_SECRET` devem existir somente no servidor/ambiente seguro.
+- O Stripe esta preparado para chaves de teste no codigo server-side.

@@ -1,0 +1,74 @@
+---
+title: "Adicionar novo projeto"
+description: "Como alocar novas documentacoes no mesmo hub Mintlify."
+---
+
+# Adicionar novo projeto
+
+Use `navigation.products` como a divisao principal do hub. Cada projeto grande deve virar um `product`, com seus proprios grupos e paginas.
+
+## Quando criar um novo produto
+
+Crie outro `product` quando o projeto tiver codigo, stack, instalacao, deploy ou publico tecnico proprio.
+
+Exemplos:
+
+- outro app web
+- um app mobile
+- uma API independente
+- uma biblioteca interna
+- uma automacao ou worker com ciclo de vida separado
+
+## Estrutura recomendada
+
+```json
+{
+  "product": "NomeDoProjeto",
+  "description": "Resumo curto do projeto.",
+  "icon": "box",
+  "groups": [
+    {
+      "group": "Introducao",
+      "pages": ["nome-do-projeto/index", "nome-do-projeto/stack"]
+    },
+    {
+      "group": "Arquitetura",
+      "pages": ["nome-do-projeto/arquitetura"]
+    },
+    {
+      "group": "Setup",
+      "pages": ["nome-do-projeto/setup"]
+    },
+    {
+      "group": "Operacao",
+      "pages": ["nome-do-projeto/deploy", "nome-do-projeto/troubleshooting"]
+    }
+  ]
+}
+```
+
+## Padrao de pastas
+
+Para novos projetos, prefira prefixar os arquivos com o slug do projeto:
+
+```txt
+docs/
+  nome-do-projeto/
+    index.mdx
+    stack.mdx
+    arquitetura.mdx
+    setup.mdx
+    deploy.mdx
+    troubleshooting.mdx
+```
+
+O PetCornerNext foi mantido nos caminhos atuais porque ele ja e o primeiro produto do hub.
+
+## Checklist
+
+- Criar um novo `product` em `docs.json`.
+- Criar as paginas `.mdx` com frontmatter `title` e `description`.
+- Manter segredos fora da documentacao.
+- Rodar `npx mint validate`.
+- Rodar `npx mint broken-links`.
+- Publicar pelo fluxo do Mintlify/MCP.

@@ -1,0 +1,52 @@
+---
+title: "Stripe e Workers"
+description: "Checkout, webhooks, emails e Cloudflare Workers."
+---
+
+# Stripe e Workers
+
+## Stripe Checkout
+
+O checkout server-side cria sessoes Stripe usando:
+
+- carrinho revalidado no Firestore
+- dados de entrega validados
+- frete padrao
+- `NEXT_PUBLIC_APP_URL` para URLs de retorno
+
+O codigo espera chaves de teste para reduzir risco operacional em desenvolvimento.
+
+## Webhook Stripe
+
+O webhook processa sessoes pagas e:
+
+- verifica assinatura com `STRIPE_WEBHOOK_SECRET`
+- confirma que o checkout pendente existe
+- valida valor total e moeda
+- cria pedido global e pedido do cliente
+- marca o checkout como `fulfilled`
+- registra a sessao em `stripeCheckoutSessions`
+
+## Email de agendamento
+
+O envio de email e opcional e controlado por:
+
+```env
+APPOINTMENT_EMAIL_ENABLED=
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+```
+
+Quando habilitado, o sistema envia informacoes e link de calendario para o cliente.
+
+## Cloudflare Workers
+
+Workers aparecem em dois contextos:
+
+- `petpage`: suporte/chat/foto de perfil por `NEXT_PUBLIC_CLOUDFLARE_WORKER_URL`, `NEXT_PUBLIC_COSMOS_SYNC_URL` ou `NEXT_PUBLIC_CHAT_WORKER_URL`.
+- `petCorner`: sincronizacao de catalogo, chat e imagens via `VITE_COSMOS_SYNC_URL` e `VITE_CHAT_WORKER_URL`.
+
+O codigo deve falhar com mensagem de configuracao quando a URL necessaria nao estiver definida.

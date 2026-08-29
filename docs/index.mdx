@@ -1,0 +1,29 @@
+---
+title: "Overview"
+description: "Visao geral do ecossistema PetCornerNext."
+---
+
+# PetCornerNext
+
+PetCornerNext e um monorepo para a operacao digital de um pet shop. Ele combina uma vitrine publica, area do cliente, checkout, agendamentos e um painel administrativo publicado dentro da mesma entrega web.
+
+## Aplicacoes
+
+| App | Pasta | Papel |
+| --- | --- | --- |
+| `petpage` | `apps/petpage` | Aplicacao publica em Next.js com landing, catalogo, cliente, carrinho, checkout, APIs server-side e rota para o admin. |
+| `petCorner` | `apps/petCorner` | SPA administrativa em React/Vite para CRUDs, pedidos, agendamentos, notificacoes, catalogo e suporte operacional. |
+
+## Fluxos principais
+
+- Visitante acessa a landing, consulta produtos e servicos e adiciona itens ao carrinho.
+- Cliente cria conta ou faz login via Firebase Auth para acessar perfil, pedidos, carrinho persistente, checkout e rastreamento.
+- Checkout cria sessao Stripe, salva checkout pendente no Firestore e confirma pedidos pelo webhook.
+- Cliente agenda servicos; o servidor valida disponibilidade, cria locks de horario e notifica o admin.
+- Admin acessa `/app-react`, autentica com Firebase Auth e claim `admin`, e opera cadastros, pedidos, servicos e agendamentos.
+
+## Onde comecar
+
+- Leia [Stack](/introducao/stack) para entender as tecnologias.
+- Leia [Monorepo](/introducao/monorepo) para entender a organizacao.
+- Leia [Ambiente](/setup/ambiente) antes de rodar localmente.

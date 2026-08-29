@@ -1,0 +1,55 @@
+---
+title: "Firebase"
+description: "Firebase Auth, Firestore client SDK e Firebase Admin SDK."
+---
+
+# Firebase
+
+## Client SDK
+
+O client SDK e usado em:
+
+- `petpage` para login/cadastro, carrinho autenticado, perfil e notificacoes.
+- `petCorner` para autenticacao admin e CRUDs operacionais.
+
+Configuracao publica:
+
+- `NEXT_PUBLIC_FIREBASE_*` no Next.js
+- `VITE_FIREBASE_*` no Vite
+
+## Admin SDK
+
+O Admin SDK roda somente no servidor Next.js. Ele e usado para:
+
+- verificar ID token em `/api/auth/session`
+- validar cliente em agendamentos
+- ler dados server-side da landing
+- criar checkout e confirmar webhook Stripe
+
+Variaveis privadas:
+
+- `FIREBASE_ADMIN_PROJECT_ID`
+- `FIREBASE_ADMIN_CLIENT_EMAIL`
+- `FIREBASE_ADMIN_PRIVATE_KEY`
+
+## Auth do cliente
+
+Providers suportados:
+
+- password
+- Google
+- Microsoft
+
+O perfil e sincronizado apos login/cadastro e o app tenta manter um espelho em `clientes`.
+
+## Auth do admin
+
+O admin depende de custom claim:
+
+```json
+{
+  "admin": true
+}
+```
+
+Essa claim deve ser configurada fora do app, via Firebase Admin/console/script seguro.

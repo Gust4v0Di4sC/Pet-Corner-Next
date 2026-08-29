@@ -1,0 +1,77 @@
+---
+title: "Rodando localmente"
+description: "Instalacao, servidores locais, build e validacao."
+---
+
+# Rodando localmente
+
+## Instalar dependencias
+
+```bash
+npm install
+```
+
+## Rodar o `petpage`
+
+```bash
+npm run dev:next
+```
+
+URL padrao:
+
+```txt
+http://localhost:3000
+```
+
+## Rodar o `petCorner`
+
+```bash
+npm run dev:vite
+```
+
+URL padrao do Vite:
+
+```txt
+http://localhost:3001
+```
+
+## Build completo
+
+```bash
+npm run build
+```
+
+Esse comando executa:
+
+1. `npm run build --workspace=petcorner`
+2. `npm run build --workspace=petpage`
+
+## Build por workspace
+
+```bash
+npm run build --workspace=petcorner
+npm run build --workspace=petpage
+```
+
+## Lint
+
+```bash
+npm run lint --workspace=petcorner
+npm run lint --workspace=petpage
+```
+
+## Preview da documentacao Mintlify
+
+Rode a partir da pasta `docs`, onde esta o `docs.json`:
+
+```bash
+cd docs
+npx mint dev --no-open
+```
+
+Validacoes recomendadas:
+
+```bash
+npx mint validate
+npx mint broken-links
+```

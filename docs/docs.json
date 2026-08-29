@@ -1,0 +1,75 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Projetos",
+  "description": "Hub de documentacoes tecnicas dos projetos.",
+  "colors": {
+    "primary": "#fb8b24"
+  },
+  "navigation": {
+    "products": [
+      {
+        "product": "PetCornerNext",
+        "description": "Ecossistema web do Pet Corner com vitrine, cliente, checkout, agendamentos e admin.",
+        "icon": "paw-print",
+        "groups": [
+          {
+            "group": "Introducao",
+            "pages": [
+              "index",
+              "introducao/stack",
+              "introducao/monorepo"
+            ]
+          },
+          {
+            "group": "Arquitetura",
+            "pages": [
+              "arquitetura/petpage",
+              "arquitetura/petcorner",
+              "arquitetura/app-react"
+            ]
+          },
+          {
+            "group": "Setup",
+            "pages": [
+              "setup/ambiente",
+              "setup/rodando-localmente"
+            ]
+          },
+          {
+            "group": "Funcionalidades",
+            "pages": [
+              "funcionalidades/catalogo",
+              "funcionalidades/auth-perfil",
+              "funcionalidades/carrinho-checkout",
+              "funcionalidades/agendamentos-notificacoes",
+              "funcionalidades/admin"
+            ]
+          },
+          {
+            "group": "Dados e Integracoes",
+            "pages": [
+              "dados-integracoes/firestore",
+              "dados-integracoes/firebase",
+              "dados-integracoes/stripe-workers"
+            ]
+          },
+          {
+            "group": "Componentes",
+            "pages": [
+              "componentes/componentes"
+            ]
+          },
+          {
+            "group": "Operacao",
+            "pages": [
+              "operacao/deploy-validacao",
+              "operacao/troubleshooting",
+              "operacao/adicionar-projeto"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

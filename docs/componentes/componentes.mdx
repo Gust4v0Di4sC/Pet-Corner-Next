@@ -1,0 +1,45 @@
+---
+title: "Componentes"
+description: "Mapa dos principais componentes e convencoes de UI."
+---
+
+# Componentes
+
+## `petpage`
+
+Componentes globais:
+
+- `src/components/layout`: shell e container de paginas.
+- `src/components/ui`: primitives shadcn-style como button, input, label, select, card, dialog e alert.
+
+Feature components:
+
+| Feature | Componentes principais |
+| --- | --- |
+| `marketing` | nav bar, hero, produtos, servicos, depoimentos, drawer de carrinho e usuario. |
+| `auth` | login form, register form e social login. |
+| `account` | dashboard de perfil, sidebar, endereco, pets, pedidos, favoritos e upload de imagem. |
+| `cart-checkout` | add-to-cart, cart summary, checkout form, delivery form, payment form, order summary e tracking. |
+| `scheduling` | appointment scheduler. |
+| `notifications` | drawer e services de notificacao do cliente. |
+| `support` | acoes flutuantes e chat de entrega. |
+
+## `petCorner`
+
+Componentes de administracao:
+
+- `Templates`: header, nav, main, logo, footer e loader.
+- `Login`: formulario e campos de login admin.
+- `Dashboard`: cards, graficos e utilitarios do dashboard.
+- `Records`: infraestrutura reutilizavel de CRUD.
+- `Form`: campos, masks, autocomplete, file upload e layout de formulario.
+- `notifications`: sino de notificacoes administrativas.
+- `chat`: assistente admin.
+- `layout`: `AppShell`.
+
+## Convencoes
+
+- Formulario e validacao usam Zod e sanitizadores locais.
+- Dados remotos devem passar por mapeadores defensivos antes de renderizar.
+- Componentes de pagina vivem dentro de `features/*/pages` no `petpage`.
+- Telas admin vivem dentro de `screens/*` no `petCorner`.

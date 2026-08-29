@@ -1,0 +1,46 @@
+---
+title: "petCorner"
+description: "Arquitetura do painel administrativo React/Vite."
+---
+
+# `petCorner`
+
+`petCorner` e a SPA administrativa usada pela equipe interna. Ela usa React Router, Firebase Auth, Firestore client SDK e Workers para integracoes auxiliares.
+
+## Rotas administrativas
+
+| Rota | Tela |
+| --- | --- |
+| `/` | Login administrativo. |
+| `/reset-password` | Redefinicao de senha. |
+| `/__/auth/action` | Acao de reset/autenticacao do Firebase. |
+| `/dashboard` | Home/dashboard operacional. |
+| `/clientes` | CRUD de clientes. |
+| `/caes` | CRUD de animais/pets. |
+| `/prods` | CRUD de produtos. |
+| `/servicos` | CRUD de servicos. |
+| `/agendamentos` | Gestao de agendamentos e disponibilidade. |
+| `/depoimentos` | CRUD de depoimentos. |
+| `/pedidos` | Gestao de pedidos e ocorrencias de entrega. |
+
+## Controle de acesso
+
+O admin autentica pelo Firebase Auth. Depois do login, `hasAdminAccess` verifica se o ID token possui claim customizada:
+
+```txt
+admin === true
+```
+
+Usuarios sem essa claim sao deslogados e recebem mensagem de acesso restrito.
+
+## Padroes internos
+
+- `services`: acesso ao Firestore, Workers e logicas de dominio.
+- `hooks`: leitura, mutacoes, busca e orquestracao de estado.
+- `screens`: composicao das telas.
+- `components/Records`: base reutilizavel para formularios, listas, paginacao e delete modal.
+- `validation`: schemas Zod para entradas do painel.
+
+## Configuracao runtime
+
+O script `apps/petCorner/scripts/write-runtime-config.mjs` gera `runtime-config.js` antes de `dev`, `build` e `preview`. Isso permite que a SPA leia variaveis em tempo de execucao.
