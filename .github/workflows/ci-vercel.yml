@@ -1,0 +1,114 @@
+name: CI e deploy Vercel
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-vercel-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  VERCEL_CLI_VERSION: "59.17.0"
+
+jobs:
+  prebuild:
+    name: Lint, tipos e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Valores sintéticos permitem validar PRs sem expor secrets. Nenhuma API é chamada.
+      VITE_FIREBASE_API_KEY: ci-placeholder
+      VITE_FIREBASE_AUTH_DOMAIN: ci.invalid
+      VITE_FIREBASE_PROJECT_ID: ci-project
+      VITE_FIREBASE_STORAGE_BUCKET: ci.invalid
+      VITE_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      VITE_FIREBASE_APP_ID: "1:000000000000:web:ci"
+      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci.invalid
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-project
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci.invalid
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:ci"
+      CUSTOMER_SESSION_SECRET: ci-only-placeholder-at-least-32-characters
+      NEXT_PUBLIC_APP_URL: https://ci.invalid
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_ci_placeholder
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Instalar dependências do lockfile
+        run: npm ci
+
+      - name: Executar prebuild completo
+        run: npm run ci:prebuild
+
+  deploy-production:
+    name: Deploy de produção
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: prebuild
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Baixar o código aprovado pelo prebuild
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Instalar dependências do lockfile
+        run: npm ci
+
+      - name: Validar secrets da Vercel
+        shell: bash
+        run: |
+          for variable_name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!variable_name}" ]; then
+              echo "::error::Configure o secret ${variable_name} no ambiente production do GitHub."
+              exit 1
+            fi
+          done
+
+      - name: Instalar Vercel CLI
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
+
+      - name: Baixar configuração de produção da Vercel
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Baixar variáveis para o build do admin
+        run: vercel env pull apps/petCorner/.env.production.local --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Recompilar admin com a configuração de produção
+        run: npm run build:ci --workspace=petcorner
+
+      - name: Gerar artefato da Vercel
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Publicar somente o artefato pré-construído
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

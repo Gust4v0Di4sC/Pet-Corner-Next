@@ -20,8 +20,10 @@
   ],
   "scripts": {
     "build": "npm run build --workspace=petcorner && npm run build --workspace=petpage",
+    "ci:prebuild": "npm run lint && npm run build:ci --workspace=petcorner && npm run build --workspace=petpage",
     "dev:next": "npm run dev --workspace=petpage",
-    "dev:vite": "npm run dev --workspace=petcorner"
+    "dev:vite": "npm run dev --workspace=petcorner",
+    "lint": "npm run lint --workspace=petcorner && npm run lint --workspace=petpage"
   },
   "dependencies": {
     "punycode": "^2.3.1",

@@ -5,6 +5,37 @@ description: "Build, deploy Vercel, smoke tests e validacao da documentacao."
 
 # Deploy e validacao
 
+## Pipeline segura
+
+O workflow `.github/workflows/ci-vercel.yml` executa lint, verificacao de tipos e o
+build completo das duas aplicacoes em toda pull request. Um push na `main` somente
+chega ao deploy depois que esse prebuild termina com sucesso.
+
+O deploy recompila o admin com as variaveis de producao baixadas da Vercel, executa
+`vercel build --prod` e publica exclusivamente o artefato gerado com
+`vercel deploy --prebuilt --prod`. Dessa forma, uma falha de compilacao acontece
+antes da publicacao.
+
+Configure no ambiente `production` do GitHub estes secrets:
+
+| Secret | Origem |
+| --- | --- |
+| `VERCEL_TOKEN` | Token de acesso da conta Vercel |
+| `VERCEL_ORG_ID` | ID do time/conta proprietaria do projeto |
+| `VERCEL_PROJECT_ID` | ID do projeto Vercel |
+
+Para que esse gate seja efetivo:
+
+1. Proteja a branch `main` e exija o check `Lint, tipos e build` antes do merge.
+2. Configure o ambiente `production` do GitHub; se desejado, adicione aprovadores.
+3. Desative os deployments automaticos da integracao Git da Vercel, evitando um
+   deploy paralelo que contorne o workflow.
+4. Use Node.js 22.x tambem nas configuracoes do projeto na Vercel.
+
+As variaveis da aplicacao continuam cadastradas na Vercel. A CI de pull request usa
+somente placeholders publicos para validar a compilacao e nunca recebe secrets de
+producao.
+
 ## Deploy do app
 
 Configuracao esperada na Vercel:
