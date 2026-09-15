@@ -34,6 +34,7 @@ function buildContentSecurityPolicy(): string {
     "https://*.stripe.com",
     "https://cdn.jsdelivr.net",
     "https://unpkg.com",
+    "https://viacep.com.br",
     ...readWorkerOrigins(),
   ];
 
@@ -41,7 +42,7 @@ function buildContentSecurityPolicy(): string {
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self'",
     "form-action 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.gstatic.com https://www.google.com https://apis.google.com https://www.googletagmanager.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -70,7 +71,7 @@ function buildSecurityHeaders() {
     },
     {
       key: "X-Frame-Options",
-      value: "DENY",
+      value: "SAMEORIGIN",
     },
     {
       key: "Referrer-Policy",

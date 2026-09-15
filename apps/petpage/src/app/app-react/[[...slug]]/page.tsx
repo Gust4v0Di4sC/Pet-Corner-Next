@@ -13,7 +13,7 @@ export default function ReactApp() {
       }}
     >
       <iframe
-        src="/app-react/index.html"
+        src="/app-react"
         style={{
           width: "100%",
           height: "100%",
