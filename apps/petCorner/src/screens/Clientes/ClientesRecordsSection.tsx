@@ -12,6 +12,7 @@ import {
   useRecordFormController,
 } from "../../hooks/records";
 import type { Client } from "../../types/client";
+import { findAddressByZipCode } from "../../services/viaCepService";
 import {
   buildClientListGroup,
   buildClientPayload,
@@ -53,6 +54,25 @@ export function ClientesRecordsSection({
     buildPayload: buildClientPayload,
     onCreate: async () => undefined,
     onUpdate: update,
+    onInputAsyncEffect: async ({ name, value, nextData }) => {
+      if (name !== "zipCode" || value.replace(/\D/g, "").length !== 8) {
+        return;
+      }
+
+      const address = await findAddressByZipCode(value);
+      if (!address) {
+        return;
+      }
+
+      return {
+        zipCode: address.zipCode,
+        street: address.street || nextData.street,
+        district: address.district || nextData.district,
+        city: address.city || nextData.city,
+        state: address.state || nextData.state,
+        complement: nextData.complement || address.complement,
+      };
+    },
     notifyAdminAction,
   });
 

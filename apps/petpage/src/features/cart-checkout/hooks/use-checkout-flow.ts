@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, type SubmitEvent, useMemo, useState } from "react";
+import { type ChangeEvent, type SubmitEvent, useMemo, useRef, useState } from "react";
 import { saveCustomerDeliveryAddress } from "@/features/account/services/customer-profile.service";
 import { useCustomerCart } from "@/features/cart-checkout/hooks/use-customer-cart";
 import { getCartItemsCount } from "@/features/cart-checkout/services/customer-cart.service";
@@ -13,6 +13,7 @@ import {
   normalizeStateCode,
 } from "@/lib/validation/input-sanitizers";
 import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
+import { findAddressByZipCode } from "@/lib/address/viacep";
 
 export type CheckoutStep = "delivery" | "payment";
 
@@ -77,6 +78,7 @@ type UseCheckoutFlowInput = {
 };
 
 export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInput) {
+  const zipCodeRequestRef = useRef(0);
   const [activeStep, setActiveStep] = useState<CheckoutStep>("delivery");
   const [isSavingDelivery, setIsSavingDelivery] = useState(false);
   const [isCreatingStripeSession, setIsCreatingStripeSession] = useState(false);
@@ -114,6 +116,31 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
       ...currentValue,
       [name]: nextValue,
     }));
+
+    if (name !== "zipCode") {
+      return;
+    }
+
+    const requestId = ++zipCodeRequestRef.current;
+    if (nextValue.replace(/\D/g, "").length !== 8) {
+      return;
+    }
+
+    void findAddressByZipCode(nextValue).then((address) => {
+      if (!address || requestId !== zipCodeRequestRef.current) {
+        return;
+      }
+
+      setDeliveryForm((currentValue) => ({
+        ...currentValue,
+        zipCode: address.zipCode || currentValue.zipCode,
+        street: address.street || currentValue.street,
+        district: address.district || currentValue.district,
+        city: address.city || currentValue.city,
+        state: address.state || currentValue.state,
+        complement: currentValue.complement || address.complement,
+      }));
+    });
   };
 
   const handleContinueToPayment = async (event: SubmitEvent<HTMLFormElement>) => {

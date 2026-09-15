@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, type SubmitEvent, useMemo, useState } from "react";
+import { type ChangeEvent, type SubmitEvent, useMemo, useRef, useState } from "react";
 import { INITIAL_ADDRESS_FORM } from "@/features/account/components/profile-dashboard.constants";
 import type { CustomerDeliveryAddress } from "@/features/account/services/customer-profile.service";
 import type { AddressFormState } from "@/features/account/types/profile-dashboard";
@@ -13,6 +13,7 @@ import {
   type CustomerAddressInput,
 } from "@/features/account/validation/profile-schemas";
 import { getFirstZodErrorMessage } from "@/lib/validation/input-sanitizers";
+import { findAddressByZipCode } from "@/lib/address/viacep";
 
 type UseProfileAddressFormInput = {
   address: CustomerDeliveryAddress | null;
@@ -25,6 +26,7 @@ export function useProfileAddressForm({
   isSavingAddress,
   saveAddress,
 }: UseProfileAddressFormInput) {
+  const zipCodeRequestRef = useRef(0);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [addressFormDraft, setAddressFormDraft] = useState<AddressFormState | null>(null);
   const [addressMessage, setAddressMessage] = useState<string | null>(null);
@@ -46,6 +48,34 @@ export function useProfileAddressForm({
       ...(currentState || addressForm),
       [name]: nextValue,
     }));
+
+    if (name !== "zipCode") {
+      return;
+    }
+
+    const requestId = ++zipCodeRequestRef.current;
+    if (nextValue.replace(/\D/g, "").length !== 8) {
+      return;
+    }
+
+    void findAddressByZipCode(nextValue).then((foundAddress) => {
+      if (!foundAddress || requestId !== zipCodeRequestRef.current) {
+        return;
+      }
+
+      setAddressFormDraft((currentState) => {
+        const currentAddress = currentState || addressForm;
+        return {
+          ...currentAddress,
+          zipCode: foundAddress.zipCode || currentAddress.zipCode,
+          street: foundAddress.street || currentAddress.street,
+          district: foundAddress.district || currentAddress.district,
+          city: foundAddress.city || currentAddress.city,
+          state: foundAddress.state || currentAddress.state,
+          complement: currentAddress.complement || foundAddress.complement,
+        };
+      });
+    });
   };
 
   const handleAddressSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
