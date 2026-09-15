@@ -1,20 +1,60 @@
 node_modules/
-apps/petpage/public/app-react/
-firebase-debug.log
-apps/.playwright-mcp/
-apps/petpage-*.log
-.env.local
-.playwright-mcp/
-.vercel/
-app-react-*.log
-app-react-current-snapshot.md
-app-react-current.png
-**/AGENTS.md
-**/agents.md
 
-.vercel
-.env*
-.playwright-mcp/
+# Build/cache output
+dist/
+build/
+coverage/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+apps/petpage/public/app-react/
+
+# Logs and local debug artifacts
+logs/
+*.log
+firebase-debug.log
 app-react-*.log
 app-react-*.md
 app-react-*.png
+app-react-current-snapshot.md
+app-react-current.png
+
+# Environment files and runtime secrets
+.env
+.env.*
+.env*
+!.env.example
+!.env.*.example
+!.env.docker.example
+**/.env
+**/.env.*
+**/.env*
+!**/.env.example
+!**/.env.*.example
+
+# Credentials, private keys, certificates, and local data
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+serviceAccount*.json
+google-services.json
+GoogleService-Info.plist
+*.db
+*.sqlite
+*.sqlite3
+
+# Tooling and deployment state
+.local/
+.playwright-mcp/
+.vercel/
+.agents/
+skills-lock.json
+apps/.playwright-mcp/
+**/AGENTS.md
+**/agents.md

@@ -13,11 +13,29 @@ dist
 dist-ssr
 *.local
 
-# Arquivos sensíveis
+# Arquivos sensiveis
 .env
+.env.*
+.env*
+!.env.example
+!.env.*.example
 public/runtime-config.js
 cloudflare/cosmos-sync/.dev.vars
 cloudflare/cosmos-sync/.wrangler
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+serviceAccount*.json
+google-services.json
+GoogleService-Info.plist
+*.db
+*.sqlite
+*.sqlite3
 
 # Editor directories and files
 .vscode/*
