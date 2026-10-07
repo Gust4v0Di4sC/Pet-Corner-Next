@@ -1,337 +1,157 @@
-<p align="center">
-  <img src="./assets/favicon.svg" alt="Logo Pet Corner" width="120" />
-</p>
+<div align="center">
+
+<img src="./assets/favicon.svg" alt="Logo Pet Corner" width="104" />
 
 # PetCornerNext
 
-Monorepo do ecossistema PetCorner, com duas aplicacoes principais:
+**Plataforma full-stack para a jornada de compra e a operação de um pet shop.**
 
-- `petpage`: app publico e area do cliente em Next.js.
-- `petCorner`: painel administrativo em React/Vite, tambem publicado dentro do `petpage` em `/app-react`.
+[![CI e deploy](https://github.com/Gust4v0Di4sC/Pet-Corner-Next/actions/workflows/ci-vercel.yml/badge.svg)](https://github.com/Gust4v0Di4sC/Pet-Corner-Next/actions/workflows/ci-vercel.yml)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
+[![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](#licenca)
 
-O projeto atende o fluxo completo de um pet shop: vitrine de produtos e servicos, cadastro e login de clientes, perfil do cliente, pets, carrinho, checkout, pedidos, agendamentos, painel administrativo, catalogo, notificacoes e integracoes com Firebase, Stripe e Workers.
+[Ver demonstração](https://pet-corner.vercel.app/) · [Documentação](./docs/index.mdx) · [Reportar problema](https://github.com/Gust4v0Di4sC/Pet-Corner-Next/issues)
 
-## Estrutura
+</div>
 
-```txt
-apps/
-  petpage/      App Next.js publico, area do cliente e API routes
-  petCorner/    SPA administrativa em React/Vite
-assets/         Imagens usadas na documentacao
-```
+<p align="center">
+  <img src="./assets/screenshots/home.png" alt="Página inicial do Pet Corner" width="960" />
+</p>
 
-O build do `petCorner` usa `base: "/app-react/"` e gera a SPA em:
+## Sobre
 
-```txt
-apps/petpage/public/app-react
-```
+**PetCornerNext** reúne a experiência pública, a área do cliente e a administração de um pet shop em um único monorepo. A plataforma cobre da descoberta de produtos e serviços ao pós-venda, com autenticação, carrinho, checkout, agendamentos, pedidos e rastreamento.
 
-Assim, o deploy do `petpage` tambem entrega o painel administrativo em `/app-react`.
+O projeto combina uma aplicação **Next.js** voltada ao cliente com uma SPA administrativa em **React e Vite**. O painel é gerado como parte do build e incorporado à entrega principal pela rota `/app-react`.
 
-## Aplicacoes
+## Funcionalidades
 
-### petpage
+- **Vitrine e catálogo** — landing page, produtos, serviços, detalhes, favoritos e busca.
+- **Conta do cliente** — cadastro, login, sessão segura, perfil, endereços e pets.
+- **Compra e pagamento** — carrinho persistente, checkout Stripe e confirmação de pedidos por webhook.
+- **Agendamentos** — consulta de disponibilidade, reserva de horários, notificações e links de calendário.
+- **Operação administrativa** — dashboard e gestão de clientes, pets, catálogo, serviços, pedidos e depoimentos.
+- **Integrações auxiliares** — sincronização de catálogo, upload de imagens e chat por Cloudflare Workers.
 
-Aplicacao principal em Next.js App Router. Ela concentra:
+## Interface
 
-- Landing page com produtos, servicos, depoimentos e conteudo carregado do Firestore.
-- Catalogo publico de produtos e servicos, incluindo paginas de detalhe.
-- Login e cadastro de clientes com Firebase Auth.
-- Sessao de cliente por cookie assinado.
-- Perfil do cliente com dados pessoais, endereco, pets, pedidos, favoritos e agendamentos.
-- Carrinho para visitantes e clientes autenticados.
-- Checkout com Stripe em modo de teste.
-- Webhook Stripe para sincronizar pedidos.
-- Agendamento de servicos com disponibilidade, links de calendario e envio opcional de email.
-- Notificacoes do cliente.
-- Chat/acoes flutuantes de suporte via Worker.
-- Rota `/app-react` para servir o painel administrativo legado/SPA.
+| Catálogo de produtos | Catálogo de serviços |
+| --- | --- |
+| ![Catálogo de produtos do Pet Corner](./assets/screenshots/produtos.png) | ![Catálogo de serviços do Pet Corner](./assets/screenshots/servicos.png) |
 
-Principais pastas:
-
-```txt
-apps/petpage/src/app          Rotas, layouts, APIs e metadata
-apps/petpage/src/features     Modulos por dominio da aplicacao
-apps/petpage/src/lib          Integracoes, auth, Firebase, Stripe e utilitarios
-apps/petpage/src/providers    Providers globais do React
-apps/petpage/src/styles       CSS global
-```
-
-### petCorner
-
-SPA administrativa em React/Vite para a operacao do pet shop. Ela concentra:
-
-- Login administrativo com Firebase.
-- Dashboard.
-- CRUD de clientes.
-- CRUD de animais/pets.
-- CRUD de produtos.
-- Importacao e sincronizacao de catalogo.
-- Upload/importacao de imagens de produtos via Worker.
-- CRUD de servicos.
-- Gestao de agendamentos e configuracao de disponibilidade.
-- Gestao de pedidos e rastreamento.
-- Gestao de depoimentos.
-- Notificacoes administrativas.
-- Chat de consultas com Worker/Gemini.
-
-Principais pastas:
-
-```txt
-apps/petCorner/src/screens       Telas administrativas
-apps/petCorner/src/components    Layout, records, dashboard, chat e UI compartilhada
-apps/petCorner/src/services      Servicos de Firebase, catalogo, pedidos e notificacoes
-apps/petCorner/src/hooks         Hooks de dados e operacoes
-apps/petCorner/src/validation    Schemas de validacao
-```
+| Área do cliente | Acesso administrativo |
+| --- | --- |
+| ![Login da área do cliente](./assets/screenshots/cliente-login.png) | ![Login do painel administrativo](./assets/screenshots/admin-login.png) |
 
 ## Tecnologias
 
-- npm workspaces
-- Next.js 16
-- React 19
-- Vite 7
-- TypeScript
-- Tailwind CSS no `petpage`
-- Firebase Auth
-- Firestore
-- Firebase Admin SDK no servidor do Next
-- Stripe Checkout e Webhooks
-- Nodemailer/SMTP para emails de agendamento
-- Cloudflare Workers para integracoes auxiliares
-- TanStack Query
-- React Hook Form e Zod
-- MUI no painel administrativo
-- Radix/shadcn-style primitives no `petpage`
-
-## Scripts
-
-Na raiz do repositorio:
-
-| Comando | Descricao |
+| Área | Stack |
 | --- | --- |
-| `npm install` | Instala as dependencias dos workspaces |
-| `npm run dev:next` | Inicia o `petpage` em desenvolvimento |
-| `npm run dev:vite` | Inicia o `petCorner` em desenvolvimento |
-| `npm run build` | Builda `petCorner` e depois `petpage` |
+| Front-end público | Next.js 16, React 19, TypeScript, Tailwind CSS, Radix UI |
+| Painel administrativo | React 19, Vite 7, Material UI, React Router |
+| Dados e autenticação | Firebase Auth, Firestore, Firebase Admin SDK |
+| Estado e formulários | TanStack Query, Zustand, React Hook Form, Zod |
+| Integrações | Stripe, Nodemailer/SMTP, Cloudflare Workers, Gemini, Cosmos Bluesoft |
+| Infraestrutura | npm workspaces, Vercel, Docker, GitHub Actions |
 
-Nos workspaces:
+## Arquitetura
+
+```mermaid
+flowchart LR
+    U[Cliente] --> WEB[petpage<br/>Next.js]
+    A[Equipe interna] --> ADMIN[petCorner<br/>React + Vite]
+
+    WEB --> API[API Routes<br/>Next.js]
+    WEB --> FB[(Firebase)]
+    ADMIN --> FB
+    API --> FB
+    API --> STRIPE[Stripe]
+    API --> SMTP[SMTP]
+    WEB --> WORKERS[Cloudflare Workers]
+    ADMIN --> WORKERS
+    WORKERS --> EXT[Gemini e Cosmos]
+
+    ADMIN -. build em /app-react .-> WEB
+```
+
+O monorepo separa as responsabilidades em dois workspaces:
+
+```text
+apps/
+├── petpage/      # App público, área do cliente e APIs server-side
+└── petCorner/    # SPA de administração e operação do pet shop
+```
+
+O `petpage` organiza a aplicação pública por domínios em `src/features`. O `petCorner` separa telas, componentes, hooks, serviços e validações. Durante o build completo, o bundle Vite é escrito em `apps/petpage/public/app-react` antes da compilação do Next.js.
+
+> Consulte a [documentação de arquitetura](./docs/arquitetura/petpage.mdx) e o [fluxo de integração do painel](./docs/arquitetura/app-react.mdx) para os detalhes técnicos.
+
+## Executando localmente
+
+### Pré-requisitos
+
+- Node.js 22 ou superior
+- npm
+- Um projeto Firebase configurado
+
+### Instalação
 
 ```bash
-npm run lint --workspace=petpage
-npm run lint --workspace=petcorner
-npm run build --workspace=petpage
-npm run build --workspace=petcorner
-```
-
-## Ambiente
-
-Crie os arquivos de ambiente dentro de cada app conforme necessario.
-
-### apps/petpage/.env.local
-
-Variaveis publicas do Firebase:
-
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
-```
-
-Sessao do cliente:
-
-```env
-CUSTOMER_SESSION_SECRET=
-```
-
-Firebase Admin para rotas server-side:
-
-```env
-FIREBASE_ADMIN_PROJECT_ID=
-FIREBASE_ADMIN_CLIENT_EMAIL=
-FIREBASE_ADMIN_PRIVATE_KEY=
-```
-
-Stripe em modo de teste:
-
-```env
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-Email de agendamentos, opcional:
-
-```env
-APPOINTMENT_EMAIL_ENABLED=false
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
-```
-
-Workers, opcionais:
-
-```env
-NEXT_PUBLIC_CLOUDFLARE_WORKER_URL=
-NEXT_PUBLIC_COSMOS_SYNC_URL=
-NEXT_PUBLIC_CHAT_WORKER_URL=
-```
-
-### apps/petCorner/.env
-
-Configuracao Firebase exposta ao Vite:
-
-```env
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-VITE_FIREBASE_MEASUREMENT_ID=
-```
-
-Workers usados no painel administrativo:
-
-```env
-VITE_COSMOS_SYNC_URL=
-VITE_CHAT_WORKER_URL=
-```
-
-O script `apps/petCorner/scripts/write-runtime-config.mjs` gera `runtime-config.js` antes de `dev`, `build` e `preview`, permitindo que a SPA leia configuracoes em tempo de execucao.
-
-## Rodando localmente
-
-Instale as dependencias:
-
-```bash
+git clone https://github.com/Gust4v0Di4sC/Pet-Corner-Next.git
+cd Pet-Corner-Next
 npm install
 ```
 
-Inicie o Next.js:
+Configure `apps/petpage/.env.local` e `apps/petCorner/.env` conforme o [guia de variáveis de ambiente](./docs/setup/ambiente.mdx). Valores reais de chaves, tokens e credenciais não devem ser versionados.
+
+Inicie a aplicação pública:
 
 ```bash
 npm run dev:next
 ```
 
-Por padrao, o `petpage` roda em:
+Acesse [http://localhost:3000](http://localhost:3000).
 
-```txt
-http://localhost:3000
-```
-
-Inicie o painel Vite separadamente, se precisar desenvolver a SPA administrativa isolada:
+Para desenvolver o painel administrativo separadamente, use outro terminal:
 
 ```bash
 npm run dev:vite
 ```
 
-Por padrao, o `petCorner` roda em:
+O painel ficará disponível em [http://localhost:3001](http://localhost:3001).
 
-```txt
-http://localhost:3001
-```
+### Scripts principais
 
-Para testar a integracao final, rode o build do `petCorner` antes do `petpage`:
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev:next` | Inicia o app Next.js em desenvolvimento |
+| `npm run dev:vite` | Inicia o painel Vite isoladamente |
+| `npm run lint` | Executa o ESLint nos dois workspaces |
+| `npm run build` | Gera o painel e, em seguida, a aplicação Next.js |
 
-```bash
-npm run build --workspace=petcorner
-npm run build --workspace=petpage
-```
-
-## Build e deploy
-
-O comando da raiz executa o fluxo completo:
+Também é possível executar a entrega integrada com Docker Compose após preencher `.env.docker` a partir de `.env.docker.example`:
 
 ```bash
-npm run build
+docker compose up --build
 ```
 
-Ele:
+## Documentação
 
-1. Gera a build Vite do `petCorner` em `apps/petpage/public/app-react`.
-2. Gera a build Next.js do `petpage`.
+A documentação aprofundada está em [`docs/`](./docs/index.mdx) e pode ser visualizada localmente com Mintlify.
 
-Para deploy na Vercel, use:
+- [Visão geral do monorepo](./docs/introducao/monorepo.mdx)
+- [Stack e responsabilidades](./docs/introducao/stack.mdx)
+- [Configuração do ambiente](./docs/setup/ambiente.mdx)
+- [Arquitetura do app público](./docs/arquitetura/petpage.mdx)
+- [Arquitetura do painel administrativo](./docs/arquitetura/petcorner.mdx)
+- [Firebase e Firestore](./docs/dados-integracoes/firebase.mdx)
+- [Stripe e Workers](./docs/dados-integracoes/stripe-workers.mdx)
+- [Deploy e validação](./docs/operacao/deploy-validacao.mdx)
 
-- Root Directory: `apps/petpage`
-- Build Command: `npm run build`
-- Output Directory: `.next`
+## Licença
 
-Antes do deploy, garanta que a build do `petCorner` usada por `/app-react` foi gerada ou que o pipeline execute o build da raiz.
-
-## Rotas principais
-
-No `petpage`:
-
-- `/`: landing page.
-- `/produtos`: catalogo de produtos.
-- `/produtos/[id]`: detalhe de produto.
-- `/servicos`: catalogo de servicos.
-- `/servicos/[id]`: detalhe de servico.
-- `/agendamentos`: agendamento de servicos.
-- `/login`: login do cliente.
-- `/register`: cadastro do cliente.
-- `/profile`: perfil do cliente.
-- `/cart`: carrinho.
-- `/checkout`: checkout.
-- `/checkout/sucesso`: retorno de sucesso.
-- `/checkout/cancelado`: retorno cancelado.
-- `/rastreamento`: rastreamento de pedidos.
-- `/app-react`: painel administrativo Vite embutido.
-
-APIs do `petpage`:
-
-- `/api/auth/session`
-- `/api/auth/logout`
-- `/api/appointments`
-- `/api/appointments/availability`
-- `/api/stripe/checkout/session`
-- `/api/stripe/webhook`
-
-## Qualidade
-
-Comandos usados para validacao:
-
-```bash
-npm run lint --workspace=petpage
-npm run lint --workspace=petcorner
-npm run build --workspace=petcorner
-npm run build --workspace=petpage
-```
-
-## Imagens do sistema
-
-
-### Vitrine Next.js
-
-![Vitrine Pet Corner](./assets/screenshots/home.png)
-
-### Catalogo de produtos
-
-![Catalogo de produtos](./assets/screenshots/produtos.png)
-
-### Servicos
-
-![Tela de servicos](./assets/screenshots/servicos.png)
-
-### Login do cliente
-
-![Login do cliente](./assets/screenshots/cliente-login.png)
-
-### Acesso administrativo
-
-![Acesso administrativo](./assets/screenshots/admin-login.png)
-
-## Licenca
-
-O `package.json` raiz declara licenca ISC. O app `petpage` tambem possui arquivo `LICENSE`.
+O pacote raiz declara a licença **ISC**. O workspace `apps/petpage` possui uma licença **MIT** própria em [`apps/petpage/LICENSE`](./apps/petpage/LICENSE).
 
 ## Autor
 
