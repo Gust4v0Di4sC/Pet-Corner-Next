@@ -341,12 +341,15 @@ export async function resolveCheckoutCart(
   customerId: string,
   clientItems: unknown
 ): Promise<Cart> {
-  const remoteCart = await loadServerCustomerCart(customerId);
-  if (remoteCart.items.length) {
-    return buildValidatedCheckoutCart(customerId, remoteCart.items);
+  // The browser sends the exact cart currently shown to the customer. Prices and
+  // product availability are still revalidated from Firestore, but an older
+  // remote cart must never reintroduce products the customer already removed.
+  if (Array.isArray(clientItems)) {
+    return buildValidatedCheckoutCart(customerId, clientItems);
   }
 
-  return buildValidatedCheckoutCart(customerId, clientItems);
+  const remoteCart = await loadServerCustomerCart(customerId);
+  return buildValidatedCheckoutCart(customerId, remoteCart.items);
 }
 
 export async function saveStripePendingCheckout(input: {

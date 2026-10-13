@@ -22,6 +22,7 @@ import {
 } from "@/features/scheduling/utils/appointment-time";
 import { buildGoogleCalendarAddUrl } from "@/features/scheduling/utils/calendar-links";
 import { sendAppointmentCalendarEmail } from "@/features/scheduling/services/appointment-email.server";
+import { listCustomerPetsOnServer } from "@/features/account/services/pet-registration.server";
 
 const APPOINTMENTS_COLLECTION = "appointments";
 const APPOINTMENT_LOCKS_COLLECTION = "appointmentLocks";
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS_DOCUMENT_ID = "default";
 
 const createAppointmentSchema = z.object({
   serviceId: z.string().trim().min(1),
+  petId: z.string().trim().min(1),
   dateKey: z.string().trim().refine(isValidDateKey),
   startTime: z.string().trim().regex(/^\d{2}:\d{2}$/),
   notes: z.string().trim().max(500).optional().default(""),
@@ -326,8 +328,16 @@ export async function createAppointment(input: CreateAppointmentInput): Promise<
   }
 
   const db = getFirebaseServerFirestore();
-  const settings = await readSettings();
-  const service = await readService(parsedInput.serviceId);
+  const [settings, service, customerPets] = await Promise.all([
+    readSettings(),
+    readService(parsedInput.serviceId),
+    listCustomerPetsOnServer(customerId),
+  ]);
+  const selectedPet = customerPets.find((pet) => pet.id === parsedInput.petId);
+
+  if (!selectedPet) {
+    throw new Error("Selecione um pet cadastrado na sua conta para agendar.");
+  }
 
   if (!service || !service.isActive) {
     throw new Error("Serviço indisponível para agendamento.");
@@ -366,6 +376,10 @@ export async function createAppointment(input: CreateAppointmentInput): Promise<
     customerId,
     customerEmail,
     customerName,
+    petId: selectedPet.id,
+    petName: selectedPet.name,
+    petAnimalType: selectedPet.animalType,
+    petBreed: selectedPet.breed,
     serviceId: service.id,
     serviceName: service.name,
     serviceCategory: service.category,
@@ -424,43 +438,13 @@ export async function createAppointment(input: CreateAppointmentInput): Promise<
     });
   });
 
-  let calendarEmailStatus: CustomerAppointment["calendarEmailStatus"] = "disabled";
-  try {
-    calendarEmailStatus = await sendAppointmentCalendarEmail({
-      customerEmail,
-      customerName,
-      serviceName: service.name,
-      scheduledStartIso,
-      scheduledEndIso,
-      notes: parsedInput.notes,
-    });
-
-    await appointmentRef.set(
-      {
-        calendarEmailStatus,
-        calendarEmailSentAt:
-          calendarEmailStatus === "sent" ? FieldValue.serverTimestamp() : null,
-        calendarEmailSentAtIso: calendarEmailStatus === "sent" ? new Date().toISOString() : "",
-      },
-      { merge: true }
-    );
-  } catch (error) {
-    calendarEmailStatus = "error";
-    await appointmentRef.set(
-      {
-        calendarEmailStatus,
-        calendarEmailLastError:
-          error instanceof Error && error.message.trim()
-            ? error.message.slice(0, 500)
-            : "Falha ao enviar e-mail do agendamento.",
-      },
-      { merge: true }
-    );
-  }
+  const calendarEmailStatus: CustomerAppointment["calendarEmailStatus"] = "disabled";
 
   return {
     id: appointmentRef.id,
     customerId,
+    petId: selectedPet.id,
+    petName: selectedPet.name,
     serviceId: service.id,
     serviceName: service.name,
     scheduledDateKey: parsedInput.dateKey,
@@ -475,6 +459,57 @@ export async function createAppointment(input: CreateAppointmentInput): Promise<
     createdAtIso: nowIso,
     updatedAtIso: nowIso,
   };
+}
+
+export async function sendAppointmentEmailForCustomer(input: {
+  appointmentId: string;
+  customerId: string;
+  customerEmail: string;
+}): Promise<void> {
+  const appointmentId = input.appointmentId.trim();
+  const customerId = input.customerId.trim();
+  const customerEmail = input.customerEmail.trim();
+  if (!appointmentId || !customerId || !customerEmail) {
+    throw new Error("Dados insuficientes para enviar a confirmacao.");
+  }
+
+  const db = getFirebaseServerFirestore();
+  const appointmentRef = db.collection(APPOINTMENTS_COLLECTION).doc(appointmentId);
+  const snapshot = await appointmentRef.get();
+  const payload = snapshot.exists ? snapshot.data() : null;
+
+  if (!payload || toStringValue(payload.customerId).trim() !== customerId) {
+    throw new Error("Agendamento nao encontrado para esta conta.");
+  }
+
+  const status = await sendAppointmentCalendarEmail({
+    customerEmail,
+    customerName: toStringValue(payload.customerName).trim() || customerEmail,
+    serviceName: toStringValue(payload.serviceName).trim(),
+    scheduledStartIso: toStringValue(payload.scheduledStartIso).trim(),
+    scheduledEndIso: toStringValue(payload.scheduledEndIso).trim(),
+    notes: toStringValue(payload.notes).trim(),
+  });
+
+  await appointmentRef.set(
+    {
+      customerEmail,
+      calendarEmailStatus: status,
+      calendarEmailSentAt: status === "sent" ? FieldValue.serverTimestamp() : null,
+      calendarEmailSentAtIso: status === "sent" ? new Date().toISOString() : "",
+    },
+    { merge: true }
+  );
+
+  if (status === "disabled") {
+    throw new Error("O envio de e-mail esta desativado no servidor.");
+  }
+  if (status === "missing_config") {
+    throw new Error("O servidor de e-mail ainda nao foi configurado.");
+  }
+  if (status !== "sent") {
+    throw new Error("Nao foi possivel identificar o e-mail atual da conta.");
+  }
 }
 
 export function mapAppointmentTimestamp(value: unknown): string | null {

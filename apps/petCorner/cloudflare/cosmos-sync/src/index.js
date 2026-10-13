@@ -3,7 +3,7 @@
 const COSMOS_API_BASE_URL = "https://api.cosmos.bluesoft.com.br";
 const COSMOS_SOURCE_FILE_NAME = "Cosmos API";
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 const DEFAULT_PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const PRODUCT_IMAGE_KEY_PREFIX = "products";
 const PROFILE_IMAGE_KEY_PREFIX = "profileimages";
@@ -2511,13 +2511,18 @@ async function handleCustomerDeliveryChat(request, env) {
     let customerOrders = [];
     let matchedOrder = null;
 
-    if (customerId && idToken) {
-      customerOrders = await fetchCustomerOrdersForDeliveryChat(customerId, idToken, env);
-      const orderCodeFromMessage = extractOrderCodeFromMessage(message);
-      matchedOrder = findCustomerOrder(
-        customerOrders,
-        orderCodeFromBody || normalizeOrderCode(orderCodeFromMessage)
-      );
+    if (customerId && idToken && requiresAuth) {
+      try {
+        customerOrders = await fetchCustomerOrdersForDeliveryChat(customerId, idToken, env);
+        const orderCodeFromMessage = extractOrderCodeFromMessage(message);
+        matchedOrder = findCustomerOrder(
+          customerOrders,
+          orderCodeFromBody || normalizeOrderCode(orderCodeFromMessage)
+        );
+      } catch {
+        customerOrders = [];
+        matchedOrder = null;
+      }
     }
 
     let issueTicketId = undefined;

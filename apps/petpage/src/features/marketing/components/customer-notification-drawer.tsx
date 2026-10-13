@@ -95,6 +95,7 @@ export function CustomerNotificationDrawer({ customerId }: CustomerNotificationD
               </p>
               <Button
                 type="button"
+                variant="outline"
                 onClick={() => void markAllAsRead()}
                 disabled={!unreadCount}
                 className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-[#fb8b24] hover:text-[#fb8b24] disabled:cursor-not-allowed disabled:opacity-50"
@@ -161,8 +162,9 @@ export function CustomerNotificationDrawer({ customerId }: CustomerNotificationD
                           {!notification.isRead ? (
                             <Button
                               type="button"
+                              variant="outline"
                               onClick={() => void markAsRead(notification.id)}
-                              className="text-xs font-semibold text-slate-600 transition hover:text-[#fb8b24]"
+                              className="h-8 rounded-full border-slate-400 bg-white px-3 text-xs font-semibold text-slate-800 transition hover:border-[#fb8b24] hover:bg-orange-50 hover:text-[#b45309]"
                             >
                               Marcar como lida
                             </Button>

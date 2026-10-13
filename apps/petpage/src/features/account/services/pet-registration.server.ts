@@ -21,6 +21,48 @@ export type RegisteredCustomerPet = CreateCustomerPetServerInput & {
   updatedAtIso: string;
 };
 
+function toStringValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function toNumberValue(value: unknown): number {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function mapRegisteredPet(
+  id: string,
+  customerId: string,
+  payload: FirebaseFirestore.DocumentData
+): RegisteredCustomerPet | null {
+  const name = toStringValue(payload.name);
+  const animalType = normalizeAnimalType(
+    toStringValue(payload.animalType) || toStringValue(payload.species)
+  );
+  const breed = toStringValue(payload.breed);
+  const age = Math.round(toNumberValue(payload.age));
+  const weight = normalizeWeight(toNumberValue(payload.weight));
+
+  if (!name || !animalType || !breed || age <= 0) {
+    return null;
+  }
+
+  return {
+    id,
+    customerId,
+    name,
+    animalType,
+    breed,
+    age,
+    weight,
+    createdAtIso: toStringValue(payload.createdAtIso) || new Date().toISOString(),
+    updatedAtIso:
+      toStringValue(payload.updatedAtIso) ||
+      toStringValue(payload.createdAtIso) ||
+      new Date().toISOString(),
+  };
+}
+
 function normalizeAnimalType(value: string): string {
   const normalizedValue = value.trim();
   return normalizedValue.toLowerCase() === "cao" ? "Cachorro" : normalizedValue;
@@ -32,6 +74,35 @@ function normalizeWeight(value: number): number {
 
 export function parseCreateCustomerPetInput(input: unknown): CreateCustomerPetServerInput {
   return createCustomerPetSchema.parse(input);
+}
+
+export async function listCustomerPetsOnServer(
+  customerIdInput: string
+): Promise<RegisteredCustomerPet[]> {
+  const customerId = customerIdInput.trim();
+  if (!customerId) {
+    return [];
+  }
+
+  const db = getFirebaseServerFirestore();
+  const snapshots = await Promise.all([
+    db.collection("customers").doc(customerId).collection("pets").limit(50).get(),
+    db.collection("pets").where("customerId", "==", customerId).limit(50).get(),
+    db.collection("dogs").where("ownerCustomerId", "==", customerId).limit(50).get(),
+  ]);
+  const firstAvailablePetSource = snapshots
+    .map((snapshot) =>
+      snapshot.docs
+        .map((documentSnapshot) =>
+          mapRegisteredPet(documentSnapshot.id, customerId, documentSnapshot.data())
+        )
+        .filter((pet): pet is RegisteredCustomerPet => pet !== null)
+    )
+    .find((pets) => pets.length > 0);
+
+  return (firstAvailablePetSource || []).sort((left, right) =>
+    left.name.localeCompare(right.name, "pt-BR")
+  );
 }
 
 export async function createCustomerPetOnServer(input: {

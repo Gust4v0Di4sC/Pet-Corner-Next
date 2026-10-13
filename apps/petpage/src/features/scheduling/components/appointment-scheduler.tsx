@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarDays, CheckCircle2, Clock, RefreshCw } from "lucide-react";
@@ -14,6 +15,7 @@ import { useAppointmentScheduler } from "@/features/scheduling/hooks/use-appoint
 type AppointmentSchedulerProps = {
   initialServiceId: string;
   customerName: string;
+  customerEmail: string;
 };
 
 function formatDate(value: Date | null): string {
@@ -31,6 +33,7 @@ function formatDate(value: Date | null): string {
 export function AppointmentScheduler({
   initialServiceId,
   customerName,
+  customerEmail,
 }: AppointmentSchedulerProps) {
   const { services, isLoading: isLoadingServices, errorMessage: servicesError } = useLandingServices();
   const scheduler = useAppointmentScheduler({ initialServiceId });
@@ -87,7 +90,7 @@ export function AppointmentScheduler({
           onSubmit={(event) => void handleSubmit(event)}
           className="min-w-0 space-y-5 rounded-lg border border-slate-200 bg-[#efefef] p-4 shadow-[0_20px_45px_-35px_rgba(30,41,59,0.7)] sm:p-5 md:p-6"
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="appointment-service" className="text-sm font-semibold text-slate-700">
                 Serviço
@@ -109,10 +112,35 @@ export function AppointmentScheduler({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">Data</Label>
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Label htmlFor="appointment-pet" className="text-sm font-semibold text-slate-700">
+                Pet
+              </Label>
+              <Select
+                id="appointment-pet"
+                value={scheduler.petId}
+                onChange={(event) => scheduler.setPetId(event.target.value)}
+                disabled={scheduler.isLoadingPets || scheduler.pets.length === 0}
+                className="h-11 rounded-lg border-slate-300 bg-white px-3 text-sm text-slate-800"
+              >
+                <option value="">
+                  {scheduler.isLoadingPets ? "Carregando pets..." : "Selecione um pet"}
+                </option>
+                {scheduler.pets.map((pet) => (
+                  <option key={pet.id} value={pet.id}>
+                    {pet.name} - {pet.animalType}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="appointment-date" className="text-sm font-semibold text-slate-700">
+                Data
+              </Label>
+              <div className="relative [&_.react-datepicker-wrapper]:w-full">
+                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-500" />
                 <DatePicker
+                  id="appointment-date"
                   selected={scheduler.selectedDate}
                   onChange={(date) => scheduler.setSelectedDate(date)}
                   dateFormat="dd/MM/yyyy"
@@ -123,6 +151,18 @@ export function AppointmentScheduler({
               </div>
             </div>
           </div>
+
+          {!scheduler.isLoadingPets && scheduler.pets.length === 0 ? (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p className="font-semibold">Cadastre um pet antes de solicitar um agendamento.</p>
+              <Link
+                href="/profile#profile-section-pets"
+                className="mt-1 inline-flex font-semibold text-amber-950 underline underline-offset-2"
+              >
+                Ir para Meus pets
+              </Link>
+            </div>
+          ) : null}
 
           <section className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -206,22 +246,30 @@ export function AppointmentScheduler({
                       Adicionar ao Google Agenda
                     </a>
                   </Button>
-                  {scheduler.calendarMailtoUrl ? (
-                    <Button
-                      asChild
-                      className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-4 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 sm:w-auto"
-                    >
-                      <a href={scheduler.calendarMailtoUrl}>Enviar link por e-mail</a>
-                    </Button>
-                  ) : null}
+                  <Button
+                    type="button"
+                    onClick={() => void scheduler.sendConfirmationEmail()}
+                    disabled={scheduler.isSendingEmail}
+                    className="h-10 w-full rounded-lg border border-emerald-300 bg-white px-4 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 sm:w-auto"
+                  >
+                    {scheduler.isSendingEmail
+                      ? "Enviando..."
+                      : `Enviar confirmacao para ${customerEmail}`}
+                  </Button>
                 </div>
               ) : null}
+              {scheduler.emailSuccessMessage ? <p>{scheduler.emailSuccessMessage}</p> : null}
             </div>
           ) : null}
 
           <Button
             type="submit"
-            disabled={!scheduler.selectedSlot || scheduler.isCreating}
+            disabled={
+              !scheduler.selectedSlot ||
+              !scheduler.petId ||
+              scheduler.pets.length === 0 ||
+              scheduler.isCreating
+            }
             className="h-11 w-full rounded-lg bg-[#fb8b24] text-sm font-semibold text-white hover:bg-[#ef7e14] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {scheduler.isCreating ? "Solicitando agendamento..." : "Solicitar agendamento"}

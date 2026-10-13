@@ -16,9 +16,18 @@ export type AppointmentAvailability = {
   slots: AppointmentSlot[];
 };
 
+export type AppointmentPet = {
+  id: string;
+  name: string;
+  animalType: string;
+  breed: string;
+};
+
 export type CustomerAppointment = {
   id: string;
   customerId: string;
+  petId: string;
+  petName: string;
   serviceId: string;
   serviceName: string;
   scheduledDateKey: string;

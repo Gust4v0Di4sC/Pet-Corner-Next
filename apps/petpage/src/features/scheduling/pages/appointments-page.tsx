@@ -17,6 +17,7 @@ export function AppointmentsPage({ initialServiceId, session }: AppointmentsPage
       <AppointmentScheduler
         initialServiceId={initialServiceId}
         customerName={session.name?.trim() || session.email}
+        customerEmail={session.email}
       />
       <Footer />
     </main>

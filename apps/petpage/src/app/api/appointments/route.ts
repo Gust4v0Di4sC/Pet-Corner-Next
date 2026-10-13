@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const appointment = await createAppointment({
       idToken,
       serviceId: String(payload.serviceId || ""),
+      petId: String(payload.petId || ""),
       dateKey: String(payload.dateKey || ""),
       startTime: String(payload.startTime || ""),
       notes: String(payload.notes || ""),

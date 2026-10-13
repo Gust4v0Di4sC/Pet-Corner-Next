@@ -2,11 +2,33 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import {
   createCustomerPetOnServer,
+  listCustomerPetsOnServer,
   parseCreateCustomerPetInput,
 } from "@/features/account/services/pet-registration.server";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
 
 export const runtime = "nodejs";
+
+export async function GET() {
+  const session = await readServerCustomerSession();
+  if (!session) {
+    return NextResponse.json(
+      { ok: false, error: "Sua sessao expirou. Entre novamente para consultar seus pets." },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const pets = await listCustomerPetsOnServer(session.customerId);
+    return NextResponse.json({ ok: true, pets });
+  } catch (error) {
+    console.error("Falha ao consultar pets no servidor.", error);
+    return NextResponse.json(
+      { ok: false, error: "Nao foi possivel carregar seus pets agora. Tente novamente." },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const session = await readServerCustomerSession();
