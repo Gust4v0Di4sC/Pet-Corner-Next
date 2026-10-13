@@ -3,7 +3,6 @@
 import { upsertCustomerProfile } from "@/features/account/services/firebase-customer.adapter";
 import { waitForFirebaseUser } from "@/lib/auth/firebase-auth.adapter";
 import {
-  createCustomerPet,
   readCustomerAccountProfile,
   readCustomerAddress,
   readCustomerAppointments,
@@ -18,10 +17,7 @@ import {
   type FirebaseCustomerPet,
   upsertCustomerAddress,
 } from "@/features/account/services/firebase-profile.adapter";
-import {
-  createAdminBroadcastNotification,
-  createCustomerNotification,
-} from "@/features/notifications/services/customer-notification.service";
+import { createCustomerNotification } from "@/features/notifications/services/customer-notification.service";
 
 export type CustomerProfileIdentity = {
   customerId: string;
@@ -37,7 +33,6 @@ export type CustomerDeliveryAddress = FirebaseCustomerAddress;
 export type CustomerAccountProfile = FirebaseCustomerAccountProfile;
 
 export type CreatePetInput = {
-  customerId: string;
   name: string;
   animalType: string;
   breed: string;
@@ -163,36 +158,29 @@ export async function getCustomerProfileDataBundle(
 }
 
 export async function registerCustomerPet(input: CreatePetInput): Promise<CustomerPet> {
-  const resolvedCustomerId = await resolveCustomerId(input.customerId);
-  const createdPet = await createCustomerPet({
-    customerId: resolvedCustomerId,
-    name: input.name,
-    animalType: input.animalType,
-    breed: input.breed,
-    age: input.age,
-    weight: input.weight,
+  const response = await fetch("/api/profile/pets", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      name: input.name,
+      animalType: input.animalType,
+      breed: input.breed,
+      age: input.age,
+      weight: input.weight,
+    }),
   });
+  const result = (await response.json().catch(() => null)) as
+    | { ok?: boolean; pet?: CustomerPet; error?: string }
+    | null;
 
-  void createCustomerNotification({
-    customerId: resolvedCustomerId,
-    title: "Pet cadastrado com sucesso",
-    message: `${createdPet.name} foi adicionado ao seu perfil.`,
-    category: "profile",
-    linkHref: "/profile",
-  }).catch(() => {
-    return;
-  });
+  if (!response.ok || !result?.ok || !result.pet) {
+    throw new Error(result?.error || "Nao foi possivel cadastrar o pet agora.");
+  }
 
-  void createAdminBroadcastNotification({
-    title: "Novo pet cadastrado",
-    message: `Cliente ${resolvedCustomerId} cadastrou o pet ${createdPet.name}.`,
-    category: "profile",
-    actorCustomerId: resolvedCustomerId,
-  }).catch(() => {
-    return;
-  });
-
-  return createdPet;
+  return result.pet;
 }
 
 export async function saveCustomerDeliveryAddress(
