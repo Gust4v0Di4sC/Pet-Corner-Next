@@ -89,17 +89,6 @@ export type FirebaseCustomerAddress = {
   updatedAtIso: string;
 };
 
-export type UpsertCustomerAddressInput = {
-  customerId: string;
-  zipCode: string;
-  street: string;
-  number: string;
-  district: string;
-  city: string;
-  state: string;
-  complement: string;
-};
-
 const BRL_FORMATTER = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -215,65 +204,6 @@ function customerCollectionRef(
     firebaseCustomerProfileAdapter.customersCollection,
     customerId,
     collectionName
-  );
-}
-
-function formatAddressLabel(input: {
-  street: string;
-  number: string;
-  district: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  complement: string;
-}): string {
-  const baseAddress = [input.street.trim(), input.number.trim()]
-    .filter(Boolean)
-    .join(", ");
-  const districtAddress = input.district.trim();
-  const cityState = [input.city.trim(), input.state.trim()].filter(Boolean).join(" - ");
-  const zipCode = input.zipCode.trim();
-  const complement = input.complement.trim();
-
-  return [baseAddress, districtAddress, cityState, zipCode, complement]
-    .filter(Boolean)
-    .join(" | ");
-}
-
-async function mirrorAddressToAdminClientCollection(input: {
-  customerId: string;
-  zipCode: string;
-  street: string;
-  number: string;
-  district: string;
-  city: string;
-  state: string;
-  complement: string;
-  address: string;
-}): Promise<void> {
-  const mirrorRef = doc(
-    getDb(),
-    firebaseCustomerProfileAdapter.adminClientsCollection,
-    input.customerId
-  );
-
-  await setDoc(
-    mirrorRef,
-    {
-      ownerCustomerId: input.customerId,
-      zipCode: input.zipCode,
-      street: input.street,
-      number: input.number,
-      district: input.district,
-      city: input.city,
-      state: input.state,
-      complement: input.complement,
-      address: input.address,
-      source: "petpage",
-      updatedAt: serverTimestamp(),
-      updatedAtIso: new Date().toISOString(),
-    },
-    { merge: true }
   );
 }
 
@@ -769,66 +699,4 @@ export async function readCustomerAddress(
 
     throw error;
   }
-}
-
-export async function upsertCustomerAddress(
-  input: UpsertCustomerAddressInput
-): Promise<FirebaseCustomerAddress> {
-  const nowIso = new Date().toISOString();
-  const addressRef = doc(
-    getDb(),
-    firebaseCustomerProfileAdapter.customersCollection,
-    input.customerId,
-    firebaseCustomerProfileAdapter.addressesCollection,
-    firebaseCustomerProfileAdapter.defaultAddressDocId
-  );
-
-  await setDoc(
-    addressRef,
-    {
-      customerId: input.customerId,
-      zipCode: input.zipCode.trim(),
-      street: input.street.trim(),
-      number: input.number.trim(),
-      district: input.district.trim(),
-      city: input.city.trim(),
-      state: input.state.trim(),
-      complement: input.complement.trim(),
-      updatedAt: serverTimestamp(),
-      updatedAtIso: nowIso,
-    },
-    { merge: true }
-  );
-
-  await mirrorAddressToAdminClientCollection({
-    customerId: input.customerId,
-    zipCode: input.zipCode.trim(),
-    street: input.street.trim(),
-    number: input.number.trim(),
-    district: input.district.trim(),
-    city: input.city.trim(),
-    state: input.state.trim(),
-    complement: input.complement.trim(),
-    address: formatAddressLabel({
-      zipCode: input.zipCode,
-      street: input.street,
-      number: input.number,
-      district: input.district,
-      city: input.city,
-      state: input.state,
-      complement: input.complement,
-    }),
-  });
-
-  return {
-    customerId: input.customerId,
-    zipCode: input.zipCode.trim(),
-    street: input.street.trim(),
-    number: input.number.trim(),
-    district: input.district.trim(),
-    city: input.city.trim(),
-    state: input.state.trim(),
-    complement: input.complement.trim(),
-    updatedAtIso: nowIso,
-  };
 }

@@ -161,7 +161,6 @@ export function useCheckoutFlow({ customerId, customerName }: UseCheckoutFlowInp
     try {
       try {
         await saveCustomerDeliveryAddress({
-          customerId,
           zipCode: parsedDelivery.data.zipCode,
           street: parsedDelivery.data.street,
           number: parsedDelivery.data.number,
