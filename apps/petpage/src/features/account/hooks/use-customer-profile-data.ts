@@ -98,7 +98,6 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
   const createPetMutation = useMutation({
     mutationFn: async (input: CreatePetInput) =>
       registerCustomerPet({
-        customerId: normalizedCustomerId,
         name: input.name,
         animalType: input.animalType,
         breed: input.breed,

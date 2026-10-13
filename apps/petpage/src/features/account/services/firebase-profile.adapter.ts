@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  addDoc,
   collection,
   doc,
   getDoc,
@@ -88,15 +87,6 @@ export type FirebaseCustomerAddress = {
   state: string;
   complement: string;
   updatedAtIso: string;
-};
-
-export type CreateCustomerPetInput = {
-  customerId: string;
-  name: string;
-  animalType: string;
-  breed: string;
-  age: number;
-  weight: number;
 };
 
 export type UpsertCustomerAddressInput = {
@@ -248,38 +238,6 @@ function formatAddressLabel(input: {
   return [baseAddress, districtAddress, cityState, zipCode, complement]
     .filter(Boolean)
     .join(" | ");
-}
-
-async function mirrorPetToAdminDogsCollection(input: {
-  customerId: string;
-  petMirrorId: string;
-  name: string;
-  animalType: string;
-  breed: string;
-  age: number;
-  weight: number;
-}): Promise<void> {
-  const mirrorRef = doc(
-    getDb(),
-    firebaseCustomerProfileAdapter.adminDogsCollection,
-    input.petMirrorId
-  );
-
-  await setDoc(
-    mirrorRef,
-    {
-      ownerCustomerId: input.customerId,
-      name: input.name,
-      animalType: input.animalType,
-      breed: input.breed,
-      age: input.age,
-      weight: normalizePetWeight(input.weight),
-      source: "petpage",
-      updatedAt: serverTimestamp(),
-      updatedAtIso: new Date().toISOString(),
-    },
-    { merge: true }
-  );
 }
 
 async function mirrorAddressToAdminClientCollection(input: {
@@ -642,54 +600,6 @@ export async function readCustomerPets(customerId: string): Promise<FirebaseCust
   }
 
   return [];
-}
-
-export async function createCustomerPet(
-  input: CreateCustomerPetInput
-): Promise<FirebaseCustomerPet> {
-  const nowIso = new Date().toISOString();
-  const normalizedAnimalType = normalizeAnimalType(input.animalType);
-  const normalizedWeight = normalizePetWeight(input.weight);
-  const petCollectionRef = customerCollectionRef(
-    input.customerId,
-    firebaseCustomerProfileAdapter.petsCollection
-  );
-
-  const createdPetRef = await addDoc(petCollectionRef, {
-    customerId: input.customerId,
-    name: input.name.trim(),
-    animalType: normalizedAnimalType,
-    species: normalizedAnimalType,
-    breed: input.breed.trim(),
-    age: Math.round(input.age),
-    weight: normalizedWeight,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-    createdAtIso: nowIso,
-    updatedAtIso: nowIso,
-  });
-
-  await mirrorPetToAdminDogsCollection({
-    customerId: input.customerId,
-    petMirrorId: `${input.customerId}_${createdPetRef.id}`,
-    name: input.name.trim(),
-    animalType: normalizedAnimalType,
-    breed: input.breed.trim(),
-    age: Math.round(input.age),
-    weight: normalizedWeight,
-  });
-
-  return {
-    id: createdPetRef.id,
-    customerId: input.customerId,
-    name: input.name.trim(),
-    animalType: normalizedAnimalType,
-    breed: input.breed.trim(),
-    age: Math.round(input.age),
-    weight: normalizedWeight,
-    createdAtIso: nowIso,
-    updatedAtIso: nowIso,
-  };
 }
 
 export async function readCustomerOrders(customerId: string): Promise<FirebaseCustomerOrder[]> {
