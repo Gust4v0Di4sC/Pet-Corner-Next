@@ -15,9 +15,7 @@ import {
   type FirebaseCustomerFavorite,
   type FirebaseCustomerOrder,
   type FirebaseCustomerPet,
-  upsertCustomerAddress,
 } from "@/features/account/services/firebase-profile.adapter";
-import { createCustomerNotification } from "@/features/notifications/services/customer-notification.service";
 
 export type CustomerProfileIdentity = {
   customerId: string;
@@ -41,7 +39,6 @@ export type CreatePetInput = {
 };
 
 export type SaveDeliveryAddressInput = {
-  customerId: string;
   zipCode: string;
   street: string;
   number: string;
@@ -90,22 +87,6 @@ async function resolveIdentity(customerIdentity: CustomerProfileIdentity): Promi
     email: firebaseUser.email?.trim() || customerIdentity.email,
     name: firebaseUser.displayName?.trim() || customerIdentity.name,
   };
-}
-
-async function resolveCustomerId(customerId: string): Promise<string> {
-  const firebaseUser = await waitForFirebaseUser();
-  const sessionCustomerId = customerId.trim();
-
-  if (!firebaseUser?.uid) {
-    return sessionCustomerId;
-  }
-
-  const authUid = firebaseUser.uid.trim();
-  if (isSessionPlaceholderCustomerId(sessionCustomerId) || sessionCustomerId !== authUid) {
-    return authUid;
-  }
-
-  return sessionCustomerId;
 }
 
 async function syncCustomerProfile(identity: CustomerProfileIdentity): Promise<void> {
@@ -186,27 +167,21 @@ export async function registerCustomerPet(input: CreatePetInput): Promise<Custom
 export async function saveCustomerDeliveryAddress(
   input: SaveDeliveryAddressInput
 ): Promise<CustomerDeliveryAddress> {
-  const resolvedCustomerId = await resolveCustomerId(input.customerId);
-  const savedAddress = await upsertCustomerAddress({
-    customerId: resolvedCustomerId,
-    zipCode: input.zipCode,
-    street: input.street,
-    number: input.number,
-    district: input.district,
-    city: input.city,
-    state: input.state,
-    complement: input.complement,
+  const response = await fetch("/api/profile/address", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify(input),
   });
+  const result = (await response.json().catch(() => null)) as
+    | { ok?: boolean; address?: CustomerDeliveryAddress; error?: string }
+    | null;
 
-  void createCustomerNotification({
-    customerId: resolvedCustomerId,
-    title: "Endereço atualizado",
-    message: "Seu endereço de entrega foi atualizado com sucesso.",
-    category: "profile",
-    linkHref: "/profile",
-  }).catch(() => {
-    return;
-  });
+  if (!response.ok || !result?.ok || !result.address) {
+    throw new Error(result?.error || "Nao foi possivel salvar o endereco agora.");
+  }
 
-  return savedAddress;
+  return result.address;
 }

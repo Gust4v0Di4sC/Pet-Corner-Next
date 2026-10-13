@@ -128,7 +128,6 @@ export function useCustomerProfileData(options: UseCustomerProfileDataOptions) {
   const saveAddressMutation = useMutation({
     mutationFn: async (input: SaveAddressInput) =>
       saveCustomerDeliveryAddress({
-        customerId: normalizedCustomerId,
         zipCode: input.zipCode,
         street: input.street,
         number: input.number,
