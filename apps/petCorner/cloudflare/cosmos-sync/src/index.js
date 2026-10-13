@@ -3,7 +3,9 @@
 const COSMOS_API_BASE_URL = "https://api.cosmos.bluesoft.com.br";
 const COSMOS_SOURCE_FILE_NAME = "Cosmos API";
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_REQUEST_TIMEOUT_MS = 15000;
+const GEMINI_MAX_ATTEMPTS = 3;
 const DEFAULT_PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const PRODUCT_IMAGE_KEY_PREFIX = "products";
 const PROFILE_IMAGE_KEY_PREFIX = "profileimages";
@@ -1046,17 +1048,37 @@ function tryParseModelJson(rawText) {
   }
 }
 
+async function fetchGeminiResponse(endpoint, requestBody) {
+  let lastResponse = null;
+
+  for (let attempt = 0; attempt < GEMINI_MAX_ATTEMPTS; attempt += 1) {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      signal: AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    lastResponse = response;
+    const shouldRetry = response.status === 429 || response.status >= 500;
+    if (!shouldRetry || attempt === GEMINI_MAX_ATTEMPTS - 1) {
+      return response;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 300 * 2 ** attempt));
+  }
+
+  return lastResponse;
+}
+
 async function inferIntentWithGemini(question, env, chatConfig) {
   const endpoint = `${GEMINI_API_BASE_URL}/models/${encodeURIComponent(
     chatConfig.model
   )}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const response = await fetchGeminiResponse(endpoint, {
       contents: [
         {
           role: "user",
@@ -1068,7 +1090,6 @@ async function inferIntentWithGemini(question, env, chatConfig) {
         maxOutputTokens: 512,
         responseMimeType: "application/json",
       },
-    }),
   });
 
   if (response.status === 429) {
@@ -1609,6 +1630,7 @@ async function createFirestoreDocument({ env, idToken, collectionPath, payload }
   const endpoint = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionPath}`;
   const response = await fetch(endpoint, {
     method: "POST",
+    signal: AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${idToken}`,
       "Content-Type": "application/json",
@@ -1758,12 +1780,7 @@ async function askGeminiForCustomerDelivery({ message, model, env, context }) {
     `Mensagem do cliente: ${message}`,
   ].join("\n");
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const response = await fetchGeminiResponse(endpoint, {
       contents: [
         {
           role: "user",
@@ -1774,7 +1791,6 @@ async function askGeminiForCustomerDelivery({ message, model, env, context }) {
         temperature: 0.3,
         maxOutputTokens: 420,
       },
-    }),
   });
 
   if (response.status === 429) {
@@ -2592,7 +2608,11 @@ async function handleCustomerDeliveryChat(request, env) {
         env,
         context: contextLines.join("\n"),
       });
-    } catch {
+    } catch (error) {
+      console.error(
+        "Gemini delivery fallback:",
+        error instanceof Error ? error.message : String(error)
+      );
       if (intent === "tracking") {
         answer = matchedOrder
           ? `Seu pedido ${matchedOrder.orderCode || matchedOrder.label || matchedOrder.id} esta em ${
