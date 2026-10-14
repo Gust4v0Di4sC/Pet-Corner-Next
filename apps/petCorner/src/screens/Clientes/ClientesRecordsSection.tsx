@@ -1,8 +1,4 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-
-import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
-import { RecordBackButton } from "../../components/Records/RecordBackButton";
 import RecordDeleteModal from "../../components/Records/RecordDeleteModal";
 import RecordFormModal from "../../components/Records/RecordFormModal";
 import RecordList from "../../components/Records/RecordList";
@@ -33,7 +29,6 @@ export function ClientesRecordsSection({
   update,
   remove,
 }: Props) {
-  const navigate = useNavigate();
   const notifyAdminAction = useAdminRecordNotification();
   const listGroup = useMemo(() => buildClientListGroup(items), [items]);
   const recordsById = useMemo(() => {
@@ -87,12 +82,11 @@ export function ClientesRecordsSection({
 
   return (
     <section className="record-management">
-      <RecordBackButton onClick={() => navigate(DASHBOARD_ROUTE)} />
-
       <RecordList
         {...listGroup}
         isLoading={isLoading}
-        pageSize={4}
+        pageSize={3}
+        searchPlaceholder="Pesquisar clientes"
         busyRecordId={deleteController.busyRecordId}
         className="record-panel--page"
         onEditRecord={formController.openEdit}

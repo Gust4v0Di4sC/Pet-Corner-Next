@@ -25,26 +25,6 @@
   gap: 1rem;
 }
 
-.product-catalog-card__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin-bottom: 0.55rem;
-  border: 0;
-  border-radius: 14px;
-  padding: 0.7rem 0.95rem;
-  background: linear-gradient(135deg, #fb8b24 0%, #e36414 100%);
-  color: #fff;
-  font-weight: 700;
-  box-shadow: 0 14px 30px rgba(227, 100, 20, 0.24);
-}
-
-.product-catalog-card__back:hover,
-.product-catalog-card__back:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: 0 20px 36px rgba(227, 100, 20, 0.32);
-}
-
 .product-catalog-card h3 {
   margin: 0;
   color: #1a2f3a;

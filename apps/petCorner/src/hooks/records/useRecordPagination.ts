@@ -5,9 +5,10 @@ import type { RecordListItem } from "../../components/Records/record.types";
 type Params = {
   items: RecordListItem[];
   pageSize?: number;
+  resetKey?: string;
 };
 
-export function useRecordPagination({ items, pageSize }: Params) {
+export function useRecordPagination({ items, pageSize, resetKey = "" }: Params) {
   const [currentPage, setCurrentPage] = useState(1);
   const hasPagination = typeof pageSize === "number" && pageSize > 0;
   const totalPages = hasPagination ? Math.max(1, Math.ceil(items.length / pageSize)) : 1;
@@ -15,6 +16,10 @@ export function useRecordPagination({ items, pageSize }: Params) {
   useEffect(() => {
     setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
   }, [totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [resetKey]);
 
   const visibleItems = useMemo(() => {
     if (!hasPagination || !pageSize) {

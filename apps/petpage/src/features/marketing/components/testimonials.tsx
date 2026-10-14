@@ -5,6 +5,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { Star, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { TestimonialSubmissionForm } from "@/features/marketing/components/testimonial-submission-form";
 
 export type TestimonialItem = {
   id?: string;
@@ -184,6 +185,8 @@ export function Testimonials({ items }: TestimonialsProps) {
               />
             ))}
           </div>
+
+          <TestimonialSubmissionForm />
         </div>
       </div>
     </section>

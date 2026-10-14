@@ -2,6 +2,8 @@
 
 const COSMOS_API_BASE_URL = "https://api.cosmos.bluesoft.com.br";
 const COSMOS_SOURCE_FILE_NAME = "Cosmos API";
+const COSMOS_SYNC_CACHE_PATH = "/__petcorner-cache/cosmos-catalog-v1";
+const DEFAULT_COSMOS_SYNC_CACHE_TTL_SECONDS = 86400;
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
 const GEMINI_REQUEST_TIMEOUT_MS = 15000;
@@ -883,6 +885,18 @@ async function fetchCosmosSearch(query, env) {
     throw new HttpError(500, "Token da Cosmos invalido ou sem permissao para consultar a API.");
   }
 
+  if (response.status === 429) {
+    const retryAfterHeader = Number(response.headers.get("retry-after"));
+    const retryAfterSeconds = Number.isFinite(retryAfterHeader) && retryAfterHeader > 0
+      ? Math.trunc(retryAfterHeader)
+      : 3600;
+    throw new HttpError(
+      429,
+      "O limite de consultas do plano da Cosmos foi atingido. Tente novamente apos a renovacao da cota ou aumente o plano da API.",
+      { retryAfterSeconds }
+    );
+  }
+
   if (!response.ok) {
     throw new HttpError(
       500,
@@ -905,6 +919,50 @@ async function fetchCosmosSearch(query, env) {
   }
 
   return [];
+}
+
+function getCosmosSyncCacheRequest(request) {
+  const cacheUrl = new URL(COSMOS_SYNC_CACHE_PATH, request.url);
+  return new Request(cacheUrl.toString(), { method: "GET" });
+}
+
+async function readCachedCosmosCatalog(request) {
+  if (typeof caches === "undefined") {
+    return null;
+  }
+
+  const response = await caches.default.match(getCosmosSyncCacheRequest(request));
+  if (!response) {
+    return null;
+  }
+
+  try {
+    const payload = await response.json();
+    return Array.isArray(payload?.items) && payload.items.length ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+async function cacheCosmosCatalog(request, env, payload) {
+  if (typeof caches === "undefined") {
+    return;
+  }
+
+  const ttlSeconds = toBoundedInteger(
+    env.COSMOS_SYNC_CACHE_TTL_SECONDS,
+    DEFAULT_COSMOS_SYNC_CACHE_TTL_SECONDS,
+    300,
+    604800
+  );
+  const response = new Response(JSON.stringify(payload), {
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": `public, max-age=${ttlSeconds}`,
+    },
+  });
+
+  await caches.default.put(getCosmosSyncCacheRequest(request), response);
 }
 
 function findCosmosProductByCode(products, code) {
@@ -2238,7 +2296,13 @@ async function handleCosmosSync(request, env) {
   try {
     const token = getBearerToken(request);
     await verifyAdminFirebaseToken(token, env);
+    const cachedPayload = await readCachedCosmosCatalog(request);
+    if (cachedPayload) {
+      return jsonResponse(request, env, cachedPayload, { status: 200 });
+    }
+
     const payload = await buildCatalogFromCosmos(env);
+    await cacheCosmosCatalog(request, env, payload);
     return jsonResponse(request, env, payload, { status: 200 });
   } catch (error) {
     return respondWithError(

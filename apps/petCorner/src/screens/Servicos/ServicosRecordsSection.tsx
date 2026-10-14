@@ -1,8 +1,4 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-
-import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
-import { RecordBackButton } from "../../components/Records/RecordBackButton";
 import { RecordCreateButton } from "../../components/Records/RecordCreateButton";
 import RecordDeleteModal from "../../components/Records/RecordDeleteModal";
 import RecordFormModal from "../../components/Records/RecordFormModal";
@@ -35,7 +31,6 @@ export function ServicosRecordsSection({
   update,
   remove,
 }: Props) {
-  const navigate = useNavigate();
   const notifyAdminAction = useAdminRecordNotification();
   const listGroup = useMemo(() => buildServiceListGroup(items), [items]);
   const recordsById = useMemo(() => {
@@ -73,12 +68,11 @@ export function ServicosRecordsSection({
 
   return (
     <section className="record-management">
-      <RecordBackButton onClick={() => navigate(DASHBOARD_ROUTE)} />
-
       <RecordList
         {...listGroup}
         isLoading={isLoading}
-        pageSize={4}
+        pageSize={3}
+        searchPlaceholder="Pesquisar servicos"
         busyRecordId={deleteController.busyRecordId}
         className="record-panel--page"
         onEditRecord={formController.openEdit}

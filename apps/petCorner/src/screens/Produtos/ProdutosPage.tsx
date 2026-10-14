@@ -1,9 +1,7 @@
 import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
 
 import logoimg from "../../assets/Logo.svg";
 import {
-  DASHBOARD_ROUTE,
   ORDERS_ROUTE,
   PRODUCTS_ROUTE,
   SERVICES_ROUTE,
@@ -42,7 +40,6 @@ function isWorkerManagedProductImageUrl(imageUrl: string): boolean {
 }
 
 export default function ProdutosPage() {
-  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const toast = useToast();
   const { items, isLoading, create, update, remove } = useProducts();
@@ -317,14 +314,6 @@ export default function ProdutosPage() {
           <section className="product-catalog-card">
             <div className="product-catalog-card__content">
               <div>
-                <button
-                  type="button"
-                  className="product-catalog-card__back"
-                  onClick={() => navigate(DASHBOARD_ROUTE)}
-                >
-                  <AppIcon name="arrow-left" />
-                  Voltar ao dashboard
-                </button>
                 <h3>Importe uma tabela de produtos do pet shop</h3>
                 <p className="product-catalog-card__description">
                   Envie um arquivo CSV, sincronize com a API do Cosmos ou
