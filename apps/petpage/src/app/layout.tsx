@@ -1,20 +1,17 @@
 import type { Metadata } from "next";
-import { Montserrat_Alternates, Geist } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "@/styles/globals.css";
-import { cn } from "@/lib/utils";
 import { AosInit } from "@/providers/aos-init";
 import { AppQueryProvider } from "@/providers/app-query-provider";
 import { FloatingSupportActionsLoader } from "@/features/support/components/floating-support-actions-loader";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
 
 // const geistSans = Geist({
 //   variable: "--font-geist-sans",
 //   subsets: ["latin"],
 // });
 
-const montserratAlternates = Montserrat_Alternates({
+const montserrat = Montserrat({
+  variable: "--font-sans",
   subsets: ['latin'], // Quais subsets de caracteres você quer incluir (ex: latim)
   weight: ['400', '700'], // Quais pesos da fonte você quer usar (ex: regular e negrito)
   // Ou se você quiser todos os pesos disponíveis:
@@ -104,10 +101,10 @@ export default function RootLayout({
   return (
     <html
       lang="pt-br"
-      className={cn("font-sans", geist.variable)}
+      className={montserrat.variable}
     >
       <body
-        className={`${montserratAlternates.className}  antialiased`}
+        className={`${montserrat.className} antialiased`}
         suppressHydrationWarning
       >
         <AppQueryProvider>
