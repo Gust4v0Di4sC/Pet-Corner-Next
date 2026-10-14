@@ -22,14 +22,31 @@ export default function Nav() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navigationItems = [
-    { to: DASHBOARD_ROUTE, icon: "home", label: "Dashboard" },
-    { to: CLIENTS_ROUTE, icon: "users", label: "Clientes" },
-    { to: ANIMALS_ROUTE, icon: "paw", label: "Animais" },
-    { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
-    { to: SERVICES_ROUTE, icon: "scissors", label: "Serviços" },
-    { to: APPOINTMENTS_ROUTE, icon: "calendar", label: "Agendamentos" },
-    { to: ORDERS_ROUTE, icon: "shopping-bag", label: "Pedidos" },
-    { to: TESTIMONIALS_ROUTE, icon: "comments", label: "Depoimentos" },
+    { to: DASHBOARD_ROUTE, icon: "home", label: "Dashboard", routes: [DASHBOARD_ROUTE] },
+    {
+      to: CLIENTS_ROUTE,
+      icon: "users",
+      label: "Clientes e animais",
+      routes: [CLIENTS_ROUTE, ANIMALS_ROUTE],
+    },
+    {
+      to: PRODUCTS_ROUTE,
+      icon: "medkit",
+      label: "Produtos e operações",
+      routes: [PRODUCTS_ROUTE, SERVICES_ROUTE, ORDERS_ROUTE],
+    },
+    {
+      to: APPOINTMENTS_ROUTE,
+      icon: "calendar",
+      label: "Agendamentos",
+      routes: [APPOINTMENTS_ROUTE],
+    },
+    {
+      to: TESTIMONIALS_ROUTE,
+      icon: "comments",
+      label: "Depoimentos",
+      routes: [TESTIMONIALS_ROUTE],
+    },
   ];
 
   useEffect(() => {
@@ -72,7 +89,9 @@ export default function Nav() {
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) => `menu__link${isActive ? " is-active" : ""}`}
+              className={() =>
+                `menu__link${item.routes.includes(pathname) ? " is-active" : ""}`
+              }
               data-tooltip-id="sidebar-tooltip"
               data-tooltip-content={item.label}
               data-tooltip-place="right"

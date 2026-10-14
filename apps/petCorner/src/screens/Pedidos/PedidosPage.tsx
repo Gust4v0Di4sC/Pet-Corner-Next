@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import logoimg from "../../assets/Logo.svg";
+import {
+  ORDERS_ROUTE,
+  PRODUCTS_ROUTE,
+  SERVICES_ROUTE,
+} from "../../components/Dashboard/dashboard.domain";
 import AppShell from "../../components/layout/AppShell";
+import SectionTabs from "../../components/layout/SectionTabs";
 import Main from "../../components/Templates/Main";
 import { useOrderOperations } from "../../hooks/useOrderOperations";
 import { useToast } from "../../hooks/useToast";
@@ -160,6 +166,14 @@ export default function PedidosPage() {
         contentClassName="orders-ops-shell"
       >
         <section className="orders-ops">
+          <SectionTabs
+            label="Produtos, serviços e pedidos"
+            tabs={[
+              { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
+              { to: SERVICES_ROUTE, icon: "scissors", label: "Serviços" },
+              { to: ORDERS_ROUTE, icon: "shopping-bag", label: "Pedidos" },
+            ]}
+          />
           <header className="orders-ops__toolbar">
             <div className="orders-ops__filters">
               <label className="orders-ops__field">

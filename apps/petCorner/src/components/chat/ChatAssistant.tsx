@@ -116,7 +116,11 @@ export default function ChatAssistant({ placement = "default" }: Props) {
     } catch (error) {
       const message = getUserErrorMessage(
         error,
-        "Nao consegui responder agora. Tente novamente em alguns instantes."
+        "Nao consegui responder agora. Tente novamente em alguns instantes.",
+        {
+          networkMessage:
+            "Nao foi possivel acessar o assistente. Recarregue a pagina e tente novamente.",
+        }
       );
 
       setMessages((current) => [

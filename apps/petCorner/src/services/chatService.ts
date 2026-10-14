@@ -77,7 +77,7 @@ export async function queryChat(payload: ChatQueryPayload): Promise<ChatQueryRes
     throw new Error("Faca login como administrador para consultar o chat.");
   }
 
-  const idToken = await user.getIdToken(true);
+  const idToken = await user.getIdToken();
   const endpoint = resolveChatEndpoint(getChatWorkerUrl());
   let response: Response;
 
@@ -95,7 +95,7 @@ export async function queryChat(payload: ChatQueryPayload): Promise<ChatQueryRes
     });
   } catch {
     throw new Error(
-      "Não foi possível conectar ao Worker de chat. Verifique a URL configurada e a publicação do Worker."
+      "NÃ£o foi possÃ­vel conectar ao Worker de chat. Verifique a URL configurada e a publicaÃ§Ã£o do Worker."
     );
   }
 
@@ -109,12 +109,12 @@ export async function queryChat(payload: ChatQueryPayload): Promise<ChatQueryRes
 
   if (!response.ok) {
     throw new Error(
-      getErrorMessage(responsePayload, "Não foi possível consultar o chat agora.")
+      getErrorMessage(responsePayload, "NÃ£o foi possÃ­vel consultar o chat agora.")
     );
   }
 
   if (!isChatResponse(responsePayload)) {
-    throw new Error("O Worker de chat retornou um payload inválido.");
+    throw new Error("O Worker de chat retornou um payload invÃ¡lido.");
   }
 
   return responsePayload;

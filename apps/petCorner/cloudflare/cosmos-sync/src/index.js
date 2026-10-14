@@ -212,6 +212,22 @@ function isProductionWorker(env) {
   return String(env.ENVIRONMENT ?? env.NODE_ENV ?? env.WORKER_ENV ?? "").toLowerCase() === "production";
 }
 
+function isTrustedPetCornerPreviewOrigin(origin) {
+  try {
+    const { protocol, hostname } = new URL(origin);
+
+    return (
+      protocol === "https:" &&
+      (hostname === "pet-corner.vercel.app" ||
+        hostname === "www.pet-corner.vercel.app" ||
+        hostname === "pet-corner-next-nine.vercel.app" ||
+        /^pet-corner-next-[a-z0-9-]+\.vercel\.app$/i.test(hostname))
+    );
+  } catch {
+    return false;
+  }
+}
+
 function resolveRequestOrigin(request, env) {
   const requestOrigin = request.headers.get("Origin");
   const allowedOrigins = getAllowedOrigins(env);
@@ -230,6 +246,10 @@ function resolveRequestOrigin(request, env) {
   }
 
   if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  if (isTrustedPetCornerPreviewOrigin(requestOrigin)) {
     return requestOrigin;
   }
 

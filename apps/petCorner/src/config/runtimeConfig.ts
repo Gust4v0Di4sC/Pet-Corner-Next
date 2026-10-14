@@ -68,7 +68,8 @@ export function getCosmosSyncUrl(): string {
 }
 
 export function getChatWorkerUrl(): string {
-  const value = getRuntimeConfig().chatWorkerUrl?.trim();
+  const runtimeConfig = getRuntimeConfig();
+  const value = runtimeConfig.chatWorkerUrl?.trim() || runtimeConfig.cosmosSyncUrl?.trim();
 
   if (!value) {
     throw new Error("Configure VITE_CHAT_WORKER_URL no ambiente para usar o chat com Gemini.");

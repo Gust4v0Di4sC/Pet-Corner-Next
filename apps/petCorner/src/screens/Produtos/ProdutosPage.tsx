@@ -2,10 +2,16 @@ import { useCallback, useMemo, useRef, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import logoimg from "../../assets/Logo.svg";
-import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
+import {
+  DASHBOARD_ROUTE,
+  ORDERS_ROUTE,
+  PRODUCTS_ROUTE,
+  SERVICES_ROUTE,
+} from "../../components/Dashboard/dashboard.domain";
 import { AppIcon } from "../../components/icons/AppIcon";
 import type { RecordFormData } from "../../components/Records/record.types";
 import AppShell from "../../components/layout/AppShell";
+import SectionTabs from "../../components/layout/SectionTabs";
 import Main from "../../components/Templates/Main";
 import { useProductCatalog } from "../../hooks/product";
 import { useProducts } from "../../hooks/useProducts";
@@ -300,6 +306,14 @@ export default function ProdutosPage() {
         contentClassName="record-management-shell"
       >
         <div className="products-page">
+          <SectionTabs
+            label="Produtos, serviços e pedidos"
+            tabs={[
+              { to: PRODUCTS_ROUTE, icon: "medkit", label: "Produtos" },
+              { to: SERVICES_ROUTE, icon: "scissors", label: "Serviços" },
+              { to: ORDERS_ROUTE, icon: "shopping-bag", label: "Pedidos" },
+            ]}
+          />
           <section className="product-catalog-card">
             <div className="product-catalog-card__content">
               <div>
