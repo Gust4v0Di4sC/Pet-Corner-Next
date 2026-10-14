@@ -2,6 +2,11 @@
   height: calc(100% - 1rem);
 }
 
+main.content.content--fill .content__panel.record-management-shell {
+  height: auto;
+  min-height: calc(100% - 1.8rem);
+}
+
 .record-management {
   display: flex;
   flex-direction: column;
@@ -94,6 +99,47 @@
 .record-panel__header p {
   margin: 0.35rem 0 0;
   color: #67727b;
+}
+
+.record-search {
+  display: grid;
+  gap: 0.35rem;
+  width: min(100%, 22rem);
+  margin-left: auto;
+}
+
+.record-search__label {
+  color: #49616c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.record-search__field {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(26, 47, 58, 0.16);
+  border-radius: 14px;
+  background: #fff;
+  color: #67727b;
+}
+
+.record-search__field:focus-within {
+  border-color: rgba(251, 139, 36, 0.75);
+  box-shadow: 0 0 0 3px rgba(251, 139, 36, 0.15);
+}
+
+.record-search__field input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #1a2f3a;
+  background: transparent;
 }
 
 .record-list {
@@ -402,6 +448,15 @@
 
   .record-card__content {
     flex-direction: column;
+  }
+
+  .record-panel__header {
+    flex-direction: column;
+  }
+
+  .record-search {
+    width: 100%;
+    margin-left: 0;
   }
 
   .record-card__footer {

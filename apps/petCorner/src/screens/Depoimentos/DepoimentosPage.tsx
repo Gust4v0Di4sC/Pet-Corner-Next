@@ -12,7 +12,7 @@ export default function DepoimentosPage() {
       <Main
         icon="comments"
         title="Depoimentos"
-        subtitle="Gerencie os depoimentos exibidos na landing"
+        subtitle="Consulte e modere os depoimentos enviados pelos clientes"
         fillHeight
         contentClassName="record-management-shell"
       >

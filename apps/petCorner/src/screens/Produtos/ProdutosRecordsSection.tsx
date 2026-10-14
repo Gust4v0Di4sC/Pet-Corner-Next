@@ -91,7 +91,8 @@ export function ProdutosRecordsSection({
       <RecordList
         {...listGroup}
         isLoading={isLoading}
-        pageSize={4}
+        pageSize={3}
+        searchPlaceholder="Pesquisar produtos"
         busyRecordId={deleteController.busyRecordId}
         className="record-panel--page"
         onEditRecord={formController.openEdit}

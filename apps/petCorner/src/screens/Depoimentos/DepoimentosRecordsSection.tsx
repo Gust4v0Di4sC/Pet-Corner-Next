@@ -4,34 +4,26 @@ import { useNavigate } from "react-router-dom";
 import { DASHBOARD_ROUTE } from "../../components/Dashboard/dashboard.domain";
 import { RecordBackButton } from "../../components/Records/RecordBackButton";
 import RecordDeleteModal from "../../components/Records/RecordDeleteModal";
-import RecordFormModal from "../../components/Records/RecordFormModal";
 import RecordList from "../../components/Records/RecordList";
 import {
   useAdminRecordNotification,
   useRecordDeleteController,
-  useRecordFormController,
 } from "../../hooks/records";
 import type { Testimonial } from "../../types/testimonial";
 import {
   buildTestimonialListGroup,
-  buildTestimonialPayload,
-  getTestimonialFormData,
   testimonialFormConfig,
 } from "./depoimentos.records";
 
 type Props = {
   items: Testimonial[];
   isLoading: boolean;
-  create: (payload: Omit<Testimonial, "id">) => Promise<void>;
-  update: (recordId: string, payload: Omit<Testimonial, "id">) => Promise<void>;
   remove: (recordId: string) => Promise<void>;
 };
 
 export function DepoimentosRecordsSection({
   items,
   isLoading,
-  create,
-  update,
   remove,
 }: Props) {
   const navigate = useNavigate();
@@ -51,16 +43,6 @@ export function DepoimentosRecordsSection({
     return new Map(listGroup.items.map((item) => [item.id, item.title]));
   }, [listGroup.items]);
 
-  const formController = useRecordFormController({
-    recordsById,
-    config: testimonialFormConfig,
-    getFormData: getTestimonialFormData,
-    buildPayload: buildTestimonialPayload,
-    onCreate: create,
-    onUpdate: update,
-    notifyAdminAction,
-  });
-
   const deleteController = useRecordDeleteController({
     recordsById,
     recordItemsById,
@@ -77,27 +59,11 @@ export function DepoimentosRecordsSection({
       <RecordList
         {...listGroup}
         isLoading={isLoading}
-        pageSize={4}
+        pageSize={3}
+        searchPlaceholder="Pesquisar depoimentos"
         busyRecordId={deleteController.busyRecordId}
         className="record-panel--page"
-        onEditRecord={formController.openEdit}
         onDeleteRecord={deleteController.open}
-      />
-
-      <RecordFormModal
-        open={formController.isOpen}
-        content={formController.content}
-        form={{
-          fields: formController.fields,
-          data: formController.data,
-          isSubmitting: formController.isSubmitting,
-          onInputChange: formController.handleInputChange,
-        }}
-        actions={{
-          onClose: formController.close,
-          onReset: formController.reset,
-          onSubmit: formController.submit,
-        }}
       />
 
       <RecordDeleteModal
