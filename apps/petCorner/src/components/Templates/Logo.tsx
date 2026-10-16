@@ -8,13 +8,13 @@ type LogoProps = {
   alt?: string;
 };
 
-function Logo({ src, mobileSrc, alt = "Logo" }: LogoProps) {
+function Logo({ src, mobileSrc }: LogoProps) {
   return (
     <aside className="logo">
-      <Link to={DASHBOARD_ROUTE} className="logo">
-        <img className="logo__image logo__image--desktop" src={src} alt={alt} />
+      <Link to={DASHBOARD_ROUTE} className="logo" aria-label="Ir para o painel administrativo">
+        <img className="logo__image logo__image--desktop" src={src} alt="" aria-hidden="true" />
         {mobileSrc ? (
-          <img className="logo__image logo__image--mobile" src={mobileSrc} alt={alt} />
+          <img className="logo__image logo__image--mobile" src={mobileSrc} alt="" aria-hidden="true" />
         ) : null}
       </Link>
     </aside>

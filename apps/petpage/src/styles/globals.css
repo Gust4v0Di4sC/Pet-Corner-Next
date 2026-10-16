@@ -68,6 +68,64 @@
 
   body {
     @apply bg-background text-foreground;
+    overflow-x: clip;
+  }
+
+  :focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 3px;
+  }
+
+  .skip-link {
+    position: fixed;
+    z-index: 9999;
+    top: 0.75rem;
+    left: 0.75rem;
+    transform: translateY(-180%);
+    border-radius: 0.5rem;
+    background: #ffffff;
+    padding: 0.75rem 1rem;
+    color: #0f172a;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.24);
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Variantes funcionais da marca com contraste WCAG AA; tons claros continuam decorativos. */
+  [class~="text-[#fb8b24]"] {
+    color: #9a3f00 !important;
+  }
+
+  [class~="bg-[#1f2937]"] [class~="text-[#fb8b24]"],
+  [class~="bg-[#273446]"] [class~="text-[#fb8b24]"] {
+    color: #ffad66 !important;
+  }
+
+  [class~="bg-[#fb8b24]"] {
+    background-color: #9a3f00 !important;
+  }
+
+  [class~="bg-emerald-500"] {
+    background-color: #047857 !important;
+  }
+
+  [class~="text-emerald-600"] {
+    color: #047857 !important;
+  }
+
+  [class~="text-slate-500"] {
+    color: #475569 !important;
   }
 }
 

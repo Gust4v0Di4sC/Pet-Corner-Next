@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 
 import {
   readLandingProductByIdServer,
@@ -22,10 +23,23 @@ type ListLandingOptions = {
   limitCount?: number;
 };
 
+const cachedProducts = unstable_cache(readLandingProductsServer, ["public-products"], {
+  revalidate: 60,
+  tags: ["catalog", "products"],
+});
+const cachedServices = unstable_cache(readLandingServicesServer, ["public-services"], {
+  revalidate: 60,
+  tags: ["catalog", "services"],
+});
+const cachedTestimonials = unstable_cache(readLandingTestimonialsServer, ["public-testimonials"], {
+  revalidate: 60,
+  tags: ["testimonials"],
+});
+
 export async function listLandingProductsServer(
   options: ListLandingOptions = {}
 ): Promise<LandingProductView[]> {
-  const records = await readLandingProductsServer({
+  const records = await cachedProducts({
     limitCount: options.limitCount,
   });
 
@@ -35,7 +49,7 @@ export async function listLandingProductsServer(
 export async function listLandingServicesServer(
   options: ListLandingOptions = {}
 ): Promise<LandingServiceView[]> {
-  const records = await readLandingServicesServer({
+  const records = await cachedServices({
     limitCount: options.limitCount,
   });
 
@@ -68,9 +82,9 @@ export async function getLandingServiceByIdServer(
 
 export async function getLandingContentBundleServer(): Promise<LandingContentBundle> {
   const [productsResult, servicesResult, testimonialsResult] = await Promise.allSettled([
-    readLandingProductsServer({ limitCount: LANDING_PRODUCTS_LIMIT }),
-    readLandingServicesServer({ limitCount: LANDING_SERVICES_LIMIT }),
-    readLandingTestimonialsServer(),
+    cachedProducts({ limitCount: LANDING_PRODUCTS_LIMIT }),
+    cachedServices({ limitCount: LANDING_SERVICES_LIMIT }),
+    cachedTestimonials(),
   ]);
 
   return {

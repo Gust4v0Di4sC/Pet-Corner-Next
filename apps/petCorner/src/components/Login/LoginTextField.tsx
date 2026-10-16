@@ -4,17 +4,21 @@ import type { InputHTMLAttributes } from "react";
 
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
+  label: string;
 };
 
 const LoginTextField = forwardRef<HTMLInputElement, Props>(
-  ({ error, className, ...props }, ref) => {
+  ({ error, label, className, id, name, ...props }, ref) => {
     const inputClassName = className ? `login-field__input ${className}` : "login-field__input";
+    const inputId = id || `login-${name}`;
+    const errorId = `${inputId}-error`;
 
     return (
       <div className={`login-field${error ? " has-error" : ""}`}>
-        <input ref={ref} className={inputClassName} {...props} />
+        <label htmlFor={inputId} className="login-field__label">{label}</label>
+        <input ref={ref} id={inputId} name={name} className={inputClassName} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined} {...props} />
         {error ? (
-          <small className="login-field__error" role="alert">
+          <small id={errorId} className="login-field__error" role="alert">
             {error}
           </small>
         ) : null}
