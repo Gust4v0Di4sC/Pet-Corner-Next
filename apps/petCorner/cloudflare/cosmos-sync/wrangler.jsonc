@@ -4,6 +4,20 @@
   "main": "src/index.js",
   "compatibility_date": "2026-04-18",
   "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  },
+  "ratelimits": [
+    {
+      "name": "CHAT_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 8,
+        "period": 60
+      }
+    }
+  ],
   "r2_buckets": [
     {
       "binding": "PRODUCT_IMAGES_BUCKET",

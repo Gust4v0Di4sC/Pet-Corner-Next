@@ -27,6 +27,8 @@ Este guia resume como publicar e manter a integracao da Cosmos usando Cloudflare
 - Secret: `GEMINI_API_KEY`
 - Variavel: `FIREBASE_PROJECT_ID=petcorner-219fc`
 - Variavel: `ALLOWED_ORIGINS=<urls permitidas do app>`
+- Binding nativo de Rate Limiting: `CHAT_RATE_LIMITER` (8 requisicoes por 60 segundos)
+- Workers Logs habilitado em `observability`, com amostragem configurada no `wrangler.jsonc`
 
 Essas configuracoes ficam em:
 
@@ -40,7 +42,7 @@ Essas configuracoes ficam em:
 3. No terminal, entrar na pasta do Worker:
 
 ```bash
-cd "D:\meus projetos\PertCornerNext\apps\petCorner\cloudflare\cosmos-sync"
+cd "C:\meus projetos\PertCornerNext\apps\petCorner\cloudflare\cosmos-sync"
 ```
 
 4. Instalar dependencias:
@@ -67,7 +69,12 @@ npx wrangler secret put COSMOS_API_TOKEN
 npx wrangler secret put GEMINI_API_KEY
 ```
 
-7. Ajustar `ALLOWED_ORIGINS` em `wrangler.jsonc`.
+7. Ajustar `ALLOWED_ORIGINS` em `wrangler.jsonc` e confirmar que o `namespace_id` do binding `CHAT_RATE_LIMITER` e exclusivo nessa conta.
+7.1 Validar bindings e bundle sem publicar:
+
+```bash
+npx wrangler deploy --dry-run
+```
 8. Publicar o Worker:
 
 ```bash
@@ -113,6 +120,9 @@ Voce deve ver:
 - Secret `GEMINI_API_KEY`
 - Variavel `FIREBASE_PROJECT_ID`
 - Variavel `ALLOWED_ORIGINS`
+- Binding `CHAT_RATE_LIMITER`
+
+Em `Observability`, filtre logs JSON por `requestId`, `status`, `route` ou `durationMs`. Respostas limitadas usam status `429` e o header `Retry-After`.
 
 ## O que nao fazer
 
@@ -124,7 +134,7 @@ Voce deve ver:
 ## Comandos principais
 
 ```bash
-cd "D:\meus projetos\PertCornerNext\apps\petCorner\cloudflare\cosmos-sync"
+cd "C:\meus projetos\PertCornerNext\apps\petCorner\cloudflare\cosmos-sync"
 npm install
 npx wrangler login
 npx wrangler secret put COSMOS_API_TOKEN
