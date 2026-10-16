@@ -63,6 +63,7 @@
           {
             "group": "Operacao",
             "pages": [
+              "operacao/qualidade-e-confiabilidade",
               "operacao/deploy-validacao",
               "operacao/troubleshooting",
               "operacao/adicionar-projeto"

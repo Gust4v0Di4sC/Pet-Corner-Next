@@ -19,6 +19,7 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY=
 ```
 
 Firebase Admin usado em rotas server-side:
@@ -29,10 +30,10 @@ FIREBASE_ADMIN_CLIENT_EMAIL=
 FIREBASE_ADMIN_PRIVATE_KEY=
 ```
 
-Sessao do cliente:
+Proteção das APIs próprias (inicie em monitor):
 
 ```env
-CUSTOMER_SESSION_SECRET=
+APP_CHECK_ENFORCEMENT=monitor
 ```
 
 Stripe:
@@ -74,6 +75,7 @@ VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
+VITE_FIREBASE_APP_CHECK_SITE_KEY=
 ```
 
 Workers usados pelo painel admin:
@@ -87,5 +89,6 @@ VITE_PETPAGE_API_BASE_URL=
 ## Cuidados
 
 - `NEXT_PUBLIC_*` e `VITE_*` ficam expostos no browser.
-- `FIREBASE_ADMIN_PRIVATE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, SMTP e `CUSTOMER_SESSION_SECRET` devem existir somente no servidor/ambiente seguro.
+- `FIREBASE_ADMIN_PRIVATE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e SMTP devem existir somente no servidor/ambiente seguro.
+- Cadastre os dois frontends no App Check com reCAPTCHA Enterprise. Observe tokens inválidos antes de mudar `APP_CHECK_ENFORCEMENT` para `enforce`.
 - O Stripe esta preparado para chaves de teste no codigo server-side.

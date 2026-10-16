@@ -23,7 +23,9 @@ Verifique:
 - dominio autorizado no Firebase
 - variaveis `NEXT_PUBLIC_FIREBASE_*`
 - resposta de `/api/auth/session`
-- `CUSTOMER_SESSION_SECRET`
+- credenciais `FIREBASE_ADMIN_*`
+- cookie `pc_customer_session` e revogação do usuário no Firebase Auth
+- eventos `app_check_invalid` quando o enforcement estiver ativo
 
 ## Rota protegida redireciona para login
 

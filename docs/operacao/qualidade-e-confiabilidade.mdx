@@ -1,0 +1,58 @@
+---
+title: "Qualidade e confiabilidade"
+description: "Controles de segurança, desempenho, acessibilidade, observabilidade e operação."
+---
+
+# Qualidade e confiabilidade
+
+## Controles implementados
+
+- Sessões de cliente usam Firebase Admin Session Cookies `HttpOnly`, `Secure` em produção e `SameSite=Lax`. O servidor valida expiração e revogação; a abertura exige autenticação feita nos últimos cinco minutos.
+- As APIs críticas validam origem, tipo/tamanho do corpo, schema e App Check. O webhook Stripe permanece isento de App Check e depende exclusivamente da assinatura Stripe.
+- Toda resposta preparada pela infraestrutura comum inclui `x-request-id`; logs estruturados removem tokens, cookies, e-mail, endereço, telefone e payloads.
+- A landing usa cache compartilhado de 60 segundos para catálogo, serviços e depoimentos e limita itens renderizados. Dados administrativos e personalizados não entram no cache.
+- O painel e a vitrine expõem Vercel Web Analytics e Speed Insights. O Next registra traces OpenTelemetry como `petcorner-next`.
+- Regras e índices canônicos do Firestore ficam somente na raiz do repositório e são testados no Emulator.
+
+## Ativações externas
+
+### Firebase App Check
+
+1. Crie chaves reCAPTCHA Enterprise para cada domínio e cadastre os apps Web no Firebase.
+2. Configure `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY` e `VITE_FIREBASE_APP_CHECK_SITE_KEY`.
+3. Publique com `APP_CHECK_ENFORCEMENT=monitor`, acompanhe `app_check_invalid` por pelo menos 48 horas e corrija clientes legítimos.
+4. Altere para `enforce`. Faça rollback imediato para `monitor` se a taxa de 401 subir de forma anormal.
+
+### Vercel Firewall
+
+Crie inicialmente uma regra em modo log para POST em `/api/auth/session`, `/api/appointments`, `/api/appointments/email`, `/api/testimonials` e `/api/stripe/checkout/session`. Exclua `/api/stripe/webhook` e `/api/health`. Após observar tráfego legítimo, aplique limite por IP com janela curta e resposta 429.
+
+### Cloudflare
+
+O binding `CHAT_RATE_LIMITER` e Workers Logs estão declarados no `wrangler.jsonc`. Antes do deploy, confirme que o namespace `1001` não conflita com outro binding da conta. A resposta 429 inclui `Retry-After`; busque logs pelo `requestId`.
+
+## Painéis e alertas
+
+Crie painéis para taxa de respostas 5xx e 429, p75/p95 de latência, falhas de checkout, falhas de agendamento e App Check inválido. Alertas iniciais recomendados:
+
+- 5xx acima de 2% por 10 minutos;
+- p95 acima de 2 segundos por 15 minutos em APIs críticas;
+- cinco falhas de checkout ou agendamento em 10 minutos;
+- 429 acima de 10% por 10 minutos;
+- queda de sucesso de App Check abaixo de 98% após enforcement.
+
+As metas de experiência no percentil 75 são LCP até 2,5 s, INP até 200 ms e CLS até 0,1.
+
+## Verificação local e CI
+
+```bash
+npm run audit:prod
+npm run lint
+npm run test:unit
+npm run test:rules
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+Qualquer vulnerabilidade alta/crítica em dependências de produção bloqueia a CI. Os testes E2E rejeitam violações axe graves/críticas e overflow horizontal.
