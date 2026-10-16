@@ -1,6 +1,6 @@
 {
   "name": "petpage",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "postinstall": "npm rebuild sharp --platform=linux --arch=x64",
