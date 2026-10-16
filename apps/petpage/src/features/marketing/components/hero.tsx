@@ -39,7 +39,7 @@ export function Hero() {
               <PawPrint className="ml-3 inline-block h-8 w-8 text-[#5c4a7a] md:h-10 md:w-10" />
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-slate-600 md:text-lg">
-              Cada rabo abanando e um sorriso para nos. Cuidamos com amor do seu fiel
+              Cada rabo abanando é um sorriso para nós. Cuidamos com amor do seu fiel
               amigo, oferecendo o melhor em produtos e atendimento.
             </p>
           </div>
@@ -97,11 +97,11 @@ export function Hero() {
                 4.9
                 <Star className="h-4 w-4 fill-[#fb8b24] text-[#fb8b24]" />
               </p>
-              <p className="text-xs text-slate-500">Avaliacao</p>
+              <p className="text-xs text-slate-500">Avaliação</p>
             </div>
             <div>
               <p className="text-3xl font-bold text-slate-800">8 anos</p>
-              <p className="text-xs text-slate-500">de historia</p>
+              <p className="text-xs text-slate-500">de história</p>
             </div>
           </div>
           </article>
@@ -129,7 +129,7 @@ export function Hero() {
               className="animate-hero-float absolute left-0 top-10 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-slate-600 shadow-lg md:-left-9"
               style={{ animationDelay: "180ms" }}
             >
-              frete gratis
+              frete grátis
               <br />
               <span className="text-sm text-slate-800">acima de R$ 99</span>
             </div>

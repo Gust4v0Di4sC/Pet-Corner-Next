@@ -1,3 +1,5 @@
+import { apiFetch } from "@/lib/http/client-api";
+
 export type CustomerTestimonialSubmission = {
   role: string;
   content: string;
@@ -12,7 +14,7 @@ type TestimonialApiResponse = {
 export async function submitCustomerTestimonial(
   input: CustomerTestimonialSubmission
 ): Promise<void> {
-  const response = await fetch("/api/testimonials", {
+  const response = await apiFetch("/api/testimonials", {
     method: "POST",
     headers: {
       "content-type": "application/json",

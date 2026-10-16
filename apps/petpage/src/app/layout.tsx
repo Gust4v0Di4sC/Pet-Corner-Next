@@ -4,6 +4,8 @@ import "@/styles/globals.css";
 import { AosInit } from "@/providers/aos-init";
 import { AppQueryProvider } from "@/providers/app-query-provider";
 import { FloatingSupportActionsLoader } from "@/features/support/components/floating-support-actions-loader";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // const geistSans = Geist({
 //   variable: "--font-geist-sans",
@@ -100,18 +102,21 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="pt-br"
+      lang="pt-BR"
       className={montserrat.variable}
     >
       <body
         className={`${montserrat.className} antialiased`}
         suppressHydrationWarning
       >
+        <a href="#main-content" className="skip-link">Ir para o conteúdo principal</a>
         <AppQueryProvider>
-          {children}
+          <div id="main-content" tabIndex={-1}>{children}</div>
           <FloatingSupportActionsLoader />
           <AosInit/>
         </AppQueryProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

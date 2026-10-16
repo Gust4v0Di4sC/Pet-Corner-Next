@@ -1,6 +1,7 @@
 "use client";
 
 import { getFirebaseAuth, waitForFirebaseUser } from "@/lib/auth/firebase-auth.adapter";
+import { apiFetch } from "@/lib/http/client-api";
 import type {
   AppointmentAvailability,
   AppointmentPet,
@@ -20,7 +21,7 @@ type CustomerPetsResponse =
   | { ok: false; error?: string };
 
 export async function fetchCustomerAppointmentPets(): Promise<AppointmentPet[]> {
-  const response = await fetch("/api/profile/pets", {
+  const response = await apiFetch("/api/profile/pets", {
     method: "GET",
     credentials: "same-origin",
     cache: "no-store",
@@ -44,7 +45,7 @@ export async function fetchAppointmentAvailability(input: {
     serviceId: input.serviceId,
     date: input.dateKey,
   });
-  const response = await fetch(`/api/appointments/availability?${params.toString()}`, {
+  const response = await apiFetch(`/api/appointments/availability?${params.toString()}`, {
     method: "GET",
   });
   const payload = (await response.json().catch(() => ({}))) as AvailabilityResponse;
@@ -72,7 +73,7 @@ export async function createCustomerAppointment(input: {
   }
 
   const idToken = await currentUser.getIdToken();
-  const response = await fetch("/api/appointments", {
+  const response = await apiFetch("/api/appointments", {
     method: "POST",
     headers: {
       authorization: `Bearer ${idToken}`,
@@ -92,7 +93,7 @@ export async function createCustomerAppointment(input: {
 }
 
 export async function sendCustomerAppointmentEmail(appointmentId: string): Promise<void> {
-  const response = await fetch("/api/appointments/email", {
+  const response = await apiFetch("/api/appointments/email", {
     method: "POST",
     headers: { "content-type": "application/json" },
     credentials: "same-origin",

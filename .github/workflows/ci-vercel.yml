@@ -37,7 +37,7 @@ jobs:
       NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci.invalid
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
       NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:ci"
-      CUSTOMER_SESSION_SECRET: ci-only-placeholder-at-least-32-characters
+      APP_CHECK_ENFORCEMENT: monitor
       NEXT_PUBLIC_APP_URL: https://ci.invalid
       STRIPE_SECRET_KEY: sk_test_ci_placeholder
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_ci_placeholder
@@ -53,11 +53,23 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: Configurar Java para o Firebase Emulator
+        uses: actions/setup-java@7a445ee88d4e23b52c33ce82c274e30b9ae0e324 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Instalar dependências do lockfile
         run: npm ci
 
       - name: Executar prebuild completo
         run: npm run ci:prebuild
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Executar E2E e acessibilidade
+        run: npm run test:e2e
 
   deploy-production:
     name: Deploy de produção

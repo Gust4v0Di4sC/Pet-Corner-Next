@@ -6,6 +6,15 @@ const PROTECTED_ROUTES = new Set(["/profile", "/checkout", "/rastreamento"]);
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  if (pathname.startsWith("/api/")) {
+    const requestId = request.headers.get("x-request-id")?.slice(0, 128) || crypto.randomUUID();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-request-id", requestId);
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set("x-request-id", requestId);
+    return response;
+  }
+
   if (!PROTECTED_ROUTES.has(pathname)) {
     return NextResponse.next();
   }
@@ -21,5 +30,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile", "/checkout", "/rastreamento"],
+  matcher: ["/api/:path*", "/profile", "/checkout", "/rastreamento"],
 };

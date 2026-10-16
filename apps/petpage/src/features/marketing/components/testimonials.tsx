@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import { useAccessibleCarouselAutoplay } from "@/features/marketing/hooks/use-accessible-carousel-autoplay";
 import { Star, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -81,23 +82,7 @@ export function Testimonials({ items }: TestimonialsProps) {
     };
   }, [emblaApi, syncCarouselState]);
 
-  useEffect(() => {
-    if (!emblaApi || testimonialItems.length < 2) {
-      return;
-    }
-
-    const autoplay = window.setInterval(() => {
-      if (emblaApi.canScrollNext()) {
-        emblaApi.scrollNext();
-      } else {
-        emblaApi.scrollTo(0);
-      }
-    }, AUTOPLAY_MS);
-
-    return () => {
-      window.clearInterval(autoplay);
-    };
-  }, [emblaApi, testimonialItems.length]);
+  useAccessibleCarouselAutoplay(emblaApi, testimonialItems.length, AUTOPLAY_MS);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);

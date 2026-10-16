@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CartPanelDrawer } from "@/features/marketing/components/cart-panel-drawer";
 import { GuestCartButton } from "@/features/marketing/components/guest-cart-button";
+import { apiFetch } from "@/lib/http/client-api";
 
 type CustomerSessionSummary = {
   customerId: string;
@@ -15,7 +16,7 @@ type SessionResponse = {
 };
 
 async function readCustomerSession(): Promise<CustomerSessionSummary | null> {
-  const response = await fetch("/api/auth/session", {
+  const response = await apiFetch("/api/auth/session", {
     method: "GET",
     credentials: "include",
     cache: "no-store",

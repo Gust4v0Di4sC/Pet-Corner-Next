@@ -69,8 +69,8 @@ export type LandingContentBundle = {
   testimonials: LandingTestimonialView[];
 };
 
-export const LANDING_PRODUCTS_LIMIT = 24;
-export const LANDING_SERVICES_LIMIT = 20;
+export const LANDING_PRODUCTS_LIMIT = 10;
+export const LANDING_SERVICES_LIMIT = 8;
 
 const BRL_FORMATTER = new Intl.NumberFormat("pt-BR", {
   style: "currency",

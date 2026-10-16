@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
+import { useAccessibleCarouselAutoplay } from "@/features/marketing/hooks/use-accessible-carousel-autoplay";
 import {
   Scissors,
   Syringe,
@@ -119,23 +120,7 @@ export function Services({ items }: ServicesProps) {
     };
   }, [emblaApi, syncCarouselState]);
 
-  useEffect(() => {
-    if (!emblaApi || serviceItems.length < 2) {
-      return;
-    }
-
-    const autoplay = window.setInterval(() => {
-      if (emblaApi.canScrollNext()) {
-        emblaApi.scrollNext();
-      } else {
-        emblaApi.scrollTo(0);
-      }
-    }, AUTOPLAY_MS);
-
-    return () => {
-      window.clearInterval(autoplay);
-    };
-  }, [emblaApi, serviceItems.length]);
+  useAccessibleCarouselAutoplay(emblaApi, serviceItems.length, AUTOPLAY_MS);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);

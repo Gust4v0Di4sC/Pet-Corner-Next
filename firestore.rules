@@ -15,20 +15,27 @@ service cloud.firestore {
 
     function isValidCustomerToAdminNotificationCreate() {
       return isAuthenticated()
+        && hasOnlyFields(["source", "actorCustomerId", "title", "message", "category", "createdAt", "createdAtIso", "isRead", "linkHref"])
         && request.resource.data.source == "petpage"
         && request.resource.data.actorCustomerId == request.auth.uid
         && request.resource.data.title is string
         && request.resource.data.message is string
         && request.resource.data.category is string
         && request.resource.data.createdAtIso is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 140
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 600
+        && request.resource.data.category.size() <= 40
         && request.resource.data.isRead == false;
     }
 
     function isValidDeliveryIssueCreate() {
       return isAuthenticated()
+        && hasOnlyFields(["customerId", "message", "status", "createdAt", "updatedAt", "createdAtIso", "updatedAtIso", "orderId"])
         && request.resource.data.customerId == request.auth.uid
-        && request.resource.data.message is string
-        && request.resource.data.status is string
+        && requiredString("message", 1000)
+        && request.resource.data.status in ["open", "pending", "resolved", "closed"]
         && request.resource.data.createdAtIso is string
         && request.resource.data.updatedAtIso is string;
     }
@@ -112,6 +119,7 @@ service cloud.firestore {
         && request.resource.data.items.size() <= 50
         && request.resource.data.subtotalInCents is number
         && request.resource.data.subtotalInCents >= 0
+        && request.resource.data.subtotalInCents <= 100000000
         && optionalString("updatedAtIso", 40);
     }
 
@@ -144,7 +152,10 @@ service cloud.firestore {
         ])
         && requiredString("name", 160)
         && optionalString("category", 120)
-        && optionalString("priceLabel", 40);
+        && optionalString("priceLabel", 40)
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0
+        && request.resource.data.price <= 1000000;
     }
 
     function validCustomerAddress(customerId) {

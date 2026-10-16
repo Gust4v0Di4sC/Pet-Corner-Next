@@ -1,6 +1,6 @@
 {
   "name": "pertcornernext",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "homepage": "https://github.com/Gust4v0Di4sC/Pet-Corner-Next#readme",
   "bugs": {
@@ -20,21 +20,40 @@
   ],
   "scripts": {
     "build": "npm run build --workspace=petcorner && npm run build --workspace=petpage",
-    "ci:prebuild": "npm run lint && npm run build:ci --workspace=petcorner && npm run build --workspace=petpage",
+    "ci:prebuild": "npm run audit:prod && npm run lint && npm run test:unit && npm run test:rules && npm run build:ci --workspace=petcorner && npm run build --workspace=petpage",
     "dev:next": "npm run dev --workspace=petpage",
     "dev:vite": "npm run dev --workspace=petcorner",
-    "lint": "npm run lint --workspace=petcorner && npm run lint --workspace=petpage"
+    "lint": "npm run lint --workspace=petcorner && npm run lint --workspace=petpage",
+    "test": "npm run test:unit && npm run test:rules && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-petcorner-quality \"vitest run --config vitest.rules.config.mts\"",
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test --grep @a11y",
+    "audit:prod": "node scripts/audit-production.mjs"
   },
   "dependencies": {
-    "punycode": "^2.3.1",
-    "zustand": "^5.0.9"
+    "punycode": "^2.3.1"
   },
   "overrides": {
     "next": {
-      "postcss": "^8.5.22",
-      "sharp": "^0.35.3"
+      "postcss": "^8.5.30",
+      "sharp": "^0.35.5"
     },
-    "postcss": "^8.5.22",
-    "sharp": "^0.35.3"
+    "@fastify/busboy": "^3.2.3",
+    "@grpc/grpc-js": "^1.14.6",
+    "postcss": "^8.5.30",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "^1.64.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@vitest/coverage-v8": "^5.0.4",
+    "firebase-tools": "^15.34.0",
+    "jsdom": "^27.4.0",
+    "vitest": "^5.0.4"
   }
 }

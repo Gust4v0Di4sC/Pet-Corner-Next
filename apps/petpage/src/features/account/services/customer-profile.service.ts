@@ -2,6 +2,7 @@
 
 import { upsertCustomerProfile } from "@/features/account/services/firebase-customer.adapter";
 import { waitForFirebaseUser } from "@/lib/auth/firebase-auth.adapter";
+import { apiFetch } from "@/lib/http/client-api";
 import {
   readCustomerAccountProfile,
   readCustomerAddress,
@@ -139,7 +140,7 @@ export async function getCustomerProfileDataBundle(
 }
 
 export async function registerCustomerPet(input: CreatePetInput): Promise<CustomerPet> {
-  const response = await fetch("/api/profile/pets", {
+  const response = await apiFetch("/api/profile/pets", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -167,7 +168,7 @@ export async function registerCustomerPet(input: CreatePetInput): Promise<Custom
 export async function saveCustomerDeliveryAddress(
   input: SaveDeliveryAddressInput
 ): Promise<CustomerDeliveryAddress> {
-  const response = await fetch("/api/profile/address", {
+  const response = await apiFetch("/api/profile/address", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

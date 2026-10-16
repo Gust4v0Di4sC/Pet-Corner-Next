@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAppointment } from "@/features/scheduling/services/firebase-appointments.server";
 import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
+import { guardApiMutation } from "@/lib/http/route-security";
 
 function readBearerToken(request: Request): string {
   const authorizationHeader = request.headers.get("authorization") || "";
@@ -9,6 +10,8 @@ function readBearerToken(request: Request): string {
 }
 
 export async function POST(request: Request) {
+  const blocked = await guardApiMutation(request, { maxBytes: 16 * 1024 });
+  if (blocked) return blocked;
   const idToken = readBearerToken(request);
   if (!idToken) {
     return NextResponse.json(

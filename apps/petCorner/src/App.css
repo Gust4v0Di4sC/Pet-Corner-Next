@@ -15,3 +15,18 @@ body{
     font-family: 'Montserrat Alternates';
     src: local('Montserrat Alternates'), url(./assets/MontserratAlternates-Bold.ttf) format('truetype');
   }
+.app-fatal-error {
+  display: grid;
+  min-height: 100dvh;
+  place-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.app-fatal-error button {
+  min-height: 44px;
+  border-radius: 0.6rem;
+  background: #1f2937;
+  color: white;
+}

@@ -145,7 +145,6 @@ const CHAT_COLLECTION_ALIASES = {
   cosmos: "productCatalog",
 };
 
-const CHAT_RATE_LIMIT_STORE = new Map();
 const CHAT_ALLOWED_ACTIONS = new Set(["count", "list", "sum", "avg"]);
 const CHAT_ALLOWED_OPERATORS = new Set(["eq", "contains", "gt", "gte", "lt", "lte"]);
 const DEFAULT_CHAT_LIMIT = 5;
@@ -271,7 +270,7 @@ function createCorsHeaders(request, env) {
 
   const headers = new Headers();
   headers.set("Access-Control-Allow-Origin", allowedOrigin);
-  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Firebase-AppCheck, X-Request-ID");
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   headers.set("Access-Control-Max-Age", "86400");
 
@@ -296,6 +295,7 @@ function jsonResponse(request, env, body, init = {}) {
 
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
+  headers.set("X-Request-ID", request.headers.get("X-Request-ID") || crypto.randomUUID());
 
   corsHeaders.forEach((value, key) => {
     headers.set(key, value);
@@ -315,6 +315,7 @@ function responseWithCors(request, env, body, init = {}) {
   }
 
   const headers = new Headers(init.headers);
+  headers.set("X-Request-ID", request.headers.get("X-Request-ID") || crypto.randomUUID());
 
   corsHeaders.forEach((value, key) => {
     headers.set(key, value);
@@ -1889,31 +1890,20 @@ async function askGeminiForCustomerDelivery({ message, model, env, context }) {
   return outputText;
 }
 
-function applyRateLimit(userId, chatConfig) {
-  const now = Date.now();
-  const bucketKey = String(userId || "anonymous");
-  const windowStart = now - chatConfig.rateLimitWindowMs;
-  const previousRequests = CHAT_RATE_LIMIT_STORE.get(bucketKey) ?? [];
-  const validRequests = previousRequests.filter((timestamp) => timestamp > windowStart);
-
-  if (validRequests.length >= chatConfig.rateLimitMaxRequests) {
-    const retryAfterMs = validRequests[0] + chatConfig.rateLimitWindowMs - now;
-    return {
-      allowed: false,
-      remaining: 0,
-      retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)),
-    };
+async function applyRateLimit(userId, env, chatConfig) {
+  if (!env.CHAT_RATE_LIMITER || typeof env.CHAT_RATE_LIMITER.limit !== "function") {
+    console.warn(JSON.stringify({ event: "rate_limit_binding_missing", severity: "warn" }));
+    return { allowed: true, remaining: null, retryAfterSeconds: 0 };
   }
-
-  validRequests.push(now);
-  CHAT_RATE_LIMIT_STORE.set(bucketKey, validRequests);
-
+  const result = await env.CHAT_RATE_LIMITER.limit({ key: String(userId || "anonymous") });
   return {
-    allowed: true,
-    remaining: Math.max(chatConfig.rateLimitMaxRequests - validRequests.length, 0),
-    retryAfterSeconds: 0,
+    allowed: result.success,
+    remaining: null,
+    retryAfterSeconds: result.success ? 0 : Math.max(1, Math.ceil(chatConfig.rateLimitWindowMs / 1000)),
   };
 }
+
+export { applyRateLimit };
 
 async function parseRequestBody(request) {
   try {
@@ -2413,7 +2403,7 @@ async function handleChatQuery(request, env) {
     const idToken = getBearerToken(request);
     const tokenPayload = await verifyAdminFirebaseToken(idToken, env);
     const userId = String(tokenPayload.user_id ?? tokenPayload.sub ?? "admin");
-    const rateLimit = applyRateLimit(userId, chatConfig);
+    const rateLimit = await applyRateLimit(userId, env, chatConfig);
 
     if (!rateLimit.allowed) {
       throw new HttpError(429, "Limite de consultas por minuto atingido. Tente novamente em instantes.", {
@@ -2583,7 +2573,7 @@ async function handleCustomerDeliveryChat(request, env) {
     }
 
     const rateLimitUserKey = customerId || sessionId || "anonymous-delivery";
-    const rateLimit = applyRateLimit(`delivery:${rateLimitUserKey}`, chatConfig);
+    const rateLimit = await applyRateLimit(`delivery:${rateLimitUserKey}`, env, chatConfig);
 
     if (!rateLimit.allowed) {
       throw new HttpError(429, "Limite de consultas por minuto atingido. Tente novamente em instantes.", {
@@ -2738,8 +2728,7 @@ async function handleCustomerDeliveryChat(request, env) {
   }
 }
 
-export default {
-  async fetch(request, env) {
+async function dispatchRequest(request, env) {
     if (request.method === "OPTIONS") {
       const corsHeaders = createCorsHeaders(request, env);
 
@@ -2793,6 +2782,34 @@ export default {
       },
       { status: 404 }
     );
+}
+
+export default {
+  async fetch(request, env) {
+    const startedAt = Date.now();
+    const requestId = request.headers.get("X-Request-ID")?.slice(0, 128) || crypto.randomUUID();
+    const headers = new Headers(request.headers);
+    headers.set("X-Request-ID", requestId);
+    const tracedRequest = new Request(request, { headers });
+    let response;
+    try {
+      response = await dispatchRequest(tracedRequest, env);
+      return response;
+    } catch (error) {
+      console.error(JSON.stringify({ event: "worker_unhandled_error", severity: "error", requestId }));
+      response = jsonResponse(tracedRequest, env, { message: "Erro interno." }, { status: 500 });
+      return response;
+    } finally {
+      console.log(JSON.stringify({
+        event: "worker_request",
+        severity: response?.status >= 500 ? "error" : response?.status >= 400 ? "warn" : "info",
+        requestId,
+        method: request.method,
+        route: new URL(request.url).pathname,
+        status: response?.status || 500,
+        durationMs: Date.now() - startedAt,
+      }));
+    }
   },
 };
 

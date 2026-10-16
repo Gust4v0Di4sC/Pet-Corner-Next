@@ -74,6 +74,7 @@ export default function LoginForm({
 
         <div className="box">
           <LoginTextField
+            label="E-mail"
             type="email"
             placeholder="Digite seu email..."
             // RHF
@@ -83,6 +84,7 @@ export default function LoginForm({
           />
 
           <LoginTextField
+            label="Senha"
             type="password"
             placeholder="Digite sua senha..."
             {...register("password")}

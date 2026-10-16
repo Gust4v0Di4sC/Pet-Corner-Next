@@ -12,6 +12,7 @@ import productFallback from "@/assets/fallbackproduct.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AddToCartButton } from "@/features/cart-checkout/components/add-to-cart-button";
+import { useAccessibleCarouselAutoplay } from "@/features/marketing/hooks/use-accessible-carousel-autoplay";
 
 export type ProductItem = {
   id?: string;
@@ -95,23 +96,7 @@ export function Products({ items }: ProductsProps) {
     };
   }, [emblaApi, syncCarouselState]);
 
-  useEffect(() => {
-    if (!emblaApi || productItems.length < 2) {
-      return;
-    }
-
-    const autoplay = window.setInterval(() => {
-      if (emblaApi.canScrollNext()) {
-        emblaApi.scrollNext();
-      } else {
-        emblaApi.scrollTo(0);
-      }
-    }, AUTOPLAY_MS);
-
-    return () => {
-      window.clearInterval(autoplay);
-    };
-  }, [emblaApi, productItems.length]);
+  useAccessibleCarouselAutoplay(emblaApi, productItems.length, AUTOPLAY_MS);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);

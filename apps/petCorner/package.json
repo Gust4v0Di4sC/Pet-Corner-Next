@@ -1,7 +1,7 @@
 {
   "name": "petcorner",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "prepare:runtime-config": "node scripts/write-runtime-config.mjs",
@@ -20,15 +20,16 @@
     "@mui/x-charts": "^8.15.0",
     "@tanstack/react-query": "^5.90.16",
     "@tanstack/react-virtual": "^3.13.24",
-    "axios": "^1.13.2",
-    "firebase": "^12.0.0",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
+    "firebase": "^12.19.0",
     "lucide-react": "^0.476.0",
     "react": "19.2.3",
     "react-datepicker": "^8.4.0",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.69.0",
     "react-imask": "^7.6.1",
-    "react-router-dom": "^7.7.1",
+    "react-router-dom": "^7.18.4",
     "react-tooltip": "^5.29.1",
     "zod": "^4.3.6",
     "zustand": "^4.5.7"
@@ -43,7 +44,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.5",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4"

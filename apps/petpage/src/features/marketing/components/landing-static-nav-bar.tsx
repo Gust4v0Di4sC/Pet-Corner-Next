@@ -16,7 +16,7 @@ const menuLinks = [
 export function LandingStaticNavBar() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-700/70 bg-[#1f2937]/95 backdrop-blur">
-      <nav className="gridpet">
+      <nav className="gridpet" aria-label="Navegação principal">
         <div className="gridpet-content flex h-20 items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <Image

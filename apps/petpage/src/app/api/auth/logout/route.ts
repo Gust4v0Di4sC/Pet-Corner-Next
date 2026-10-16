@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { CUSTOMER_SESSION_COOKIE } from "@/lib/auth/session-constants";
 import { sanitizeRedirectPath } from "@/lib/routing/route";
+import { guardApiMutation } from "@/lib/http/route-security";
 
 export async function POST(request: Request) {
+  const blocked = await guardApiMutation(request, { maxBytes: 4 * 1024, allowForm: true });
+  if (blocked) return blocked;
   const contentType = request.headers.get("content-type") || "";
   const isFormRequest = contentType.includes("application/x-www-form-urlencoded");
 

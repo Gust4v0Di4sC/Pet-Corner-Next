@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@phosphor-icons/react/dist/ssr";
 import { UserPanelDrawer } from "@/features/marketing/components/user-panel-drawer";
+import { apiFetch } from "@/lib/http/client-api";
 
 type CustomerSessionSummary = {
   name?: string;
@@ -18,7 +19,7 @@ type SessionResponse = {
 };
 
 async function readCustomerSession(): Promise<CustomerSessionSummary | null> {
-  const response = await fetch("/api/auth/session", {
+  const response = await apiFetch("/api/auth/session", {
     method: "GET",
     credentials: "include",
     cache: "no-store",

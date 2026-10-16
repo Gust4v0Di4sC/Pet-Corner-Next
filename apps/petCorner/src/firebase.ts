@@ -8,11 +8,13 @@ import {
   OAuthProvider,
 } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
+import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
 
 import { getFirebaseRuntimeConfig } from "./config/runtimeConfig";
 
 let appPromise: Promise<FirebaseApp> | null = null;
 let authPromise: Promise<Auth> | null = null;
+let appCheckPromise: Promise<AppCheck | null> | null = null;
 
 function loadFirebaseConfig() {
   return Promise.resolve(getFirebaseRuntimeConfig());
@@ -37,6 +39,28 @@ export async function getFirebaseAuth(): Promise<Auth> {
   }
 
   return authPromise;
+}
+
+export function getFirebaseAppCheck(): Promise<AppCheck | null> {
+  if (!appCheckPromise) {
+    appCheckPromise = getFirebaseApp().then((app) => {
+      const siteKey = import.meta.env.VITE_FIREBASE_APP_CHECK_SITE_KEY?.trim();
+      return siteKey
+        ? initializeAppCheck(app, {
+            provider: new ReCaptchaEnterpriseProvider(siteKey),
+            isTokenAutoRefreshEnabled: true,
+          })
+        : null;
+    });
+  }
+  return appCheckPromise;
+}
+
+export async function getAppCheckHeaders(): Promise<Record<string, string>> {
+  const instance = await getFirebaseAppCheck();
+  if (!instance) return {};
+  const result = await getToken(instance, false).catch(() => null);
+  return result?.token ? { "X-Firebase-AppCheck": result.token } : {};
 }
 
 export async function getFirestoreDB(): Promise<Firestore> {

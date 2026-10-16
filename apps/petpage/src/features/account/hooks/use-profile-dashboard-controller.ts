@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/http/client-api";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, useMemo, useState } from "react";
 import { useCustomerProfileData } from "@/features/account/hooks/use-customer-profile-data";
@@ -126,7 +127,7 @@ export function useProfileDashboardController({
     setIsLoggingOut(true);
 
     try {
-      await fetch("/api/auth/logout", {
+      await apiFetch("/api/auth/logout", {
         method: "POST",
         headers: {
           "content-type": "application/json",

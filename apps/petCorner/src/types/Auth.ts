@@ -6,7 +6,6 @@ export type AuthUser = {
   email: string | null;
   isAdmin: boolean;
 };
-
 export type EmailCredentials = {
   email: string;
   password: string;
@@ -44,25 +43,4 @@ export type AuthHookReturn = {
   logout: LogoutFn;
   setUser: Dispatch<SetStateAction<AuthUser | null>>;
   isLoading: boolean;
-};
-
-export type TokenPayload = {
-  idToken: string;
-  refreshToken: string;
-  expiresIn: number | string;
-};
-
-export type AuthTokens = {
-  idToken: string;
-  refreshToken: string;
-  expiresAt: number;
-};
-
-export type AuthStoreState = {
-  tokens: AuthTokens | null;
-  isRefreshing: boolean;
-  setSession: (payload: TokenPayload) => void;
-  clearSession: () => void;
-  setRefreshing: (value: boolean) => void;
-  hasValidToken: () => boolean;
 };

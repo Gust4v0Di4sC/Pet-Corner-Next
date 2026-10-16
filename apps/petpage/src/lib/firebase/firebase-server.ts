@@ -2,6 +2,8 @@ import "server-only";
 
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+import { getAppCheck } from "firebase-admin/app-check";
 
 function readOptionalEnv(name: string): string {
   return process.env[name]?.trim() || "";
@@ -51,4 +53,12 @@ export function getFirebaseServerApp(): App {
 
 export function getFirebaseServerFirestore() {
   return getFirestore(getFirebaseServerApp());
+}
+
+export function getFirebaseServerAuth() {
+  return getAuth(getFirebaseServerApp());
+}
+
+export function getFirebaseServerAppCheck() {
+  return getAppCheck(getFirebaseServerApp());
 }

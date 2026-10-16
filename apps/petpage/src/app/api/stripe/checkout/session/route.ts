@@ -11,6 +11,7 @@ import {
   saveStripePendingCheckout,
 } from "@/features/cart-checkout/services/stripe-order-fulfillment.server";
 import { getPublicAppUrl, getStripeServerClient } from "@/lib/stripe/stripe-server";
+import { guardApiMutation } from "@/lib/http/route-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -105,6 +106,8 @@ function buildLineItems(
 }
 
 export async function POST(request: Request) {
+  const blocked = await guardApiMutation(request, { maxBytes: 64 * 1024 });
+  if (blocked) return blocked;
   const session = await readServerCustomerSession();
   if (!session) {
     return jsonError("Faca login para finalizar o pedido.", 401);

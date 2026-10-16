@@ -14,6 +14,7 @@ import {
   type User,
   type UserCredential,
 } from "firebase/auth";
+import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -34,6 +35,26 @@ function ensureFirebaseConfig() {
 export function getFirebaseApp(): FirebaseApp {
   ensureFirebaseConfig();
   return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
+
+let appCheck: AppCheck | null = null;
+
+export function getFirebaseAppCheck(): AppCheck | null {
+  if (typeof window === "undefined") return null;
+  const siteKey = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY?.trim();
+  if (!siteKey) return null;
+  appCheck ??= initializeAppCheck(getFirebaseApp(), {
+    provider: new ReCaptchaEnterpriseProvider(siteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+  return appCheck;
+}
+
+export async function getAppCheckHeaders(): Promise<Record<string, string>> {
+  const instance = getFirebaseAppCheck();
+  if (!instance) return {};
+  const result = await getToken(instance, false).catch(() => null);
+  return result?.token ? { "X-Firebase-AppCheck": result.token } : {};
 }
 
 export function getFirebaseAuth(): Auth {
