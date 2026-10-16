@@ -1,138 +1,82 @@
-import { NextResponse } from "next/server";
-import { getAuth } from "firebase-admin/auth";
 import { z } from "zod";
-import { StructuralAuthRepository } from "@/lib/auth/structural-auth.repository";
-import {
-  CUSTOMER_SESSION_COOKIE,
-  CUSTOMER_SESSION_MAX_AGE_SECONDS,
-} from "@/lib/auth/session-constants";
-import {
-  createSessionCookieValue,
-} from "@/lib/auth/session-cookie";
+import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session-constants";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
-import { getFirebaseServerApp } from "@/lib/firebase/firebase-server";
+import { getFirebaseServerAuth } from "@/lib/firebase/firebase-server";
+import { apiJson, getRequestId, guardAppCheck, hasTrustedOrigin, parseJsonBody, verifyAppCheck } from "@/lib/http/route-security";
+import { logEvent } from "@/lib/observability/logger";
 import { sanitizeRedirectPath } from "@/lib/routing/route";
 
-type SessionPayload = {
-  name: string;
-  next: string;
-};
+const payloadSchema = z.object({
+  name: z.string().trim().max(120).optional().default(""),
+  next: z.string().max(500).optional().default(""),
+}).strict();
 
-function readBearerToken(request: Request): string {
-  const authorizationHeader = request.headers.get("authorization") || "";
-  const match = /^Bearer\s+(.+)$/i.exec(authorizationHeader);
-  return match?.[1]?.trim() || "";
+function bearerToken(request: Request) {
+  return /^Bearer\s+(.+)$/i.exec(request.headers.get("authorization") || "")?.[1]?.trim() || "";
 }
 
-export async function GET() {
-  const session = await readServerCustomerSession();
-  return NextResponse.json({ ok: true, session });
+export async function GET(request: Request) {
+  const requestId = getRequestId(request);
+  const blocked = await guardAppCheck(request);
+  if (blocked) return blocked;
+  return apiJson({ ok: true, session: await readServerCustomerSession() }, {}, requestId);
 }
-
-const emailValidationSchema = z.string().email();
-const sessionPayloadSchema = z
-  .object({
-    name: z.string().optional().default(""),
-    next: z.string().optional().default(""),
-  })
-  .transform((input): SessionPayload => {
-    const normalizedName = input.name.trim();
-
-    return {
-      name: normalizedName,
-      next: sanitizeRedirectPath(input.next, "/profile"),
-    };
-  });
 
 export async function POST(request: Request) {
-  const contentType = request.headers.get("content-type") || "";
-  const isFormRequest =
-    contentType.includes("application/x-www-form-urlencoded") ||
-    contentType.includes("multipart/form-data");
-
-  let payload: unknown;
-  if (isFormRequest) {
-    const form = await request.formData();
-    payload = {
-      customerId: String(form.get("customerId") || ""),
-      name: String(form.get("name") || ""),
-      email: String(form.get("email") || ""),
-      next: String(form.get("next") || ""),
-    };
-  } else {
-    payload = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const startedAt = performance.now();
+  const requestId = getRequestId(request);
+  const route = "/api/auth/session";
+  const finish = (status: number) => logEvent("info", "api_request", {
+    requestId, route, status, durationMs: Math.round(performance.now() - startedAt),
+  });
+  if (!hasTrustedOrigin(request)) {
+    finish(403);
+    return apiJson({ ok: false, error: "Origem não permitida." }, { status: 403 }, requestId);
   }
-
-  const parsedPayload = sessionPayloadSchema.safeParse(payload);
-  if (!parsedPayload.success) {
-    const [firstIssue] = parsedPayload.error.issues;
-    return NextResponse.json(
-      {
-        ok: false,
-        error: firstIssue?.message || "Payload de sessao invalido.",
-      },
-      { status: 400 }
-    );
+  const appCheck = await verifyAppCheck(request, requestId);
+  if (appCheck.enforced && !appCheck.valid) {
+    finish(401);
+    return apiJson({ ok: false, error: "Verificação do aplicativo inválida." }, { status: 401 }, requestId);
   }
-
-  const idToken = readBearerToken(request);
+  const parsed = await parseJsonBody(request, payloadSchema, 8 * 1024);
+  if (!parsed.ok) {
+    finish(parsed.status);
+    return apiJson({ ok: false, error: parsed.error }, { status: parsed.status }, requestId);
+  }
+  const idToken = bearerToken(request);
   if (!idToken) {
-    return NextResponse.json(
-      { ok: false, error: "Token de autenticacao ausente." },
-      { status: 401 }
-    );
+    finish(401);
+    return apiJson({ ok: false, error: "Token de autenticação ausente." }, { status: 401 }, requestId);
   }
-
-  const decodedToken = await getAuth(getFirebaseServerApp())
-    .verifyIdToken(idToken)
-    .catch(() => null);
-
-  if (!decodedToken?.uid) {
-    return NextResponse.json(
-      { ok: false, error: "Token de autenticacao invalido." },
-      { status: 401 }
-    );
-  }
-
-  const tokenEmail = typeof decodedToken.email === "string" ? decodedToken.email.trim().toLowerCase() : "";
-  if (!emailValidationSchema.safeParse(tokenEmail).success) {
-    return NextResponse.json(
-      { ok: false, error: "Email autenticado invalido." },
-      { status: 401 }
-    );
-  }
-
-  const tokenName = typeof decodedToken.name === "string" ? decodedToken.name.trim() : "";
-  const authRepository = new StructuralAuthRepository();
-  const normalized = parsedPayload.data;
-  const session = await authRepository.openSession({
-    customerId: decodedToken.uid,
-    email: tokenEmail,
-    name: tokenName || normalized.name || "Cliente Pet Corner",
-  });
-
-  const nextPath = sanitizeRedirectPath(normalized.next, "/profile");
-  const cookieValue = createSessionCookieValue(session);
-
-  if (isFormRequest) {
-    const response = NextResponse.redirect(new URL(nextPath, request.url));
-    response.cookies.set(CUSTOMER_SESSION_COOKIE, cookieValue, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: CUSTOMER_SESSION_MAX_AGE_SECONDS,
-      path: "/",
+  try {
+    const auth = getFirebaseServerAuth();
+    const decoded = await auth.verifyIdToken(idToken, true);
+    if (!decoded.uid || !decoded.email || Date.now() / 1000 - Number(decoded.auth_time || 0) > 5 * 60) {
+      finish(401);
+      return apiJson({ ok: false, error: "Faça login novamente para continuar." }, { status: 401 }, requestId);
+    }
+    const cookieValue = await auth.createSessionCookie(idToken, {
+      expiresIn: CUSTOMER_SESSION_MAX_AGE_SECONDS * 1000,
     });
+    const nextPath = sanitizeRedirectPath(parsed.data.next, "/profile");
+    const issuedAt = new Date();
+    const session = {
+      customerId: decoded.uid,
+      email: decoded.email,
+      name: typeof decoded.name === "string" ? decoded.name : parsed.data.name || undefined,
+      issuedAt: issuedAt.toISOString(),
+      expiresAt: new Date(issuedAt.getTime() + CUSTOMER_SESSION_MAX_AGE_SECONDS * 1000).toISOString(),
+    };
+    const response = apiJson({ ok: true, nextPath, session }, {}, requestId);
+    response.cookies.set(CUSTOMER_SESSION_COOKIE, cookieValue, {
+      httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production",
+      maxAge: CUSTOMER_SESSION_MAX_AGE_SECONDS, path: "/",
+    });
+    finish(200);
     return response;
+  } catch (error) {
+    logEvent("warn", "session_creation_failed", { requestId, route, error });
+    finish(401);
+    return apiJson({ ok: false, error: "Não foi possível iniciar a sessão." }, { status: 401 }, requestId);
   }
-
-  const response = NextResponse.json({ ok: true, nextPath, session });
-  response.cookies.set(CUSTOMER_SESSION_COOKIE, cookieValue, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: CUSTOMER_SESSION_MAX_AGE_SECONDS,
-    path: "/",
-  });
-  return response;
 }

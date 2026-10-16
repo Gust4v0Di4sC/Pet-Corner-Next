@@ -1,4 +1,5 @@
 import type { CheckoutDeliveryStepInput } from "@/features/cart-checkout/validation/checkout-schemas";
+import { apiFetch } from "@/lib/http/client-api";
 
 type StripeCheckoutCartItemInput = {
   productId: string;
@@ -15,7 +16,7 @@ type CreateStripeCheckoutSessionInput = {
 export async function createStripeCheckoutSession(
   input: CreateStripeCheckoutSessionInput
 ): Promise<string> {
-  const response = await fetch("/api/stripe/checkout/session", {
+  const response = await apiFetch("/api/stripe/checkout/session", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

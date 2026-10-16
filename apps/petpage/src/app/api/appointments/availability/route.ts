@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAppointmentAvailability } from "@/features/scheduling/services/firebase-appointments.server";
 import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
+import { guardAppCheck } from "@/lib/http/route-security";
 
 export async function GET(request: Request) {
+  const blocked = await guardAppCheck(request);
+  if (blocked) return blocked;
   const url = new URL(request.url);
   const serviceId = url.searchParams.get("serviceId") || "";
   const dateKey = url.searchParams.get("date") || "";

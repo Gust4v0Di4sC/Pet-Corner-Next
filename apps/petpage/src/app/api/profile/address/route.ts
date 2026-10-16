@@ -5,10 +5,15 @@ import {
   saveCustomerAddressOnServer,
 } from "@/features/account/services/address-registration.server";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
+import { getRequestId, guardApiMutation } from "@/lib/http/route-security";
+import { logEvent } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 
 export async function PUT(request: Request) {
+  const requestId = getRequestId(request);
+  const blocked = await guardApiMutation(request, { maxBytes: 16 * 1024 });
+  if (blocked) return blocked;
   const session = await readServerCustomerSession();
   if (!session) {
     return NextResponse.json(
@@ -34,7 +39,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    console.error("Falha ao salvar endereco no servidor.", error);
+    logEvent("error", "profile_address_save_failed", { requestId, route: "/api/profile/address", error });
     return NextResponse.json(
       { ok: false, error: "Nao foi possivel salvar o endereco agora. Tente novamente." },
       { status: 500 }

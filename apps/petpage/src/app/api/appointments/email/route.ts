@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { sendAppointmentEmailForCustomer } from "@/features/scheduling/services/firebase-appointments.server";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
 import { getUserErrorMessage } from "@/lib/errors/user-error-messages";
+import { guardApiMutation } from "@/lib/http/route-security";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const blocked = await guardApiMutation(request, { maxBytes: 8 * 1024 });
+  if (blocked) return blocked;
   const session = await readServerCustomerSession();
   if (!session) {
     return NextResponse.json(

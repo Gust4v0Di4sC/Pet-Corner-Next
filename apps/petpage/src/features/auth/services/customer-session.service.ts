@@ -1,5 +1,7 @@
 "use client";
 
+import { getAppCheckHeaders } from "@/lib/auth/firebase-auth.adapter";
+
 type OpenSessionInput = {
   name?: string;
   nextPath: string;
@@ -13,11 +15,13 @@ export type SessionResponse = {
 };
 
 export async function openCustomerSession(input: OpenSessionInput): Promise<SessionResponse> {
+  const appCheckHeaders = await getAppCheckHeaders();
   const response = await fetch("/api/auth/session", {
     method: "POST",
     headers: {
       authorization: `Bearer ${input.idToken}`,
       "content-type": "application/json",
+      ...appCheckHeaders,
     },
     body: JSON.stringify({
       name: input.name,

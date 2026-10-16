@@ -6,10 +6,15 @@ import {
   parseCreateCustomerPetInput,
 } from "@/features/account/services/pet-registration.server";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
+import { getRequestId, guardApiMutation, guardAppCheck } from "@/lib/http/route-security";
+import { logEvent } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const requestId = getRequestId(request);
+  const blocked = await guardAppCheck(request);
+  if (blocked) return blocked;
   const session = await readServerCustomerSession();
   if (!session) {
     return NextResponse.json(
@@ -22,7 +27,7 @@ export async function GET() {
     const pets = await listCustomerPetsOnServer(session.customerId);
     return NextResponse.json({ ok: true, pets });
   } catch (error) {
-    console.error("Falha ao consultar pets no servidor.", error);
+    logEvent("error", "profile_pets_read_failed", { requestId, route: "/api/profile/pets", error });
     return NextResponse.json(
       { ok: false, error: "Nao foi possivel carregar seus pets agora. Tente novamente." },
       { status: 500 }
@@ -31,6 +36,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
+  const blocked = await guardApiMutation(request, { maxBytes: 16 * 1024 });
+  if (blocked) return blocked;
   const session = await readServerCustomerSession();
   if (!session) {
     return NextResponse.json(
@@ -57,7 +65,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("Falha ao cadastrar pet no servidor.", error);
+    logEvent("error", "profile_pet_create_failed", { requestId, route: "/api/profile/pets", error });
     return NextResponse.json(
       { ok: false, error: "Nao foi possivel cadastrar o pet agora. Tente novamente." },
       { status: 500 }

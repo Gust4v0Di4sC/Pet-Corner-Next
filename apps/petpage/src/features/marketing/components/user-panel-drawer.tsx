@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/http/client-api";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -69,7 +70,7 @@ export function UserPanelDrawer({ name, email }: UserPanelDrawerProps) {
     setIsLoggingOut(true);
 
     try {
-      await fetch("/api/auth/logout", {
+      await apiFetch("/api/auth/logout", {
         method: "POST",
         headers: {
           "content-type": "application/json",

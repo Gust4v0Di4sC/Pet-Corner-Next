@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import {
@@ -6,10 +6,15 @@ import {
   saveCustomerTestimonial,
 } from "@/features/marketing/services/customer-testimonial.server";
 import { readServerCustomerSession } from "@/lib/auth/customer-session.server";
+import { getRequestId, guardApiMutation } from "@/lib/http/route-security";
+import { logEvent } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
+  const blocked = await guardApiMutation(request, { maxBytes: 8 * 1024 });
+  if (blocked) return blocked;
   const session = await readServerCustomerSession();
   if (!session) {
     return NextResponse.json(
@@ -28,6 +33,7 @@ export async function POST(request: Request) {
     });
 
     revalidatePath("/");
+    revalidateTag("testimonials", "max");
     return NextResponse.json({ ok: true, testimonial: savedTestimonial }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError || error instanceof SyntaxError) {
@@ -37,7 +43,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("Falha ao salvar depoimento do cliente.", error);
+    logEvent("error", "testimonial_save_failed", { requestId, route: "/api/testimonials", error });
     return NextResponse.json(
       { ok: false, error: "Nao foi possivel enviar seu depoimento agora. Tente novamente." },
       { status: 500 }
